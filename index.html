@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Nutrición Híbrida</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans antialiased pb-20" x-data="appData()">
+
+  <!-- Cabecera -->
+  <header class="bg-gray-800 p-4 shadow-md sticky top-0 z-10 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-emerald-400">Nutrición Híbrida</h1>
+    <div class="flex space-x-2 bg-gray-700 rounded-lg p-1">
+      <button @click="tab = 'dieta'" :class="tab === 'dieta' ? 'bg-gray-600 text-white' : 'text-gray-400'" class="px-3 py-1 rounded-md text-sm font-medium transition">Dieta</button>
+      <button @click="tab = 'checkin'" :class="tab === 'checkin' ? 'bg-gray-600 text-white' : 'text-gray-400'" class="px-3 py-1 rounded-md text-sm font-medium transition">Check-in</button>
+    </div>
+  </header>
+
+  <!-- Pestaña 1: Dieta -->
+  <main x-show="tab === 'dieta'" class="p-4 space-y-4">
+    <div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg border border-gray-700">
+      <select x-model="diaSeleccionado" class="bg-gray-700 text-white border border-gray-600 rounded p-2 flex-1">
+        <option value="Lunes">Lunes</option>
+        <option value="Martes">Martes</option>
+        <option value="Miércoles">Miércoles</option>
+        <option value="Jueves">Jueves</option>
+        <option value="Viernes">Viernes</option>
+        <option value="Sábado">Sábado</option>
+        <option value="Domingo">Domingo</option>
+      </select>
+      <button @click="cargarDieta()" class="ml-3 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded font-medium">Actualizar</button>
+    </div>
+
+    <!-- Contenedor de Comidas -->
+    <template x-if="cargandoDieta">
+      <div class="text-center text-gray-400 py-10">Conectando con Google Sheets...</div>
+    </template>
+    
+    <div class="space-y-4">
+      <template x-for="comida in comidasDelDia()" :key="comida.ventana">
+        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-lg">
+          <div class="bg-gray-700 px-4 py-2 flex justify-between items-center border-b border-gray-600">
+            <span class="font-bold text-emerald-300" x-text="comida.ventana"></span>
+          </div>
+          <div class="p-4">
+            <p class="text-sm text-gray-300 mb-4 pb-2 border-b border-gray-700" x-text="comida.plato"></p>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Columna Fede -->
+              <div class="bg-gray-900/50 p-3 rounded-lg border border-blue-900/30">
+                <div class="text-xs font-bold text-blue-400 mb-2 uppercase tracking-wide">Fede (Crudo)</div>
+                <p class="text-sm text-gray-200" x-text="comida.fede"></p>
+              </div>
+              
+              <!-- Columna Arantxa -->
+              <div class="bg-gray-900/50 p-3 rounded-lg border border-emerald-900/30">
+                <div class="text-xs font-bold text-emerald-400 mb-2 uppercase tracking-wide">Arantxa (Crudo)</div>
+                <p class="text-sm text-gray-200" x-text="comida.arantxa"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </main>
+
+  <!-- Pestaña 2: Check-in Semanal -->
+  <main x-show="tab === 'checkin'" style="display: none;" class="p-4">
+    <form @submit.prevent="enviarCheckin" class="bg-gray-800 p-5 rounded-xl border border-gray-700 space-y-4">
+      <h2 class="text-lg font-bold text-emerald-400 mb-4">Registro Semanal</h2>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Atleta</label>
+          <select x-model="form.atleta" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+            <option>Fede</option>
+            <option>Arantxa</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Semana (ej. Semana 2)</label>
+          <input type="text" x-model="form.semana" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Fecha</label>
+          <input type="date" x-model="form.fecha" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Peso (kg)</label>
+          <input type="number" step="0.1" x-model="form.peso" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 border-t border-gray-700 pt-3">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Cintura (cm)</label>
+          <input type="number" step="0.5" x-model="form.cintura" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Cadera (cm)</label>
+          <input type="number" step="0.5" x-model="form.cadera" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Brazo (cm)</label>
+          <input type="number" step="0.5" x-model="form.brazo" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">Muslo (cm)</label>
+          <input type="number" step="0.5" x-model="form.muslo" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+        </div>
+      </div>
+
+      <button type="submit" :disabled="enviando" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg mt-4 disabled:opacity-50 transition">
+        <span x-text="enviando ? 'Guardando en Google Sheets...' : 'Guardar Pesaje'"></span>
+      </button>
+      <p x-show="mensajeExito" class="text-emerald-400 text-sm text-center mt-2">¡Datos guardados con éxito!</p>
+    </form>
+  </main>
+
+  <script>
+    // --- IMPORTANTE: PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbwiBFN8Jo15OC9NppoNY21WA1p88M8M08W4QG4Iwl84VinasRmDUqjK8FUsgAq2UUqB/exec";
+
+    function appData() {
+      return {
+        tab: 'dieta',
+        diaSeleccionado: 'Lunes',
+        cargandoDieta: false,
+        enviando: false,
+        mensajeExito: false,
+        dietaCompleta: [],
+        form: {
+          atleta: 'Fede',
+          semana: '',
+          fecha: new Date().toISOString().split('T')[0],
+          peso: '',
+          cintura: '',
+          cadera: '',
+          brazo: '',
+          muslo: ''
+        },
+        
+        init() {
+          this.cargarDieta();
+        },
+
+        async cargarDieta() {
+          if(!API_URL || API_URL === "TU_URL_DE_APPS_SCRIPT_AQUI") return;
+          this.cargandoDieta = true;
+          try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            // Asume que la hoja DIETA_ESTRUCTURADA tiene: [Día, Ventana, Plato, Fede_Crudo, Arantxa_Crudo]
+            if(data.dieta && data.dieta.length > 1) {
+              this.dietaCompleta = data.dieta.slice(1).map(row => ({
+                dia: row[0],
+                ventana: row[1],
+                plato: row[2],
+                fede: row[3],
+                arantxa: row[4]
+              }));
+            }
+          } catch (e) {
+            console.error("Error al cargar la dieta", e);
+          }
+          this.cargandoDieta = false;
+        },
+
+        comidasDelDia() {
+          return this.dietaCompleta.filter(c => c.dia === this.diaSeleccionado);
+        },
+
+        async enviarCheckin() {
+          this.enviando = true;
+          try {
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify(this.form)
+            });
+            const result = await res.json();
+            if(result.status === 'success') {
+              this.mensajeExito = true;
+              setTimeout(() => this.mensajeExito = false, 3000);
+              // Limpiar métricas
+              this.form.peso = this.form.cintura = this.form.cadera = this.form.brazo = this.form.muslo = '';
+            }
+          } catch (e) {
+            alert("Error al guardar: " + e);
+          }
+          this.enviando = false;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
