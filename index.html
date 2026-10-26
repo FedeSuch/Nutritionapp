@@ -3,63 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Nutrición Híbrida</title>
+  <title>Nutrición Híbrida - Fede & Arantxa</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans antialiased pb-20" x-data="appData()">
+<body class="bg-slate-950 text-slate-100 font-sans antialiased pb-24" x-data="appData()">
 
-  <!-- Cabecera -->
-  <header class="bg-gray-800 p-4 shadow-md sticky top-0 z-10 flex justify-between items-center">
-    <h1 class="text-xl font-bold text-emerald-400">Nutrición Híbrida</h1>
-    <div class="flex space-x-2 bg-gray-700 rounded-lg p-1">
-      <button @click="tab = 'dieta'" :class="tab === 'dieta' ? 'bg-gray-600 text-white' : 'text-gray-400'" class="px-3 py-1 rounded-md text-sm font-medium transition">Dieta</button>
-      <button @click="tab = 'checkin'" :class="tab === 'checkin' ? 'bg-gray-600 text-white' : 'text-gray-400'" class="px-3 py-1 rounded-md text-sm font-medium transition">Check-in</button>
+  <!-- Cabecera Fija -->
+  <header class="bg-slate-900/95 backdrop-blur border-b border-slate-800 p-4 sticky top-0 z-20 flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-extrabold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Hybrid Nutrition</h1>
+      <p class="text-[11px] text-slate-400">Fede (-Kcal Trail) & Arantxa (Recomp)</p>
+    </div>
+    <div class="flex space-x-1 bg-slate-800 rounded-lg p-1 border border-slate-700">
+      <button @click="tab = 'dieta'" :class="tab === 'dieta' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400'" class="px-2.5 py-1.5 rounded-md text-xs font-semibold transition">Dieta</button>
+      <button @click="tab = 'checkin'" :class="tab === 'checkin' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400'" class="px-2.5 py-1.5 rounded-md text-xs font-semibold transition">Medidas</button>
+      <button @click="tab = 'ia'" :class="tab === 'ia' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400'" class="px-2.5 py-1.5 rounded-md text-xs font-semibold transition">Nueva Sem</button>
     </div>
   </header>
 
-  <!-- Pestaña 1: Dieta -->
+  <!-- PESTAÑA 1: DIETA Y MODO OLLA COMÚN -->
   <main x-show="tab === 'dieta'" class="p-4 space-y-4">
-    <div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg border border-gray-700">
-      <select x-model="diaSeleccionado" class="bg-gray-700 text-white border border-gray-600 rounded p-2 flex-1">
-        <option value="Lunes">Lunes</option>
-        <option value="Martes">Martes</option>
-        <option value="Miércoles">Miércoles</option>
-        <option value="Jueves">Jueves</option>
-        <option value="Viernes">Viernes</option>
-        <option value="Sábado">Sábado</option>
-        <option value="Domingo">Domingo</option>
+    <!-- Selector de días -->
+    <div class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+      <select x-model="diaSeleccionado" class="bg-slate-800 text-white font-semibold border border-slate-700 rounded-lg px-3 py-2 flex-1 text-sm focus:outline-none focus:border-emerald-500">
+        <template x-for="d in diasSemana" :key="d">
+          <option :value="d" x-text="d"></option>
+        </template>
       </select>
-      <button @click="cargarDieta()" class="ml-3 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded font-medium">Actualizar</button>
+      <button @click="mostrarSumaComun = !mostrarSumaComun" :class="mostrarSumaComun ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400'" class="px-3 py-2 rounded-lg border text-xs font-bold transition">
+        🍲 Juntos
+      </button>
+      <button @click="cargarDieta()" class="bg-emerald-600 active:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold">
+        ↻
+      </button>
     </div>
 
-    <!-- Contenedor de Comidas -->
     <template x-if="cargandoDieta">
-      <div class="text-center text-gray-400 py-10">Conectando con Google Sheets...</div>
+      <div class="text-center text-slate-400 py-12 text-sm animate-pulse">Sincronizando los 7 días desde Google Sheets...</div>
     </template>
-    
+
+    <!-- Tarjetas de Comidas del Día -->
     <div class="space-y-4">
-      <template x-for="comida in comidasDelDia()" :key="comida.ventana">
-        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-lg">
-          <div class="bg-gray-700 px-4 py-2 flex justify-between items-center border-b border-gray-600">
-            <span class="font-bold text-emerald-300" x-text="comida.ventana"></span>
+      <template x-for="(comida, idx) in comidasDelDia()" :key="idx">
+        <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-lg">
+          <!-- Cabecera de ventana horaria -->
+          <div class="bg-slate-800/80 px-4 py-2.5 flex justify-between items-center border-b border-slate-700/70">
+            <span class="font-bold text-emerald-400 text-sm" x-text="comida.ventana"></span>
+            <span class="text-[11px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full font-medium" x-text="calcularReparto(comida.fede, comida.arantxa)"></span>
           </div>
-          <div class="p-4">
-            <p class="text-sm text-gray-300 mb-4 pb-2 border-b border-gray-700" x-text="comida.plato"></p>
-            
-            <div class="grid grid-cols-2 gap-4">
-              <!-- Columna Fede -->
-              <div class="bg-gray-900/50 p-3 rounded-lg border border-blue-900/30">
-                <div class="text-xs font-bold text-blue-400 mb-2 uppercase tracking-wide">Fede (Crudo)</div>
-                <p class="text-sm text-gray-200" x-text="comida.fede"></p>
+
+          <div class="p-4 space-y-3">
+            <!-- Nombre del plato -->
+            <p class="text-sm font-semibold text-white leading-snug" x-text="comida.plato"></p>
+
+            <!-- CAJA MODO OLLA COMÚN (SUMA TOTAL EN CRUDO PARA COCINAR JUNTOS) -->
+            <div x-show="mostrarSumaComun" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+              <div class="flex justify-between items-center mb-1.5">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-400">🍲 Total Olla Común (Pesar junto en crudo)</span>
               </div>
-              
-              <!-- Columna Arantxa -->
-              <div class="bg-gray-900/50 p-3 rounded-lg border border-emerald-900/30">
-                <div class="text-xs font-bold text-emerald-400 mb-2 uppercase tracking-wide">Arantxa (Crudo)</div>
-                <p class="text-sm text-gray-200" x-text="comida.arantxa"></p>
+              <div class="flex flex-wrap gap-1.5">
+                <template x-for="item in sumarIngredientes(comida.fede, comida.arantxa)" :key="item">
+                  <span class="bg-amber-950/80 border border-amber-700/50 text-amber-200 text-xs font-semibold px-2.5 py-1 rounded-lg" x-text="item"></span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Columnas individuales Fede y Arantxa -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <!-- Fede -->
+              <div class="bg-blue-950/25 p-3 rounded-xl border border-blue-800/40 flex flex-col justify-between">
+                <div>
+                  <div class="text-[11px] font-extrabold text-blue-400 mb-1.5 uppercase tracking-wide flex justify-between">
+                    <span>Fede</span>
+                    <span class="text-[10px] text-blue-300/70">Crudo</span>
+                  </div>
+                  <p class="text-xs text-slate-200 leading-relaxed" x-text="comida.fede"></p>
+                </div>
+                <div x-show="comida.macrosFede" class="mt-2 pt-2 border-t border-blue-900/40 text-[10px] text-blue-300 font-medium" x-text="comida.macrosFede"></div>
+              </div>
+
+              <!-- Arantxa -->
+              <div class="bg-emerald-950/25 p-3 rounded-xl border border-emerald-800/40 flex flex-col justify-between">
+                <div>
+                  <div class="text-[11px] font-extrabold text-emerald-400 mb-1.5 uppercase tracking-wide flex justify-between">
+                    <span>Arantxa</span>
+                    <span class="text-[10px] text-emerald-300/70">Crudo</span>
+                  </div>
+                  <p class="text-xs text-slate-200 leading-relaxed" x-text="comida.arantxa"></p>
+                </div>
+                <div x-show="comida.macrosArantxa" class="mt-2 pt-2 border-t border-emerald-900/40 text-[10px] text-emerald-300 font-medium" x-text="comida.macrosArantxa"></div>
               </div>
             </div>
           </div>
@@ -68,113 +103,221 @@
     </div>
   </main>
 
-  <!-- Pestaña 2: Check-in Semanal -->
-  <main x-show="tab === 'checkin'" style="display: none;" class="p-4">
-    <form @submit.prevent="enviarCheckin" class="bg-gray-800 p-5 rounded-xl border border-gray-700 space-y-4">
-      <h2 class="text-lg font-bold text-emerald-400 mb-4">Registro Semanal</h2>
-      
+  <!-- PESTAÑA 2: CHECK-IN MEDIDAS Y PESO -->
+  <main x-show="tab === 'checkin'" style="display: none;" class="p-4 space-y-4">
+    <form @submit.prevent="enviarCheckin" class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-base font-bold text-emerald-400">Control Antropométrico</h2>
+        <span class="text-xs text-slate-400">Guarda directo en el Sheet</span>
+      </div>
+
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Atleta</label>
-          <select x-model="form.atleta" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
-            <option>Fede</option>
-            <option>Arantxa</option>
+          <label class="block text-xs text-slate-400 mb-1">Atleta</label>
+          <select x-model="form.atleta" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-semibold">
+            <option value="Fede">Fede</option>
+            <option value="Arantxa">Arantxa</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Semana (ej. Semana 2)</label>
-          <input type="text" x-model="form.semana" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required>
+          <label class="block text-xs text-slate-400 mb-1">Semana</label>
+          <select x-model="form.semana" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-semibold">
+            <template x-for="n in 14" :key="n">
+              <option :value="'Semana ' + n" x-text="'Semana ' + n"></option>
+            </template>
+          </select>
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Fecha</label>
-          <input type="date" x-model="form.fecha" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required>
+          <label class="block text-xs text-slate-400 mb-1">Fecha</label>
+          <input type="date" x-model="form.fecha" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white" required>
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Peso (kg)</label>
-          <input type="number" step="0.1" x-model="form.peso" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" required>
+          <label class="block text-xs text-emerald-400 font-bold mb-1">Peso en ayunas (kg)</label>
+          <input type="number" step="0.1" x-model="form.peso" placeholder="Ej. 92.8" class="w-full bg-slate-800 border border-emerald-600/60 rounded-lg p-2.5 text-sm text-white font-bold" required>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 border-t border-gray-700 pt-3">
+      <div class="grid grid-cols-2 gap-3 border-t border-slate-800 pt-3">
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Cintura (cm)</label>
-          <input type="number" step="0.5" x-model="form.cintura" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+          <label class="block text-xs text-slate-400 mb-1">Pecho (cm)</label>
+          <input type="number" step="0.5" x-model="form.pecho" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Cadera (cm)</label>
-          <input type="number" step="0.5" x-model="form.cadera" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+          <label class="block text-xs text-amber-400 font-semibold mb-1">Cintura (cm) [Grasa]</label>
+          <input type="number" step="0.5" x-model="form.cintura" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Brazo (cm)</label>
-          <input type="number" step="0.5" x-model="form.brazo" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+          <label class="block text-xs text-slate-400 mb-1">Cadera (cm)</label>
+          <input type="number" step="0.5" x-model="form.cadera" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
         </div>
         <div>
-          <label class="block text-xs text-gray-400 mb-1">Muslo (cm)</label>
-          <input type="number" step="0.5" x-model="form.muslo" class="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+          <label class="block text-xs text-cyan-400 font-semibold mb-1">Brazo (cm) [Músculo]</label>
+          <input type="number" step="0.5" x-model="form.brazo" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs text-cyan-400 font-semibold mb-1">Muslo (cm) [Músculo]</label>
+          <input type="number" step="0.5" x-model="form.muslo" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
         </div>
       </div>
 
-      <button type="submit" :disabled="enviando" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg mt-4 disabled:opacity-50 transition">
-        <span x-text="enviando ? 'Guardando en Google Sheets...' : 'Guardar Pesaje'"></span>
+      <button type="submit" :disabled="enviando" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-lg transition disabled:opacity-50">
+        <span x-text="enviando ? 'Guardando en Google Sheets...' : 'Guardar Medidas de ' + form.atleta"></span>
       </button>
-      <p x-show="mensajeExito" class="text-emerald-400 text-sm text-center mt-2">¡Datos guardados con éxito!</p>
+      <p x-show="mensajeExito" class="text-emerald-400 text-xs font-bold text-center">✓ Guardado en la hoja de progresión</p>
     </form>
   </main>
 
+  <!-- PESTAÑA 3: ACTUALIZAR SEMANA CON GEMINI -->
+  <main x-show="tab === 'ia'" style="display: none;" class="p-4 space-y-4">
+    <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+      <h2 class="text-base font-bold text-emerald-400">Actualizar Dieta Semanal (Gemini)</h2>
+      <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside">
+        <li>Guarda primero tu peso y medidas en la pestaña <b>Medidas</b>.</li>
+        <li>Sube la <b>foto de tus entrenamientos de correr</b> e indica los días de CrossFit en el chat de Gemini con tu skill.</li>
+        <li>Pega aquí debajo el bloque JSON que te dará Gemini para actualizar los 7 días de golpe:</li>
+      </ol>
+
+      <textarea x-model="jsonNuevaDieta" rows="7" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno",...}]' class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500"></textarea>
+
+      <button @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta" class="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-bold py-3 rounded-xl text-sm shadow-lg disabled:opacity-40">
+        <span x-text="enviando ? 'Actualizando los 7 días en el Excel...' : 'Publicar Nueva Dieta en el Excel'"></span>
+      </button>
+      <p x-show="mensajeDietaActualizada" class="text-emerald-400 text-xs font-bold text-center">✓ ¡Dieta de lunes a domingo actualizada con éxito!</p>
+    </div>
+  </main>
+
   <script>
-    // --- IMPORTANTE: PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT ---
     const API_URL = "https://script.google.com/macros/s/AKfycbwiBFN8Jo15OC9NppoNY21WA1p88M8M08W4QG4Iwl84VinasRmDUqjK8FUsgAq2UUqB/exec";
 
     function appData() {
       return {
         tab: 'dieta',
+        diasSemana: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
         diaSeleccionado: 'Lunes',
+        mostrarSumaComun: true,
         cargandoDieta: false,
         enviando: false,
         mensajeExito: false,
+        mensajeDietaActualizada: false,
+        jsonNuevaDieta: '',
         dietaCompleta: [],
         form: {
           atleta: 'Fede',
-          semana: '',
+          semana: 'Semana 2',
           fecha: new Date().toISOString().split('T')[0],
           peso: '',
+          pecho: '',
           cintura: '',
           cadera: '',
           brazo: '',
           muslo: ''
         },
-        
+
         init() {
+          const hoyIdx = new Date().getDay(); // 0 Dom, 1 Lun...
+          const mapa = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+          this.diaSeleccionado = mapa[hoyIdx] || 'Lunes';
           this.cargarDieta();
         },
 
+        normalizarTextoDia(str) {
+          if (!str) return '';
+          return str.toString().trim().toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        },
+
         async cargarDieta() {
-          if(!API_URL || API_URL === "TU_URL_DE_APPS_SCRIPT_AQUI") return;
           this.cargandoDieta = true;
           try {
             const res = await fetch(API_URL);
             const data = await res.json();
-            // Asume que la hoja DIETA_ESTRUCTURADA tiene: [Día, Ventana, Plato, Fede_Crudo, Arantxa_Crudo]
-            if(data.dieta && data.dieta.length > 1) {
+            if (data.dieta && data.dieta.length > 1) {
               this.dietaCompleta = data.dieta.slice(1).map(row => ({
                 dia: row[0],
                 ventana: row[1],
                 plato: row[2],
                 fede: row[3],
-                arantxa: row[4]
+                macrosFede: row[4],
+                arantxa: row[5],
+                macrosArantxa: row[6]
               }));
             }
           } catch (e) {
-            console.error("Error al cargar la dieta", e);
+            console.error("Error al cargar la dieta:", e);
           }
           this.cargandoDieta = false;
         },
 
         comidasDelDia() {
-          return this.dietaCompleta.filter(c => c.dia === this.diaSeleccionado);
+          const buscado = this.normalizarTextoDia(this.diaSeleccionado);
+          return this.dietaCompleta.filter(c => this.normalizarTextoDia(c.dia).includes(buscado));
+        },
+
+        // Motor que suma automáticamente los ingredientes iguales de Fede y Arantxa
+        sumarIngredientes(strFede, strArantxa) {
+          if (!strFede && !strArantxa) return [];
+          const mapa = new Map();
+
+          const procesar = (texto) => {
+            if (!texto) return;
+            texto.split('+').forEach(parte => {
+              let limpio = parte.trim();
+              if (!limpio) return;
+              // Extrae cantidad inicial + unidad opcional (g, ml, latas, tortitas...) + nombre del alimento
+              const match = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?)?\s+(.*)$/i);
+              if (match) {
+                const cant = parseFloat(match[1].replace(',', '.'));
+                const unidad = (match[2] || 'ud').toLowerCase().replace(/s$/, ''); // singularizar básico
+                let nombre = match[3].trim().replace(/\(\d+.*?\)/g, '').trim(); // quita aclaraciones entre paréntesis
+                const clave = (unidad + '_' + nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+                
+                if (mapa.has(clave)) {
+                  mapa.get(clave).cantidad += cant;
+                } else {
+                  mapa.set(clave, { cantidad: cant, unidad: match[2] || '', nombre: nombre });
+                }
+              } else {
+                const claveTexto = limpio.toLowerCase();
+                if (!mapa.has(claveTexto)) {
+                  mapa.set(claveTexto, { cantidad: null, unidad: '', nombre: limpio });
+                }
+              }
+            });
+          };
+
+          procesar(strFede);
+          procesar(strArantxa);
+
+          const resultado = [];
+          mapa.forEach(val => {
+            if (val.cantidad !== null) {
+              const numRedondeado = Math.round(val.cantidad * 10) / 10;
+              const esp = val.unidad ? ' ' + val.unidad + ' ' : ' ';
+              resultado.push(`${numRedondeado}${esp}${val.nombre}`);
+            } else {
+              resultado.push(val.nombre);
+            }
+          });
+          return resultado;
+        },
+
+        // Calcula qué % del plato cocinado corresponde a Fede y a Arantxa
+        calcularReparto(strFede, strArantxa) {
+          const sumarGramos = (str) => {
+            if (!str) return 0;
+            let total = 0;
+            const matches = str.matchAll(/(\d+(?:[.,]\d+)?)\s*g\b/gi);
+            for (const m of matches) total += parseFloat(m[1].replace(',', '.'));
+            return total;
+          };
+          const gFede = sumarGramos(strFede);
+          const gAra = sumarGramos(strArantxa);
+          if (gFede + gAra === 0) return 'Individual';
+          const pctFede = Math.round((gFede / (gFede + gAra)) * 100);
+          return `Reparto: ${pctFede}% Fede / ${100 - pctFede}% Ara`;
         },
 
         async enviarCheckin() {
@@ -182,17 +325,40 @@
           try {
             const res = await fetch(API_URL, {
               method: 'POST',
-              body: JSON.stringify(this.form)
+              body: JSON.stringify({ action: 'checkin', ...this.form })
             });
             const result = await res.json();
-            if(result.status === 'success') {
+            if (result.status === 'success') {
               this.mensajeExito = true;
-              setTimeout(() => this.mensajeExito = false, 3000);
-              // Limpiar métricas
-              this.form.peso = this.form.cintura = this.form.cadera = this.form.brazo = this.form.muslo = '';
+              setTimeout(() => this.mensajeExito = false, 3500);
+              this.form.peso = '';
             }
           } catch (e) {
             alert("Error al guardar: " + e);
+          }
+          this.enviando = false;
+        },
+
+        async importarDietaGemini() {
+          this.enviando = true;
+          try {
+            const comidas = JSON.parse(this.jsonNuevaDieta);
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'actualizar_dieta', comidas: comidas })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+              this.mensajeDietaActualizada = true;
+              this.jsonNuevaDieta = '';
+              await this.cargarDieta();
+              setTimeout(() => {
+                this.mensajeDietaActualizada = false;
+                this.tab = 'dieta';
+              }, 2000);
+            }
+          } catch (e) {
+            alert("Revisa que hayas copiado bien el bloque JSON de Gemini: " + e.message);
           }
           this.enviando = false;
         }
