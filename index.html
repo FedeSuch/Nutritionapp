@@ -114,4 +114,875 @@
             </div>
           </div>
 
-          <div class="p-
+          <div class="p-3.5 space-y-3">
+            <p class="text-sm font-bold text-white leading-snug" x-text="comida.plato"></p>
+
+            <!-- PANEL INTERCAMBIO INTELIGENTE CON COMPENSACIÓN DE GRASA/AOVE -->
+            <div x-show="swapAbiertoIdx === idx" class="bg-indigo-950/40 border border-indigo-700/50 rounded-xl p-3 space-y-2.5 text-xs">
+              <div class="flex justify-between items-center border-b border-indigo-900/50 pb-1.5">
+                <span class="font-bold text-indigo-300">⇄ Intercambio Exacto (Ajusta AOVE auto)</span>
+                <button @click="resetSwap(idx)" class="text-[10px] text-slate-400 underline">Restaurar original</button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">Cambiar Proteína:</label>
+                  <select @change="aplicarSwap(idx, 'prot', $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+                    <option value="">-- Original --</option>
+                    <option value="pechuga pollo">Pechuga de pollo</option>
+                    <option value="pechuga pavo">Pechuga de pavo</option>
+                    <option value="atún al natural">Atún al natural</option>
+                    <option value="merluza empanada Mercadona">Merluza empanada Mercadona</option>
+                    <option value="merluza blanca">Merluza / Pescado blanco</option>
+                    <option value="solomillo ternera">Solomillo ternera</option>
+                    <option value="lomo embuchado">Lomo embuchado</option>
+                    <option value="salmón crudo/marinado">Salmón crudo/marinado</option>
+                    <option value="huevos enteros">Huevos enteros</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 mb-1">Cambiar Hidrato:</label>
+                  <select @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white">
+                    <option value="">-- Original --</option>
+                    <option value="arroz blanco/basmati">Arroz (crudo)</option>
+                    <option value="patata">Patata (cruda)</option>
+                    <option value="boniato">Boniato (crudo)</option>
+                    <option value="pasta blanca">Pasta (cruda)</option>
+                    <option value="pan masa madre">Pan masa madre</option>
+                    <option value="copos de avena">Copos de avena</option>
+                  </select>
+                </div>
+              </div>
+              <p class="text-[10px] text-indigo-300/80">Si cambias un alimento graso (salmón) por uno magro (pollo) o viceversa, la app suma o resta ml de AOVE automáticamente para clavar las kcal del día.</p>
+            </div>
+
+            <!-- CAJA OLLA COMÚN -->
+            <div x-show="mostrarSumaComun" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5">
+              <span class="block text-[10px] font-extrabold uppercase tracking-wider text-amber-400 mb-1.5">🍲 Olla Común (Pesar junto en crudo)</span>
+              <div class="flex flex-wrap gap-1.5">
+                <template x-for="item in sumarIngredientes(textoComidaFede(comida, idx), textoComidaAra(comida, idx))" :key="item">
+                  <span class="bg-amber-950/80 border border-amber-700/50 text-amber-200 text-xs font-semibold px-2 py-0.5 rounded-lg" x-text="item"></span>
+                </template>
+              </div>
+            </div>
+
+            <!-- COLUMNAS INDIVIDUALES FEDE Y ARANTXA -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="bg-blue-950/25 p-3 rounded-xl border border-blue-800/40 flex flex-col justify-between">
+                <div>
+                  <div class="text-[10px] font-extrabold text-blue-400 mb-1 uppercase flex justify-between">
+                    <span>Fede</span>
+                    <span class="text-blue-300/70">Crudo</span>
+                  </div>
+                  <p class="text-xs text-slate-200 leading-relaxed font-medium" x-text="textoComidaFede(comida, idx)"></p>
+                </div>
+                <div x-show="comida.macrosFede" class="mt-2 pt-1.5 border-t border-blue-900/40 text-[10px] text-blue-300 font-semibold" x-text="comida.macrosFede"></div>
+              </div>
+
+              <div class="bg-emerald-950/25 p-3 rounded-xl border border-emerald-800/40 flex flex-col justify-between">
+                <div>
+                  <div class="text-[10px] font-extrabold text-emerald-400 mb-1 uppercase flex justify-between">
+                    <span>Arantxa</span>
+                    <span class="text-emerald-300/70">Crudo</span>
+                  </div>
+                  <p class="text-xs text-slate-200 leading-relaxed font-medium" x-text="textoComidaAra(comida, idx)"></p>
+                </div>
+                <div x-show="comida.macrosArantxa" class="mt-2 pt-1.5 border-t border-emerald-900/40 text-[10px] text-emerald-300 font-semibold" x-text="comida.macrosArantxa"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       PESTAÑA 2: LISTA DE LA COMPRA (SOLO SUPERMERCADO, SIN RUNNING)
+       ========================================== -->
+  <main x-show="tab === 'compra'" style="display: none;" class="p-3.5 space-y-3.5">
+    <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+      <div class="flex justify-between items-center mb-1">
+        <h2 class="text-base font-bold text-emerald-400">🛒 Lista de la Compra Semanal</h2>
+        <button @click="limpiarChecksCompra()" class="text-[11px] text-slate-400 underline">Desmarcar todo</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Cantidades totales en crudo (Fede + Arantxa) para los 7 días. Excluidos geles, sales y suplementos.</p>
+
+      <template x-if="listaCompraAgrupada().length === 0">
+        <div class="text-center text-slate-500 py-8 text-xs">Cargando ingredientes de la semana...</div>
+      </template>
+
+      <div class="space-y-4">
+        <template x-for="cat in listaCompraAgrupada()" :key="cat.categoria">
+          <div class="space-y-1.5">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-cyan-400 border-b border-slate-800 pb-1" x-text="cat.categoria"></h3>
+            <div class="divide-y divide-slate-800/60">
+              <template x-for="prod in cat.items" :key="prod.clave">
+                <div @click="toggleCheckCompra(prod.clave)" class="py-2 flex justify-between items-center cursor-pointer select-none">
+                  <div class="flex items-center gap-2.5">
+                    <div :class="itemsComprados[prod.clave] ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'" class="w-4 h-4 rounded border flex items-center justify-center text-[10px] text-slate-950 font-black">
+                      <span x-show="itemsComprados[prod.clave]">✓</span>
+                    </div>
+                    <span :class="itemsComprados[prod.clave] ? 'line-through text-slate-500' : 'text-slate-200 font-medium'" class="text-xs capitalize" x-text="prod.nombre"></span>
+                  </div>
+                  <span :class="itemsComprados[prod.clave] ? 'text-slate-600 bg-slate-900' : 'text-amber-300 bg-amber-950/60 border border-amber-700/40'" class="text-xs font-bold px-2.5 py-0.5 rounded-lg" x-text="prod.totalFormateado"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       PESTAÑA 3: MEDIDAS + PANEL VISUAL DE PROGRESO
+       ========================================== -->
+  <main x-show="tab === 'checkin'" style="display: none;" class="p-3.5 space-y-3.5">
+
+    <!-- TARJETA VISUAL DE OBJETIVO Y RECOMPOSICIÓN -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3">
+      <div class="flex justify-between items-center">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400" x-text="form.atleta === 'Fede' ? 'Objetivo Ultratrail 50km (30 Ene)' : 'Objetivo Recomposición Corporal'"></span>
+          <h3 class="text-base font-black text-white" x-text="form.atleta === 'Fede' ? 'Meta: 87.5 kg (-6.0 kg)' : 'Meta: ~65.0 kg + Fuerza'"></h3>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] text-slate-400 block">Peso en <span x-text="form.semana"></span></span>
+          <span class="text-lg font-black text-cyan-400" x-text="(form.peso || '--') + ' kg'"></span>
+        </div>
+      </div>
+
+      <!-- Barra de progreso hacia el objetivo (Fede: 93.5 -> 87.5) -->
+      <div x-show="form.atleta === 'Fede'" class="space-y-1">
+        <div class="flex justify-between text-[10px] text-slate-400 font-semibold">
+          <span>Inicio: 93.5 kg</span>
+          <span class="text-emerald-400 font-bold" x-text="progresoMetaFede() + '% completado'"></span>
+          <span>Meta: 87.5 kg</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+          <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-400 transition-all duration-500" :style="'width: ' + progresoMetaFede() + '%'"></div>
+        </div>
+      </div>
+
+      <!-- Comparativa visual Semana Seleccionada vs Semana 1 -->
+      <div class="grid grid-cols-4 gap-2 pt-2 border-t border-slate-800 text-center">
+        <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+          <span class="text-[9px] text-slate-400 uppercase block">Peso vs S1</span>
+          <span class="text-xs font-extrabold" :class="deltasBase().peso <= 0 ? 'text-emerald-400' : 'text-rose-400'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
+        </div>
+        <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+          <span class="text-[9px] text-amber-400/90 uppercase block">Cintura</span>
+          <span class="text-xs font-extrabold" :class="deltasBase().cintura <= 0 ? 'text-emerald-400' : 'text-rose-400'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
+        </div>
+        <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+          <span class="text-[9px] text-cyan-400/90 uppercase block">Brazo</span>
+          <span class="text-xs font-extrabold" :class="deltasBase().brazo >= 0 ? 'text-emerald-400' : 'text-amber-400'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
+        </div>
+        <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+          <span class="text-[9px] text-cyan-400/90 uppercase block">Muslo</span>
+          <span class="text-xs font-extrabold" :class="deltasBase().muslo >= 0 ? 'text-emerald-400' : 'text-amber-400'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULARIO PARA EDITAR / GUARDAR MEDIDAS DE LA SEMANA -->
+    <form @submit.prevent="enviarCheckin" class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3.5">
+      <div class="flex justify-between items-center">
+        <h2 class="text-sm font-bold text-emerald-400">Datos de la Semana</h2>
+        <span class="text-[10px] text-slate-400">Lee y escribe en Google Sheets</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Atleta</label>
+          <select x-model="form.atleta" @change="sincronizarFechaSemana()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-bold">
+            <option value="Fede">Fede</option>
+            <option value="Arantxa">Arantxa</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Semana</label>
+          <select x-model="form.semana" @change="sincronizarFechaSemana()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-bold">
+            <template x-for="n in 14" :key="n">
+              <option :value="'Semana ' + n" x-text="'Semana ' + n"></option>
+            </template>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-cyan-400 font-semibold mb-1">Fecha Control (Auto)</label>
+          <input type="date" x-model="form.fecha" class="w-full bg-slate-800 border border-cyan-700/50 rounded-lg p-2.5 text-sm text-white font-semibold" required>
+        </div>
+        <div>
+          <label class="block text-xs text-emerald-400 font-bold mb-1">Peso en ayunas (kg)</label>
+          <input type="number" step="0.1" x-model="form.peso" placeholder="Ej. 93.5" class="w-full bg-slate-800 border border-emerald-600/60 rounded-lg p-2.5 text-sm text-white font-bold" required>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 border-t border-slate-800 pt-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Pecho (cm)</label>
+          <input type="number" step="0.5" x-model="form.pecho" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-amber-400 font-semibold mb-1">Cintura (cm) [Grasa]</label>
+          <input type="number" step="0.5" x-model="form.cintura" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Cadera (cm)</label>
+          <input type="number" step="0.5" x-model="form.cadera" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-cyan-400 font-semibold mb-1">Brazo (cm) [Músculo]</label>
+          <input type="number" step="0.5" x-model="form.brazo" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs text-cyan-400 font-semibold mb-1">Muslo (cm) [Músculo]</label>
+          <input type="number" step="0.5" x-model="form.muslo" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white">
+        </div>
+      </div>
+
+      <button type="submit" :disabled="enviando" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-lg transition disabled:opacity-50">
+        <span x-text="enviando ? 'Guardando en Google Sheets...' : 'Guardar ' + form.semana + ' (' + form.atleta + ')'"></span>
+      </button>
+      <p x-show="mensajeExito" class="text-emerald-400 text-xs font-bold text-center">✓ Guardado correctamente en el Excel</p>
+    </form>
+
+    <!-- HISTÓRICO VISUAL DE SEMANAS REGISTRADAS -->
+    <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Histórico Registrado (<span x-text="form.atleta"></span>)</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-[10px] text-slate-400 border-b border-slate-800">
+              <th class="pb-1.5">Sem</th>
+              <th class="pb-1.5">Fecha</th>
+              <th class="pb-1.5 text-emerald-400">Peso</th>
+              <th class="pb-1.5 text-amber-400">Cint.</th>
+              <th class="pb-1.5 text-cyan-400">Brazo</th>
+              <th class="pb-1.5 text-cyan-400">Muslo</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60">
+            <template x-for="fila in historicoAtleta()" :key="fila.semana">
+              <tr @click="form.semana = fila.semana; sincronizarFechaSemana()" class="cursor-pointer hover:bg-slate-800/50">
+                <td class="py-2 font-bold text-white" x-text="fila.semana.replace('Semana ', 'S')"></td>
+                <td class="py-2 text-slate-400 text-[11px]" x-text="fila.fecha"></td>
+                <td class="py-2 font-bold text-emerald-300" x-text="fila.peso ? fila.peso + ' kg' : '--'"></td>
+                <td class="py-2 text-amber-300" x-text="fila.cintura ? fila.cintura + ' cm' : '--'"></td>
+                <td class="py-2 text-cyan-300" x-text="fila.brazo ? fila.brazo + ' cm' : '--'"></td>
+                <td class="py-2 text-cyan-300" x-text="fila.muslo ? fila.muslo + ' cm' : '--'"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       PESTAÑA 4: NUEVA SEMANA (IMPORTAR JSON DE GEMINI)
+       ========================================== -->
+  <main x-show="tab === 'ia'" style="display: none;" class="p-3.5 space-y-3.5">
+    <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-3">
+      <h2 class="text-base font-bold text-emerald-400">Actualizar Dieta Semanal (Gemini)</h2>
+      <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside">
+        <li>Registra tu peso y medidas en la pestaña <b>Medidas</b>.</li>
+        <li>Sube la <b>foto de tus entrenamientos de correr</b> e indica los días de CrossFit en el chat de Gemini con tu skill.</li>
+        <li>Copia el bloque JSON que te dará Gemini y pégalo aquí debajo para actualizar de lunes a domingo:</li>
+      </ol>
+
+      <textarea x-model="jsonNuevaDieta" rows="8" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno","plato":"...","fede_crudo":"...","fede_macros":"...","arantxa_crudo":"...","arantxa_macros":"..."}]' class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500"></textarea>
+
+      <button @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta" class="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 active:opacity-90 text-white font-bold py-3 rounded-xl text-sm shadow-lg disabled:opacity-40 transition">
+        <span x-text="enviando ? 'Actualizando los 7 días en el Excel...' : 'Publicar Nueva Dieta en el Excel'"></span>
+      </button>
+      <p x-show="mensajeDietaActualizada" class="text-emerald-400 text-xs font-bold text-center">✓ ¡Dieta de lunes a domingo actualizada en el Excel!</p>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwiBFN8Jo15OC9NppoNY21WA1p88M8M08W4QG4Iwl84VinasRmDUqjK8FUsgAq2UUqB/exec";
+
+    // Fechas exactas de la columna Fecha_Control de tu Excel como respaldo inmediato
+    const FECHAS_SEMANAS_DEFAULT = {
+      "Semana 1": "2026-10-26",
+      "Semana 2": "2026-11-02",
+      "Semana 3": "2026-11-09",
+      "Semana 4": "2026-11-16",
+      "Semana 5": "2026-11-23",
+      "Semana 6": "2026-11-30",
+      "Semana 7": "2026-12-07",
+      "Semana 8": "2026-12-14",
+      "Semana 9": "2026-12-21",
+      "Semana 10": "2026-12-28",
+      "Semana 11": "2027-01-04",
+      "Semana 12": "2027-01-11",
+      "Semana 13": "2027-01-18",
+      "Semana 14": "2027-01-25"
+    };
+
+    // Valores de la Semana 1 que ya están en tu Excel (para respaldo instantáneo)
+    const DATOS_SEMANA1_RESPALDO = {
+      "Fede": { peso: "93.5", pecho: "108", cintura: "95", cadera: "100", brazo: "37", muslo: "58" },
+      "Arantxa": { peso: "67", pecho: "89", cintura: "80", cadera: "84", brazo: "28", muslo: "53" }
+    };
+
+    // Macros por 100g en crudo para intercambio exacto con ajuste de AOVE
+    const MACROS_ALIMENTOS = {
+      "pechuga pollo": { p: 23, ch: 0, g: 1 },
+      "pechuga pavo": { p: 24, ch: 0, g: 1 },
+      "atún al natural": { p: 24, ch: 0, g: 1 },
+      "merluza empanada Mercadona": { p: 16, ch: 14, g: 6 },
+      "merluza blanca": { p: 18, ch: 0, g: 2 },
+      "solomillo ternera": { p: 22, ch: 0, g: 5 },
+      "lomo embuchado": { p: 32, ch: 0, g: 8 },
+      "salmón crudo/marinado": { p: 20, ch: 0, g: 13 },
+      "huevos enteros": { p: 13, ch: 0, g: 11 },
+      "arroz blanco/basmati": { p: 7, ch: 78, g: 1 },
+      "patata": { p: 2, ch: 18, g: 0.1 },
+      "boniato": { p: 1.5, ch: 20, g: 0.1 },
+      "pasta blanca": { p: 12, ch: 74, g: 1.5 },
+      "pan masa madre": { p: 9, ch: 48, g: 1 },
+      "copos de avena": { p: 14, ch: 60, g: 7 }
+    };
+
+    function appData() {
+      return {
+        tab: 'dieta',
+        diasSemana: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+        diaSeleccionado: 'Lunes',
+        cenaSocialActiva: false,
+        mostrarSumaComun: true,
+        cargandoDieta: false,
+        enviando: false,
+        mensajeExito: false,
+        mensajeDietaActualizada: false,
+        jsonNuevaDieta: '',
+        dietaCompleta: [],
+        progresionFede: [],
+        progresionArantxa: [],
+        swapAbiertoIdx: null,
+        swapsActivos: {},
+        itemsComprados: JSON.parse(localStorage.getItem('hybrid_compra_checks') || '{}'),
+        form: {
+          atleta: 'Fede',
+          semana: 'Semana 1',
+          fecha: '2026-10-26',
+          peso: '93.5',
+          pecho: '108',
+          cintura: '95',
+          cadera: '100',
+          brazo: '37',
+          muslo: '58'
+        },
+
+        init() {
+          const mapa = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+          this.diaSeleccionado = mapa[new Date().getDay()] || 'Lunes';
+          this.sincronizarFechaSemana();
+          this.cargarDatos();
+        },
+
+        normalizar(str) {
+          if (!str) return '';
+          return str.toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        },
+
+        formatearFechaISO(raw) {
+          if (!raw) return '';
+          const str = raw.toString().trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+          // Si viene DD/MM/YYYY
+          const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+          if (dmy) {
+            return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+          }
+          const d = new Date(str);
+          if (!isNaN(d.getTime())) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+          }
+          return '';
+        },
+
+        async cargarDatos() {
+          this.cargandoDieta = true;
+          try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            if (data.dieta && data.dieta.length > 1) {
+              this.dietaCompleta = data.dieta.slice(1).map(row => ({
+                dia: row[0],
+                ventana: row[1],
+                plato: row[2],
+                fede: row[3],
+                macrosFede: row[4],
+                arantxa: row[5],
+                macrosArantxa: row[6]
+              }));
+            }
+            if (data.progresionFede) this.progresionFede = data.progresionFede;
+            if (data.progresionArantxa) this.progresionArantxa = data.progresionArantxa;
+            this.sincronizarFechaSemana();
+          } catch (e) {
+            console.error("Error cargando Google Sheets:", e);
+          }
+          this.cargandoDieta = false;
+        },
+
+        // Busca la fila de la semana seleccionada en PROGRESION FEDE / ARANTXA y rellena fecha, peso y medidas
+        sincronizarFechaSemana() {
+          const tabla = (this.form.atleta === 'Fede') ? this.progresionFede : this.progresionArantxa;
+          let fechaAsignada = FECHAS_SEMANAS_DEFAULT[this.form.semana] || '';
+          let encontradoEnSheet = false;
+
+          if (tabla && tabla.length > 1) {
+            for (let i = 1; i < tabla.length; i++) {
+              const fila = tabla[i];
+              if (this.normalizar(fila[0]) === this.normalizar(this.form.semana)) {
+                encontradoEnSheet = true;
+                const fechaSheet = this.formatearFechaISO(fila[1]);
+                if (fechaSheet) fechaAsignada = fechaSheet;
+
+                this.form.peso = (fila[2] !== undefined && fila[2] !== '') ? fila[2].toString().replace(',', '.') : '';
+                this.form.pecho = (fila[3] !== undefined && fila[3] !== '') ? fila[3].toString().replace(',', '.') : '';
+                this.form.cintura = (fila[4] !== undefined && fila[4] !== '') ? fila[4].toString().replace(',', '.') : '';
+                this.form.cadera = (fila[5] !== undefined && fila[5] !== '') ? fila[5].toString().replace(',', '.') : '';
+                this.form.brazo = (fila[6] !== undefined && fila[6] !== '') ? fila[6].toString().replace(',', '.') : '';
+                this.form.muslo = (fila[7] !== undefined && fila[7] !== '') ? fila[7].toString().replace(',', '.') : '';
+                break;
+              }
+            }
+          }
+
+          // Si el Sheet aún no devolvió la pestaña de progresión pero es Semana 1, carga los valores iniciales del Excel
+          if (!encontradoEnSheet) {
+            if (this.form.semana === 'Semana 1' && DATOS_SEMANA1_RESPALDO[this.form.atleta]) {
+              const resp = DATOS_SEMANA1_RESPALDO[this.form.atleta];
+              this.form.peso = resp.peso;
+              this.form.pecho = resp.pecho;
+              this.form.cintura = resp.cintura;
+              this.form.cadera = resp.cadera;
+              this.form.brazo = resp.brazo;
+              this.form.muslo = resp.muslo;
+            } else {
+              this.form.peso = '';
+              this.form.pecho = '';
+              this.form.cintura = '';
+              this.form.cadera = '';
+              this.form.brazo = '';
+              this.form.muslo = '';
+            }
+          }
+
+          this.form.fecha = fechaAsignada;
+        },
+
+        historicoAtleta() {
+          const tabla = (this.form.atleta === 'Fede') ? this.progresionFede : this.progresionArantxa;
+          const lista = [];
+          if (tabla && tabla.length > 1) {
+            for (let i = 1; i < tabla.length; i++) {
+              const r = tabla[i];
+              if (!r[0] || !this.normalizar(r[0]).startsWith('semana')) continue;
+              lista.push({
+                semana: r[0].toString().trim(),
+                fecha: this.formatearFechaISO(r[1]) || FECHAS_SEMANAS_DEFAULT[r[0].toString().trim()] || '',
+                peso: r[2] ? r[2].toString().replace(',', '.') : '',
+                pecho: r[3] ? r[3].toString().replace(',', '.') : '',
+                cintura: r[4] ? r[4].toString().replace(',', '.') : '',
+                cadera: r[5] ? r[5].toString().replace(',', '.') : '',
+                brazo: r[6] ? r[6].toString().replace(',', '.') : '',
+                muslo: r[7] ? r[7].toString().replace(',', '.') : ''
+              });
+            }
+          }
+          if (lista.length === 0) {
+            const r1 = DATOS_SEMANA1_RESPALDO[this.form.atleta];
+            lista.push({ semana: 'Semana 1', fecha: '2026-10-26', ...r1 });
+          }
+          return lista;
+        },
+
+        progresoMetaFede() {
+          const pesoActual = parseFloat(this.form.peso) || 93.5;
+          const inicio = 93.5;
+          const meta = 87.5;
+          const pct = ((inicio - pesoActual) / (inicio - meta)) * 100;
+          return Math.max(0, Math.min(100, Math.round(pct)));
+        },
+
+        deltasBase() {
+          const base = DATOS_SEMANA1_RESPALDO[this.form.atleta] || { peso: 93.5, cintura: 95, brazo: 37, muslo: 58 };
+          const p1 = parseFloat(base.peso);
+          const c1 = parseFloat(base.cintura);
+          const b1 = parseFloat(base.brazo);
+          const m1 = parseFloat(base.muslo);
+
+          const pActual = parseFloat(this.form.peso) || p1;
+          const cActual = parseFloat(this.form.cintura) || c1;
+          const bActual = parseFloat(this.form.brazo) || b1;
+          const mActual = parseFloat(this.form.muslo) || m1;
+
+          return {
+            peso: pActual - p1,
+            cintura: cActual - c1,
+            brazo: bActual - b1,
+            muslo: mActual - m1
+          };
+        },
+
+        formatDelta(n) {
+          if (!n || isNaN(n)) return '0.0';
+          return n > 0 ? '+' + n.toFixed(1) : n.toFixed(1);
+        },
+
+        comidasDelDia() {
+          const buscado = this.normalizar(this.diaSeleccionado);
+          return this.dietaCompleta.filter(c => this.normalizar(c.dia).includes(buscado));
+        },
+
+        isPreCena(ventana) {
+          return !this.normalizar(ventana).includes('cena');
+        },
+
+        // Calcula los Totales Diarios reales (y descuenta el 35% de CH/G pre-cena si Cena Libre está activo)
+        totalesDia() {
+          const comidas = this.comidasDelDia();
+          const acumular = (campoMacros) => {
+            let p = 0, ch = 0, g = 0, kcal = 0, ahorroKcal = 0;
+            comidas.forEach(c => {
+              const txt = c[campoMacros] || '';
+              const mP = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*P\b/i);
+              const mCH = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*CH\b/i);
+              const mG = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*G\b/i);
+              const mKcal = txt.match(/(\d+(?:[.,]\d+)?)\s*kcal/i);
+
+              let valP = mP ? parseFloat(mP[1].replace(',', '.')) : 0;
+              let valCH = mCH ? parseFloat(mCH[1].replace(',', '.')) : 0;
+              let valG = mG ? parseFloat(mG[1].replace(',', '.')) : 0;
+              let valKcal = 0;
+              if (mKcal) {
+                const limpioKcal = mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
+                valKcal = parseFloat(limpioKcal);
+              }
+
+              if (this.cenaSocialActiva && this.isPreCena(c.ventana)) {
+                const chRecortado = valCH * 0.35;
+                const gRecortado = valG * 0.35;
+                const kcalRecortadas = (chRecortado * 4) + (gRecortado * 9);
+                valCH -= chRecortado;
+                valG -= gRecortado;
+                valKcal = Math.max(0, valKcal - kcalRecortadas);
+                ahorroKcal += kcalRecortadas;
+              }
+
+              p += valP;
+              ch += valCH;
+              g += valG;
+              kcal += valKcal;
+            });
+            return {
+              p: Math.round(p),
+              ch: Math.round(ch),
+              g: Math.round(g),
+              kcal: Math.round(kcal),
+              ahorroKcal: Math.round(ahorroKcal)
+            };
+          };
+          return {
+            fede: acumular('macrosFede'),
+            arantxa: acumular('macrosArantxa')
+          };
+        },
+
+        // Motor de Intercambio con Compensación Automática de Lípidos (AOVE)
+        reemplazarYCompensar(textoOriginal, swapConfig, esPreCena) {
+          if (!textoOriginal) return textoOriginal;
+          let partes = textoOriginal.split('+').map(p => p.trim());
+          let deltaGrasaTotal = 0;
+
+          const regexProt = /(pollo|pavo|salm[oó]n|merluza|ternera|solomillo|at[uú]n|lomo|hamburguesa|jam[oó]n|huevo)/i;
+          const regexCH = /(arroz|patata|boniato|pasta|pan|avena|tortita)/i;
+
+          if (swapConfig) {
+            partes = partes.map(parte => {
+              const match = parte.match(/^(\d+(?:[.,]\d+)?)\s*g\s+(.*)$/i);
+              if (!match) return parte;
+              const gOrig = parseFloat(match[1].replace(',', '.'));
+              const nOrig = match[2];
+
+              if (swapConfig.prot && regexProt.test(nOrig)) {
+                let mOrig = { p: 22, g: 2 };
+                for (const k in MACROS_ALIMENTOS) {
+                  if (this.normalizar(nOrig).includes(this.normalizar(k.split(' ')[0]))) mOrig = MACROS_ALIMENTOS[k];
+                }
+                const mNuevo = MACROS_ALIMENTOS[swapConfig.prot] || { p: 22, g: 2 };
+                const nuevosGramos = Math.round(((gOrig * mOrig.p) / mNuevo.p) / 5) * 5;
+
+                const grasaAntigua = (gOrig / 100) * mOrig.g;
+                const grasaNueva = (nuevosGramos / 100) * mNuevo.g;
+                deltaGrasaTotal += (grasaNueva - grasaAntigua);
+
+                return `${nuevosGramos} g ${swapConfig.prot}`;
+              }
+
+              if (swapConfig.ch && regexCH.test(nOrig)) {
+                let mOrig = { ch: 75 };
+                if (/patata|boniato/i.test(nOrig)) mOrig = { ch: 19 };
+                else if (/pan/i.test(nOrig)) mOrig = { ch: 48 };
+                else if (/avena/i.test(nOrig)) mOrig = { ch: 60 };
+
+                const mNuevo = MACROS_ALIMENTOS[swapConfig.ch] || { ch: 75 };
+                const nuevosGramos = Math.round(((gOrig * mOrig.ch) / mNuevo.ch) / 5) * 5;
+                return `${nuevosGramos} g ${swapConfig.ch}`;
+              }
+              return parte;
+            });
+          }
+
+          let indiceAOVE = -1;
+          partes = partes.map((parte, index) => {
+            const matchCH = parte.match(/^(\d+(?:[.,]\d+)?)\s*g\s+(.*)$/i);
+            const matchAOVE = parte.match(/^(\d+(?:[.,]\d+)?)\s*ml\s+(aove|aceite)/i);
+
+            if (this.cenaSocialActiva && esPreCena && matchCH && regexCH.test(matchCH[2])) {
+              const gOrig = parseFloat(matchCH[1].replace(',', '.'));
+              const gFinal = Math.round((gOrig * 0.65) / 5) * 5;
+              return `${gFinal} g ${matchCH[2]}`;
+            }
+
+            if (matchAOVE) {
+              indiceAOVE = index;
+              let aoveFinal = parseFloat(matchAOVE[1].replace(',', '.'));
+              if (this.cenaSocialActiva && esPreCena) aoveFinal = aoveFinal * 0.65;
+              aoveFinal = aoveFinal - deltaGrasaTotal;
+              if (aoveFinal <= 0) return '';
+              return `${Math.round(aoveFinal)} ml AOVE`;
+            }
+            return parte;
+          });
+
+          if (deltaGrasaTotal < -2 && indiceAOVE === -1) {
+            partes.push(`${Math.round(Math.abs(deltaGrasaTotal))} ml AOVE (compensación)`);
+          }
+
+          return partes.filter(p => p !== '').join(' + ');
+        },
+
+        textoComidaFede(comida, idx) {
+          const swap = this.swapsActivos[this.diaSeleccionado + '_' + idx];
+          return this.reemplazarYCompensar(comida.fede, swap, this.isPreCena(comida.ventana));
+        },
+
+        textoComidaAra(comida, idx) {
+          const swap = this.swapsActivos[this.diaSeleccionado + '_' + idx];
+          return this.reemplazarYCompensar(comida.arantxa, swap, this.isPreCena(comida.ventana));
+        },
+
+        abrirSwap(idx) { this.swapAbiertoIdx = (this.swapAbiertoIdx === idx) ? null : idx; },
+        resetSwap(idx) {
+          delete this.swapsActivos[this.diaSeleccionado + '_' + idx];
+          this.swapsActivos = { ...this.swapsActivos };
+        },
+        aplicarSwap(idx, tipo, val) {
+          const key = this.diaSeleccionado + '_' + idx;
+          if (!this.swapsActivos[key]) this.swapsActivos[key] = {};
+          this.swapsActivos[key][tipo] = val;
+          this.swapsActivos = { ...this.swapsActivos };
+        },
+
+        // Suma ingredientes comunes para cocinar juntos en la Olla Común
+        sumarIngredientes(strFede, strArantxa) {
+          if (!strFede && !strArantxa) return [];
+          const mapa = new Map();
+
+          const procesar = (texto) => {
+            if (!texto) return;
+            texto.split('+').forEach(parte => {
+              let limpio = parte.trim();
+              if (!limpio) return;
+              const match = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?)?\s+(.*)$/i);
+              if (match) {
+                const cant = parseFloat(match[1].replace(',', '.'));
+                const unidad = (match[2] || 'ud').toLowerCase().replace(/s$/, '');
+                let nombre = match[3].trim().replace(/\(\d+.*?\)/g, '').trim();
+                const clave = unidad + '_' + this.normalizar(nombre);
+
+                if (mapa.has(clave)) {
+                  mapa.get(clave).cantidad += cant;
+                } else {
+                  mapa.set(clave, { cantidad: cant, unidad: match[2] || '', nombre: nombre });
+                }
+              } else {
+                const claveTexto = this.normalizar(limpio);
+                if (!mapa.has(claveTexto)) {
+                  mapa.set(claveTexto, { cantidad: null, unidad: '', nombre: limpio });
+                }
+              }
+            });
+          };
+
+          procesar(strFede);
+          procesar(strArantxa);
+
+          const resultado = [];
+          mapa.forEach(val => {
+            if (val.cantidad !== null) {
+              const numRedondeado = Math.round(val.cantidad * 10) / 10;
+              const esp = val.unidad ? ' ' + val.unidad + ' ' : ' ';
+              resultado.push(`${numRedondeado}${esp}${val.nombre}`);
+            } else {
+              resultado.push(val.nombre);
+            }
+          });
+          return resultado;
+        },
+
+        calcularReparto(strFede, strArantxa) {
+          const sumarGramos = (str) => {
+            if (!str) return 0;
+            let total = 0;
+            const matches = str.matchAll(/(\d+(?:[.,]\d+)?)\s*g\b/gi);
+            for (const m of matches) total += parseFloat(m[1].replace(',', '.'));
+            return total;
+          };
+          const gFede = sumarGramos(strFede);
+          const gAra = sumarGramos(strArantxa);
+          if (gFede + gAra === 0) return 'Individual';
+          const pctFede = Math.round((gFede / (gFede + gAra)) * 100);
+          return `${pctFede}% Fede / ${100 - pctFede}% Ara`;
+        },
+
+        // Lista de la compra semanal (excluyendo geles, sales, isotónico y creatina)
+        listaCompraAgrupada() {
+          const acumulado = new Map();
+
+          const esSuplementoORunning = (txt) => {
+            const n = this.normalizar(txt);
+            return /agua|gel|sales|sodio|isotonico|evocarb|creatina|whey|proteina|cafeina|probiotico|\bna\b/.test(n);
+          };
+
+          const clasificarCategoria = (nombre) => {
+            const n = this.normalizar(nombre);
+            if (/pollo|pavo|ternera|solomillo|merluza|salmon|atun|jamon|lomo|hamburguesa/.test(n)) return '🥩 Carnicería, Pescadería y Charcutería';
+            if (/skyr|queso|yogur|leche|huevo|clara/.test(n)) return '🥛 Lácteos y Huevos';
+            if (/arroz|pan|patata|boniato|avena|tortita|pasta|miel|aove|aceite/.test(n)) return '🌾 Despensa, Panadería e Hidratos';
+            return '🥦 Fruta y Verdura Fresca';
+          };
+
+          this.dietaCompleta.forEach(comida => {
+            [comida.fede, comida.arantxa].forEach(texto => {
+              if (!texto) return;
+              texto.split('+').forEach(parte => {
+                let limpio = parte.trim();
+                if (!limpio || esSuplementoORunning(limpio)) return;
+                const match = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?)?\s+(.*)$/i);
+                if (match) {
+                  const cant = parseFloat(match[1].replace(',', '.'));
+                  const unidadRaw = (match[2] || 'ud').toLowerCase();
+                  const unidadNorm = unidadRaw.replace(/s$/, '');
+                  let nombre = match[3].trim().replace(/\(\d+.*?\)/g, '').trim();
+                  if (esSuplementoORunning(nombre)) return;
+
+                  const clave = unidadNorm + '_' + this.normalizar(nombre);
+                  if (acumulado.has(clave)) {
+                    acumulado.get(clave).cantidad += cant;
+                  } else {
+                    acumulado.set(clave, {
+                      clave,
+                      nombre,
+                      unidad: unidadNorm,
+                      cantidad: cant,
+                      categoria: clasificarCategoria(nombre)
+                    });
+                  }
+                }
+              });
+            });
+          });
+
+          const grupos = {};
+          acumulado.forEach(item => {
+            let totalFmt = '';
+            if (item.unidad === 'g' && item.cantidad >= 1000) {
+              totalFmt = (item.cantidad / 1000).toFixed(2) + ' kg';
+            } else if (item.unidad === 'ud') {
+              totalFmt = Math.round(item.cantidad) + ' uds';
+            } else {
+              totalFmt = Math.round(item.cantidad) + ' ' + item.unidad;
+            }
+            item.totalFormateado = totalFmt;
+
+            if (!grupos[item.categoria]) grupos[item.categoria] = [];
+            grupos[item.categoria].push(item);
+          });
+
+          return Object.keys(grupos).sort().map(cat => ({
+            categoria: cat,
+            items: grupos[cat].sort((a, b) => b.cantidad - a.cantidad)
+          }));
+        },
+
+        toggleCheckCompra(clave) {
+          this.itemsComprados[clave] = !this.itemsComprados[clave];
+          this.itemsComprados = { ...this.itemsComprados };
+          localStorage.setItem('hybrid_compra_checks', JSON.stringify(this.itemsComprados));
+        },
+
+        limpiarChecksCompra() {
+          this.itemsComprados = {};
+          localStorage.removeItem('hybrid_compra_checks');
+        },
+
+        async enviarCheckin() {
+          this.enviando = true;
+          try {
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'checkin', ...this.form })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+              this.mensajeExito = true;
+              await this.cargarDatos();
+              setTimeout(() => this.mensajeExito = false, 3500);
+            }
+          } catch (e) {
+            alert("Error al guardar en Google Sheets: " + e.message);
+          }
+          this.enviando = false;
+        },
+
+        async importarDietaGemini() {
+          this.enviando = true;
+          try {
+            const comidas = JSON.parse(this.jsonNuevaDieta);
+            const res = await fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'actualizar_dieta', comidas: comidas })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+              this.mensajeDietaActualizada = true;
+              this.jsonNuevaDieta = '';
+              await this.cargarDatos();
+              setTimeout(() => {
+                this.mensajeDietaActualizada = false;
+                this.tab = 'dieta';
+              }, 2000);
+            }
+          } catch (e) {
+            alert("Revisa el formato del JSON pegado: " + e.message);
+          }
+          this.enviando = false;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
