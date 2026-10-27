@@ -142,14 +142,14 @@
       <div class="p-3.5 rounded-xl bg-canvas border border-border text-xs space-y-1">
         <div class="flex items-center gap-2 font-semibold text-ink">
           <span class="w-2 h-2 rounded-full" :class="errorConexion ? 'bg-amber-500' : 'bg-sage'"></span>
-          <span x-text="errorConexion ? 'Modo Local Activo' : 'Sincronizado con Sheets'"></span>
+          <span x-text="errorConexion ? 'Modo Local Activo' : 'Cálculo Bromatológico Exacto'"></span>
         </div>
-        <p class="text-ink-secondary">100% Comida Real (Sin geles/supl.)</p>
+        <p class="text-ink-secondary">100% Comida Real (4×P + 4×CH + 9×G)</p>
       </div>
     </aside>
 
     <!-- ==========================================
-         CABECERA MÓVIL CON SAFE-AREA Y SELECTOR ACCESIBLE
+         CABECERA MÓVIL CON SAFE-AREA
          ========================================== -->
     <header class="lg:hidden bg-surface border-b border-border px-4 pb-3 safe-top">
       <div class="max-w-3xl mx-auto space-y-3">
@@ -164,7 +164,6 @@
           </button>
         </div>
 
-        <!-- Selector de Atleta Fede (Azul) / Ara (Verde) / Dual -->
         <div class="bg-canvas p-1 rounded-xl border border-border grid grid-cols-3 gap-1" role="group">
           <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-fede-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-current"></span>
@@ -188,7 +187,7 @@
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-8">
 
         <!-- =========================================================
-             VISTA 1: PLAN DIARIO + ADAPTADOR DE ENTRENAMIENTO EN VIVO
+             VISTA 1: PLAN DIARIO + MOTOR BROMATOLÓGICO EXACTO
              ========================================================= -->
         <section x-show="tab === 'dieta'" class="space-y-5">
 
@@ -232,11 +231,7 @@
             </div>
           </div>
 
-          <!-- =========================================================================
-               NUEVO MÓDULO: PLANIFICADOR Y ADAPTADOR DE ENTRENAMIENTO DEL DÍA
-               Permite cambiar el tipo de sesión (ej. pasar el Tempo del Miércoles al Jueves)
-               o permutar el día entero con otro día de la semana, recalculando CH y Kcal.
-               ========================================================================= -->
+          <!-- PANEL DE ENTRENAMIENTO Y ESCALADO CALÓRICO ESTRICTO -->
           <div class="bg-surface border border-border rounded-2xl p-4 shadow-sm space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="flex items-start gap-3">
@@ -246,32 +241,30 @@
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="'Entrenamiento del ' + diaSeleccionado"></span>
-                    <span x-show="diaPermutadoCon(diaSeleccionado)" class="text-[11px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300" x-text="'⇄ Permutado con ' + diaPermutadoCon(diaSeleccionado)"></span>
-                    <span x-show="tieneCargaAdaptada(diaSeleccionado)" class="text-[11px] font-bold bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-md border border-indigo-300">⚡ Carga Recalculada</span>
+                    <span x-show="diaPermutadoCon(diaSeleccionado)" class="text-[11px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300" x-text="'⇄ Intercambiado con ' + diaPermutadoCon(diaSeleccionado)"></span>
+                    <span x-show="tieneCargaAdaptada(diaSeleccionado)" class="text-[11px] font-bold bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-md border border-indigo-300">⚡ Macros Ajustados por Carga</span>
                   </div>
                   <p class="text-sm font-bold text-ink mt-0.5" x-text="descripcionEntrenoEfectivo(diaSeleccionado)"></p>
-                  <p class="text-xs text-ink-secondary" x-text="subtituloCargaEfectiva(diaSeleccionado)"></p>
+                  <p class="text-xs text-ink-secondary font-mono mt-0.5" x-text="resumenKcalPorCarga(diaSeleccionado)"></p>
                 </div>
               </div>
 
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  @click="panelEntrenoAbierto = !panelEntrenoAbierto"
-                  :class="(tieneModificacionEntrenoDia(diaSeleccionado) || panelEntrenoAbierto) ? 'bg-ink text-white border-ink' : 'bg-canvas text-ink border-border hover:bg-subtle'"
-                  class="px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 min-h-[40px]"
-                >
-                  <span>⚙️ Cambiar Entreno / Mover Día</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                @click="panelEntrenoAbierto = !panelEntrenoAbierto"
+                :class="(tieneModificacionEntrenoDia(diaSeleccionado) || panelEntrenoAbierto) ? 'bg-ink text-white border-ink' : 'bg-canvas text-ink border-border hover:bg-subtle'"
+                class="px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 min-h-[40px]"
+              >
+                <span>⚙️ Cambiar Entreno / Mover Día</span>
+              </button>
             </div>
 
-            <!-- Panel Desplegable para Modificar el Entrenamiento o Permutar el Día -->
+            <!-- Panel Desplegable de Modificación de Entreno -->
             <div x-show="panelEntrenoAbierto" x-cloak class="bg-canvas border border-border rounded-xl p-4 space-y-4 mt-2">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
                 <div>
-                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Adaptar Nutrición al Entrenamiento Real</h3>
-                  <p class="text-xs text-ink-secondary">Si has movido una sesión (ej. pasas el Tempo 10km del miércoles al jueves y hoy solo haces CrossFit), cambia el tipo de sesión aquí abajo o permuta el día entero.</p>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Escalado Energético Determinista</h3>
+                  <p class="text-xs text-ink-secondary">Menos entreno = menos carbohidratos y menos kcal. Más entreno = más carbohidratos y más kcal. Proteína fija al 100%.</p>
                 </div>
                 <button x-show="tieneModificacionEntrenoDia(diaSeleccionado)" type="button" @click="restaurarEntrenoDia(diaSeleccionado)" class="px-3 py-1.5 rounded-lg bg-white border border-border text-xs font-bold text-rose-700 hover:bg-rose-50 shrink-0">
                   Restaurar plan original del <span x-text="diaSeleccionado"></span>
@@ -279,54 +272,54 @@
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- OPCIÓN 1: Cambiar el Tipo de Carga del Día (Escala CH y Kcal de tus comidas reales) -->
+                <!-- OPCIÓN A: Cambiar Carga del Día -->
                 <div class="bg-surface border border-border rounded-xl p-3.5 space-y-3">
                   <div>
-                    <span class="text-xs font-extrabold text-sage uppercase block">Opción A · Ajustar Carga de Hoy (Mismos Platos)</span>
-                    <p class="text-[11px] text-ink-secondary mt-0.5">Mantiene los platos de hoy pero reescala los gramos en crudo de carbohidratos (pan, arroz, patata, avena) según el desgaste real. Proteína intacta al 100%.</p>
+                    <span class="text-xs font-extrabold text-sage uppercase block">Opción A · Cambiar Carga de Hoy (Reescala Gramos)</span>
+                    <p class="text-[11px] text-ink-secondary mt-0.5">Ajusta automáticamente el pan, arroz, patata, boniato, avena, fruta y miel de hoy para clavar el objetivo energético del entrenamiento real.</p>
                   </div>
 
-                  <div class="space-y-2">
+                  <div class="space-y-2.5">
                     <div>
-                      <label class="block text-xs font-bold text-fede-dark mb-1">Carga de hoy para FEDE:</label>
+                      <label class="block text-xs font-bold text-fede-dark mb-1">Entrenamiento real hoy para FEDE:</label>
                       <select :value="obtenerCargaAtleta(diaSeleccionado, 'fede')" @change="fijarCargaAtleta(diaSeleccionado, 'fede', $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2 text-xs font-semibold text-ink">
-                        <option value="auto">Según plan original del día</option>
-                        <option value="descanso">🧘‍♂️ Descanso Total (~220g CH · ~2.350 kcal)</option>
-                        <option value="unica_cf">🏋️‍♂️ Sesión Única: Solo CrossFit / Carrera suave (~320g CH · ~2.755 kcal)</option>
-                        <option value="doble">🔥 Doble Sesión: Running (Series/Tempo) + CrossFit/Gym (~435g CH · ~3.250 kcal)</option>
-                        <option value="trail">⛰️ Tirada Larga Trail / Precarga (~480g CH · ~3.400 kcal)</option>
+                        <option value="auto" x-text="'Plan original del día (' + NOMBRES_PERFIL_CARGA[infoEntrenoOriginalDia(diaFuenteEfectivo(diaSeleccionado)).tipo] + ')'"></option>
+                        <option value="descanso">1. 🧘‍♂️ Descanso Total (~210g CH · ~2.150 kcal)</option>
+                        <option value="unica_cf">2. 🏋️‍♂️ Sesión Única: Solo CrossFit / Carrera (~300g CH · ~2.520 kcal)</option>
+                        <option value="doble">3. 🔥 Doble Sesión: Running + CrossFit (~390g CH · ~2.900 kcal)</option>
+                        <option value="trail">4. ⛰️ Tirada Larga Trail / Precarga (~460g CH · ~3.200 kcal)</option>
                       </select>
                     </div>
 
                     <div>
-                      <label class="block text-xs font-bold text-ara-dark mb-1">Carga de hoy para ARANTXA:</label>
+                      <label class="block text-xs font-bold text-ara-dark mb-1">Entrenamiento real hoy para ARANTXA:</label>
                       <select :value="obtenerCargaAtleta(diaSeleccionado, 'arantxa')" @change="fijarCargaAtleta(diaSeleccionado, 'arantxa', $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2 text-xs font-semibold text-ink">
-                        <option value="auto">Según plan original del día</option>
-                        <option value="descanso">🧘‍♀️ Descanso Total (~160g CH · ~1.650 kcal)</option>
-                        <option value="unica_cf">🏋️‍♀️ Sesión Única: Solo CrossFit / Carrera suave (~225g CH · ~1.920 kcal)</option>
-                        <option value="doble">🔥 Doble Sesión: Running (Series/Tempo) + CrossFit/Gym (~305g CH · ~2.280 kcal)</option>
-                        <option value="trail">⛰️ Tirada Larga Trail / Precarga (~340g CH · ~2.420 kcal)</option>
+                        <option value="auto" x-text="'Plan original del día (' + NOMBRES_PERFIL_CARGA[infoEntrenoOriginalDia(diaFuenteEfectivo(diaSeleccionado)).tipo] + ')'"></option>
+                        <option value="descanso">1. 🧘‍♀️ Descanso Total (~145g CH · ~1.500 kcal)</option>
+                        <option value="unica_cf">2. 🏋️‍♀️ Sesión Única: Solo CrossFit / Carrera (~205g CH · ~1.760 kcal)</option>
+                        <option value="doble">3. 🔥 Doble Sesión: Running + CrossFit (~270g CH · ~2.050 kcal)</option>
+                        <option value="trail">4. ⛰️ Tirada Larga Trail / Precarga (~320g CH · ~2.250 kcal)</option>
                       </select>
                     </div>
                   </div>
                 </div>
 
-                <!-- OPCIÓN 2: Permutar Día Entero con otro día de la semana -->
+                <!-- OPCIÓN B: Permutar Día Entero -->
                 <div class="bg-surface border border-border rounded-xl p-3.5 flex flex-col justify-between space-y-3">
                   <div>
-                    <span class="text-xs font-extrabold text-indigo-800 uppercase block">Opción B · Permutar Día Completo (Menú + Entreno)</span>
-                    <p class="text-[11px] text-ink-secondary mt-0.5">Intercambia todas las comidas y el entrenamiento del <strong x-text="diaSeleccionado"></strong> con otro día de la semana (ej. cambiar el Miércoles entero por el Jueves).</p>
+                    <span class="text-xs font-extrabold text-indigo-800 uppercase block">Opción B · Intercambiar Día Completo con Otro</span>
+                    <p class="text-[11px] text-ink-secondary mt-0.5">Intercambia todas las comidas y el entrenamiento del <strong x-text="diaSeleccionado"></strong> con otro día de la semana (ej. cambiar Miércoles ↔ Jueves).</p>
                   </div>
 
                   <div class="space-y-2">
                     <label class="block text-xs font-bold text-ink">Intercambiar todo el <span x-text="diaSeleccionado"></span> con:</label>
                     <select :value="diaPermutadoCon(diaSeleccionado) || ''" @change="permutarDias(diaSeleccionado, $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2.5 text-xs font-semibold text-ink">
-                      <option value="">-- Sin permutar (Mantener en su día) --</option>
+                      <option value="">-- Mantener en su día original --</option>
                       <template x-for="dAlt in diasSemana.filter(x => x !== diaSeleccionado)" :key="dAlt">
                         <option :value="dAlt" x-text="'⇄ Intercambiar con ' + dAlt + ' (' + entrenoOriginalDeDia(dAlt) + ')'"></option>
                       </template>
                     </select>
-                    <p class="text-[11px] text-ink-muted">Al permutar dos días, el otro día recibe automáticamente el menú y entreno de este para que tu compra semanal cuadre al 100%.</p>
+                    <p class="text-[11px] text-ink-muted">Al permutar dos días, la lista de la compra semanal no varía porque comes exactamente los mismos platos en la semana.</p>
                   </div>
                 </div>
               </div>
@@ -337,15 +330,15 @@
           <div x-show="cenaSocialActiva" x-cloak class="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-950">
             <div>
               <span class="font-bold uppercase tracking-wider text-amber-800 block mb-0.5">Modo Cena Libre Activo (-35% CH y Grasas pre-cena)</span>
-              <span>Proteína intacta al 100%. Las cantidades en crudo de las tarjetas previas a la cena ya muestran el recorte aplicado.</span>
+              <span>Proteína intacta al 100%. Las cantidades en crudo de las comidas previas a la cena ya tienen el descuento aplicado.</span>
             </div>
             <div class="font-mono font-bold text-amber-900 shrink-0 bg-white px-3 py-2 rounded-lg border border-amber-200 tabular-nums">
-              <span class="block" x-text="'Colchón Fede: ' + totalesDia().fede.ahorroKcal + ' kcal (' + totalesDia().fede.ahorroCH + 'g CH)'"></span>
-              <span class="block" x-text="'Colchón Ara: ' + totalesDia().arantxa.ahorroKcal + ' kcal (' + totalesDia().arantxa.ahorroCH + 'g CH)'"></span>
+              <span class="block" x-text="'Reserva Fede: -' + totalesDia().fede.ahorroKcal + ' kcal (-' + totalesDia().fede.ahorroCH + 'g CH)'"></span>
+              <span class="block" x-text="'Reserva Ara: -' + totalesDia().arantxa.ahorroKcal + ' kcal (-' + totalesDia().arantxa.ahorroCH + 'g CH)'"></span>
             </div>
           </div>
 
-          <!-- PANEL DE TOTALES DIARIOS DE COMIDA REAL (AZUL FEDE / ESMERALDA ARANTXA) -->
+          <!-- PANEL DE TOTALES DIARIOS CALCULADOS AL GRAMO (4*P + 4*CH + 9*G) -->
           <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
             
             <!-- Totales FEDE -->
@@ -355,11 +348,12 @@
                   <div class="flex items-center gap-2">
                     <span class="px-2 py-0.5 rounded-md bg-fede-badge text-white text-xs font-extrabold uppercase tracking-wider">Fede</span>
                     <span class="text-xs font-bold text-fede-dark" x-text="etiquetaPerfilAtleta(diaSeleccionado, 'fede')"></span>
-                    <span class="text-xs text-fede-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' tomas'"></span>
+                    <span class="text-xs text-fede-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' hechas'"></span>
                   </div>
                   <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
                     <span class="text-2xl sm:text-3xl font-extrabold font-mono text-fede-dark" x-text="totalesDia().fede.kcal"></span>
-                    <span class="text-xs font-bold text-fede-text">kcal comida real hoy</span>
+                    <span class="text-xs font-bold text-fede-text">kcal reales hoy</span>
+                    <span x-show="totalesDia().fede.deltaKcalVsBase !== 0" class="text-xs font-mono font-extrabold px-1.5 py-0.5 rounded bg-white border border-fede-border" :class="totalesDia().fede.deltaKcalVsBase < 0 ? 'text-emerald-700' : 'text-amber-700'" x-text="(totalesDia().fede.deltaKcalVsBase > 0 ? '+' : '') + totalesDia().fede.deltaKcalVsBase + ' kcal vs base'"></span>
                   </div>
                 </div>
                 <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-fede-border">
@@ -418,11 +412,12 @@
                   <div class="flex items-center gap-2">
                     <span class="px-2 py-0.5 rounded-md bg-ara-badge text-white text-xs font-extrabold uppercase tracking-wider">Arantxa</span>
                     <span class="text-xs font-bold text-ara-dark" x-text="etiquetaPerfilAtleta(diaSeleccionado, 'arantxa')"></span>
-                    <span class="text-xs text-ara-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' tomas'"></span>
+                    <span class="text-xs text-ara-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' hechas'"></span>
                   </div>
                   <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
                     <span class="text-2xl sm:text-3xl font-extrabold font-mono text-ara-dark" x-text="totalesDia().arantxa.kcal"></span>
-                    <span class="text-xs font-bold text-ara-text">kcal comida real hoy</span>
+                    <span class="text-xs font-bold text-ara-text">kcal reales hoy</span>
+                    <span x-show="totalesDia().arantxa.deltaKcalVsBase !== 0" class="text-xs font-mono font-extrabold px-1.5 py-0.5 rounded bg-white border border-ara-border" :class="totalesDia().arantxa.deltaKcalVsBase < 0 ? 'text-emerald-700' : 'text-amber-700'" x-text="(totalesDia().arantxa.deltaKcalVsBase > 0 ? '+' : '') + totalesDia().arantxa.deltaKcalVsBase + ' kcal vs base'"></span>
                   </div>
                 </div>
                 <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-ara-border">
@@ -475,7 +470,7 @@
             </div>
           </div>
 
-          <!-- LISTA DE COMIDAS REALES DEL DÍA (EXCLUIDOS GELES, HIDRATACIÓN Y SUPLEMENTOS) -->
+          <!-- LISTA DE COMIDAS REALES DEL DÍA -->
           <div class="space-y-4">
             <template x-for="(comida, idx) in comidasDelDia()" :key="diaSeleccionado + '_' + idx">
               <article class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -496,7 +491,7 @@
                       <div class="flex flex-wrap items-center gap-1.5">
                         <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="comida.ventana"></span>
                         <span x-show="esComidaCompletada(idx)" class="text-[11px] font-bold bg-sage-light text-sage px-2 py-0.5 rounded-md border border-sage-border">✓ Completada</span>
-                        <span x-show="tieneSwapActivo(idx)" class="text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md border border-indigo-200">⇄ Alimento Intercambiado</span>
+                        <span x-show="tieneSwapActivo(idx)" class="text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md border border-indigo-200">⇄ Intercambiado</span>
                       </div>
                       <h3 class="text-base font-extrabold text-ink mt-0.5" :class="esComidaCompletada(idx) ? 'line-through text-ink-muted' : ''" x-text="tituloPlatoAdaptado(comida, idx)"></h3>
                     </div>
@@ -520,8 +515,8 @@
                   <div x-show="swapAbiertoIdx === idx" x-cloak class="bg-indigo-50/70 border-2 border-indigo-200 rounded-2xl p-4 space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 pb-2.5">
                       <div>
-                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-indigo-950">Intercambio Exacto de Alimento (Cuadra P + CH + G + Kcal)</h4>
-                        <p class="text-xs text-indigo-900 mt-0.5">Recalcula proteína, guarnición de carbohidrato y aceite de oliva para mantener los macros de esta toma exactos.</p>
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-indigo-950">Intercambio Bromatológico Exacto (P + CH + G + Kcal)</h4>
+                        <p class="text-xs text-indigo-900 mt-0.5">Recalcula proteína, carbohidrato y aceite de oliva para clavar los macros de esta toma al gramo.</p>
                       </div>
                       <button type="button" @click="resetSwap(idx)" class="px-3 py-1.5 rounded-lg bg-white border border-indigo-300 text-xs font-bold text-indigo-900 hover:bg-indigo-100 shrink-0">
                         Restaurar original
@@ -533,10 +528,10 @@
                         <label class="block text-xs font-bold text-indigo-950 mb-1">Cambiar Proteína por:</label>
                         <select :value="obtenerValorSwap(idx, 'prot')" @change="aplicarSwap(idx, 'prot', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
                           <option value="">-- Mantener proteína original --</option>
-                          <option value="pechuga pollo">Pechuga de pollo (23g P | 0g CH | 1g G)</option>
+                          <option value="pechuga pollo">Pechuga de pollo (23g P | 0g CH | 1.2g G)</option>
                           <option value="pechuga pavo">Pechuga de pavo (24g P | 0g CH | 1g G)</option>
                           <option value="atún al natural">Atún al natural (24g P | 0g CH | 1g G)</option>
-                          <option value="merluza blanca">Merluza / Pescado blanco (18g P | 0g CH | 1.5g G)</option>
+                          <option value="merluza blanca">Merluza / Pescado blanco (18g P | 0g CH | 1.8g G)</option>
                           <option value="merluza empanada Mercadona">Merluza empanada Mercadona (16g P | 14g CH | 6g G)</option>
                           <option value="solomillo ternera">Solomillo / Ternera magra (22g P | 0g CH | 4.5g G)</option>
                           <option value="lomo embuchado">Lomo embuchado (32g P | 0g CH | 8g G)</option>
@@ -549,13 +544,13 @@
                         <label class="block text-xs font-bold text-indigo-950 mb-1">Cambiar Carbohidrato por:</label>
                         <select :value="obtenerValorSwap(idx, 'ch')" @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
                           <option value="">-- Mantener carbohidrato original --</option>
-                          <option value="arroz basmati">Arroz blanco / basmati en crudo (78g CH | 7g P)</option>
+                          <option value="arroz basmati">Arroz blanco / basmati en crudo (78g CH | 7.5g P)</option>
                           <option value="patata">Patata en crudo (18g CH | 2g P)</option>
-                          <option value="boniato">Boniato en crudo (20g CH | 1.5g P)</option>
+                          <option value="boniato">Boniato en crudo (20g CH | 1.6g P)</option>
                           <option value="pasta blanca">Pasta blanca en crudo (74g CH | 12g P)</option>
                           <option value="pan masa madre">Pan de masa madre (48g CH | 9g P)</option>
-                          <option value="copos de avena">Copos de avena (60g CH | 14g P | 7g G)</option>
-                          <option value="tortitas de arroz">Tortitas de arroz (80g CH | 7g P)</option>
+                          <option value="copos de avena">Copos de avena (60g CH | 13.5g P | 7g G)</option>
+                          <option value="tortitas de arroz">Tortitas de arroz (80g CH | 7.5g P)</option>
                         </select>
                       </div>
                     </div>
@@ -634,7 +629,7 @@
         </section>
 
         <!-- =========================================================
-             VISTA 2: LISTA DE LA COMPRA SEMANAL (SOLO COMIDA REAL)
+             VISTA 2: LISTA DE LA COMPRA SEMANAL
              ========================================================= -->
         <section x-show="tab === 'compra'" x-cloak class="space-y-6">
           <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
@@ -642,7 +637,7 @@
               <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-sage">Cero Desperdicio · 7 Días</span>
                 <h2 class="text-xl font-extrabold text-ink mt-0.5">Lista de la Compra Semanal</h2>
-                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo de los 7 días teniendo en cuenta tus adaptaciones de entreno e intercambios. Sin suplementos ni geles.</p>
+                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo de los 7 días incluyendo tus adaptaciones de entreno e intercambios. Sin suplementos ni geles.</p>
               </div>
               <button type="button" @click="limpiarChecksCompra()" class="px-3.5 py-2.5 rounded-xl border border-border bg-canvas hover:bg-subtle text-xs font-semibold text-ink transition min-h-[42px]">
                 Desmarcar todo
@@ -839,9 +834,9 @@
 
   </div>
 
-  <!-- ==========================================
-       LÓGICA DE NEGOCIO, FILTRO COMIDA REAL Y ADAPTADOR DE ENTRENO
-       ========================================== -->
+  <!-- =========================================================
+       MOTOR BROMATOLÓGICO DETERMINISTA (100% BASADO EN GRAMOS REALES)
+       ========================================================= -->
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwiBFN8Jo15OC9NppoNY21WA1p88M8M08W4QG4Iwl84VinasRmDUqjK8FUsgAq2UUqB/exec";
 
@@ -857,32 +852,33 @@
       "Arantxa": { peso: "67", pecho: "89", cintura: "80", cadera: "84", brazo: "28", muslo: "53" }
     };
 
-    // Respaldo de RESUMEN_SEMANAL de tu Excel actual
-    const ENTRENOS_SEMANA_RESPALDO = {
-      "Lunes":     { entreno: "CrossFit 17:30",                           tipo: "unica_cf" },
-      "Martes":    { entreno: "Cuestas 8 km (08:30) + Gym Torso (18:30)", tipo: "doble" },
-      "Miércoles": { entreno: "Tempo 10 km (08:30) + CrossFit (17:30)",   tipo: "doble" },
-      "Jueves":    { entreno: "Carrera fácil 8 km (18:30)",               tipo: "unica_cf" },
-      "Viernes":   { entreno: "CrossFit 17:30",                           tipo: "unica_cf" },
-      "Sábado":    { entreno: "Descanso activo (Precarga Trail)",         tipo: "trail" },
-      "Domingo":   { entreno: "Trail 22 km (08:30)",                      tipo: "trail" }
+    // Clasificación real y fija de los entrenamientos de la semana en RESUMEN_SEMANAL
+    const ENTRENOS_SEMANA_OFICIAL = {
+      "lunes":     { entreno: "CrossFit 17:30",                           tipo: "unica_cf" },
+      "martes":    { entreno: "Cuestas 8 km (08:30) + Gym Torso (18:30)", tipo: "doble" },
+      "miercoles": { entreno: "Tempo 10 km (08:30) + CrossFit (17:30)",   tipo: "doble" },
+      "jueves":    { entreno: "Carrera fácil 8 km (18:30)",               tipo: "unica_cf" },
+      "viernes":   { entreno: "CrossFit 17:30",                           tipo: "unica_cf" },
+      "sabado":    { entreno: "Descanso activo (Precarga Trail)",         tipo: "trail" },
+      "domingo":   { entreno: "Trail 22 km (08:30)",                      tipo: "trail" }
     };
 
-    // Presupuesto objetivo de Carbohidratos de COMIDA REAL por tipo de sesión (sin contar geles)
-    const TARGET_CH_COMIDA_REAL = {
-      fede:    { descanso: 220, unica_cf: 325, doble: 425, trail: 475 },
-      arantxa: { descanso: 155, unica_cf: 228, doble: 295, trail: 335 }
+    // Escala estricta y monotónica de Carbohidratos de Comida Real según la carga del día:
+    // Descanso < Sesión Única < Doble Sesión < Trail Largo
+    const OBJETIVO_CH_POR_CARGA = {
+      fede:    { descanso: 210, unica_cf: 300, doble: 390, trail: 460 },
+      arantxa: { descanso: 145, unica_cf: 205, doble: 270, trail: 320 }
     };
 
     const NOMBRES_PERFIL_CARGA = {
-      descanso: "Descanso",
+      descanso: "Descanso Total",
       unica_cf: "Sesión Única",
       doble:    "Doble Sesión",
       trail:    "Trail Largo / Precarga"
     };
 
+    // Catálogo de Intercambio Principal (por cada 100g en crudo)
     const CATALOGO_NUTRICIONAL = {
-      // PROTEÍNAS
       "pechuga pollo":              { tipo: 'prot', p: 23.0, ch: 0.0,  g: 1.2 },
       "pechuga pavo":               { tipo: 'prot', p: 24.0, ch: 0.0,  g: 1.0 },
       "atún al natural":            { tipo: 'prot', p: 24.0, ch: 0.0,  g: 1.0 },
@@ -894,7 +890,6 @@
       "salmón fresco":              { tipo: 'prot', p: 20.0, ch: 0.0,  g: 13.0 },
       "hamburguesa ave magra":      { tipo: 'prot', p: 21.0, ch: 1.0,  g: 4.0 },
       "huevos enteros":             { tipo: 'prot', p: 13.0, ch: 1.0,  g: 11.0 },
-      // CARBOHIDRATOS DE COMIDA REAL
       "arroz basmati":              { tipo: 'ch',   p: 7.5,  ch: 78.0, g: 0.9 },
       "patata":                     { tipo: 'ch',   p: 2.0,  ch: 18.0, g: 0.1 },
       "boniato":                    { tipo: 'ch',   p: 1.6,  ch: 20.0, g: 0.1 },
@@ -996,11 +991,7 @@
           return str.toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         },
 
-        /**
-         * FILTRO ESTRICTO DE COMIDA REAL:
-         * 1. Descarta filas que son exclusivamente geles intra-entreno o hidratación con sales en ayunas.
-         * 2. Limpia suplementos ("+ 7 g creatina", "+ sales", "+ gel", etc.) de las comidas reales.
-         */
+        // Filtro estricto de suplementación e intra-entrenos
         esFilaSoloSuplementoOCarrera(comida) {
           const v = this.normalizar(comida.ventana);
           const p = this.normalizar(comida.plato);
@@ -1018,7 +1009,6 @@
             .filter(parte => {
               const n = this.normalizar(parte);
               if (!n) return false;
-              // Excluir creatina, geles, sales, isotónicos, agua con sales
               if (/\bcreatina\b|\bgel\b|\bgeles\b|\bisotonico\b|\bsales\b|\belectrolitos\b|\bevocarb\b|\bcafeina\b|\bprobiotico\b/.test(n)) return false;
               if (/^\d+\s*ml\s*agua/.test(n)) return false;
               return true;
@@ -1031,31 +1021,106 @@
           return titulo.replace(/\s+y\s+creatina/gi, '').replace(/\s*\+\s*creatina/gi, '').trim();
         },
 
-        // Detecta el entrenamiento original del día leyendo RESUMEN_SEMANAL o el respaldo
+        /**
+         * MOTOR BROMATOLÓGICO DETERMINISTA:
+         * Calcula P, CH, G y Kcal exactos leyendo cada ingrediente y su gramaje en crudo.
+         * Garantiza coherencia matemática 100%: Kcal = (P * 4) + (CH * 4) + (G * 9).
+         */
+        calcularMacrosDeIngrediente(parteTexto) {
+          const limpio = parteTexto.trim();
+          if (!limpio) return { p: 0, ch: 0, g: 0 };
+          const n = this.normalizar(limpio);
+
+          // 1. Si es Aceite de Oliva (ml AOVE)
+          const mAove = limpio.match(/^(\d+(?:[.,]\d+)?)\s*ml\s+(aove|aceite)/i);
+          if (mAove) {
+            const ml = parseFloat(mAove[1].replace(',', '.'));
+            return { p: 0, ch: 0, g: ml };
+          }
+
+          // 2. Si tiene peso explícito entre paréntesis o al inicio (ej. "2 latas atún (110 g)" o "1 plátano (130 g)")
+          let gramos = null;
+          const mParenGramos = limpio.match(/\((\d+(?:[.,]\d+)?)\s*g\)/i);
+          const mInicioGramos = limpio.match(/^(\d+(?:[.,]\d+)?)\s*g\b/i);
+
+          if (mInicioGramos) {
+            gramos = parseFloat(mInicioGramos[1].replace(',', '.'));
+          } else if (mParenGramos) {
+            gramos = parseFloat(mParenGramos[1].replace(',', '.'));
+          } else {
+            // Unidades estándar sin gramos explícitos
+            const mUd = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(tortitas?|plátanos?|manzanas?|huevos?|latas?)/i);
+            const cantUd = mUd ? parseFloat(mUd[1].replace(',', '.')) : 1;
+            if (n.includes('tortita')) return { p: cantUd * 0.7, ch: cantUd * 7.2, g: cantUd * 0.2 };
+            if (n.includes('platano')) return { p: cantUd * 1.3, ch: cantUd * 24.0, g: cantUd * 0.3 };
+            if (n.includes('manzana')) return { p: cantUd * 0.4, ch: cantUd * 18.0, g: cantUd * 0.2 };
+            if (n.includes('huevo'))   return { p: cantUd * 7.8, ch: cantUd * 0.6,  g: cantUd * 6.6 };
+            if (n.includes('lata') && n.includes('atun')) return { p: cantUd * 13.5, ch: 0, g: cantUd * 0.6 };
+            if (n.includes('tomate') || n.includes('canonigo') || n.includes('judia') || n.includes('verdura') || n.includes('calabacin')) {
+              return { p: 1.2, ch: 3.5, g: 0.2 };
+            }
+            return { p: 0, ch: 0, g: 0 };
+          }
+
+          const f = gramos / 100;
+          // Tabla bromatológica por cada 100g en crudo
+          if (n.includes('pan'))                         return { p: f * 9.0,  ch: f * 48.0, g: f * 1.2 };
+          if (n.includes('jamon'))                       return { p: f * 30.0, ch: 0.0,      g: f * 12.0 };
+          if (n.includes('queso'))                       return { p: f * 24.0, ch: f * 1.5,  g: f * 14.0 };
+          if (n.includes('arroz'))                       return { p: f * 7.5,  ch: f * 78.0, g: f * 0.9 };
+          if (n.includes('pasta'))                       return { p: f * 12.0, ch: f * 74.0, g: f * 1.5 };
+          if (n.includes('avena'))                       return { p: f * 13.5, ch: f * 60.0, g: f * 7.0 };
+          if (n.includes('pollo'))                       return { p: f * 23.0, ch: 0.0,      g: f * 1.2 };
+          if (n.includes('pavo'))                        return { p: f * 24.0, ch: 0.0,      g: f * 1.0 };
+          if (n.includes('skyr') || n.includes('yogur')) return { p: f * 11.0, ch: f * 4.0,  g: f * 0.2 };
+          if (n.includes('miel'))                        return { p: f * 0.3,  ch: f * 82.0, g: 0.0 };
+          if (n.includes('datil'))                       return { p: f * 2.5,  ch: f * 75.0, g: f * 0.4 };
+          if (n.includes('boniato'))                     return { p: f * 1.6,  ch: f * 20.0, g: f * 0.1 };
+          if (n.includes('patata'))                      return { p: f * 2.0,  ch: f * 18.0, g: f * 0.1 };
+          if (n.includes('salmon'))                      return { p: f * 20.0, ch: 0.0,      g: f * 13.0 };
+          if (n.includes('solomillo') || n.includes('ternera')) return { p: f * 22.0, ch: 0.0, g: f * 4.5 };
+          if (n.includes('atun'))                        return { p: f * 24.0, ch: 0.0,      g: f * 1.0 };
+          if (n.includes('lomo'))                        return { p: f * 32.0, ch: 0.0,      g: f * 8.0 };
+          if (n.includes('merluza') && n.includes('empanada')) return { p: f * 16.0, ch: f * 14.0, g: f * 6.0 };
+          if (n.includes('merluza') || n.includes('pescado'))  return { p: f * 18.0, ch: 0.0,      g: f * 1.8 };
+          if (n.includes('hamburguesa'))                 return { p: f * 21.0, ch: f * 1.0,  g: f * 4.0 };
+          if (n.includes('huevo'))                       return { p: f * 13.0, ch: f * 1.0,  g: f * 11.0 };
+          if (n.includes('platano'))                     return { p: f * 1.1,  ch: f * 21.0, g: f * 0.3 };
+          if (n.includes('manzana'))                     return { p: f * 0.3,  ch: f * 14.0, g: f * 0.2 };
+          if (n.includes('calabacin') || n.includes('zanahoria') || n.includes('judia') || n.includes('verdura') || n.includes('tomate')) {
+            return { p: f * 1.1, ch: f * 4.5, g: f * 0.2 };
+          }
+          return { p: 0, ch: 0, g: 0 };
+        },
+
+        calcularNutricionExactaDeTexto(str) {
+          if (!str) return { p: 0, ch: 0, g: 0, kcal: 0 };
+          let p = 0, ch = 0, g = 0;
+          str.split('+').forEach(parte => {
+            const m = this.calcularMacrosDeIngrediente(parte);
+            p += m.p; ch += m.ch; g += m.g;
+          });
+          const pR = Math.round(p);
+          const chR = Math.round(ch);
+          const gR = Math.round(g);
+          const kcalR = (pR * 4) + (chR * 4) + (gR * 9);
+          return { p: pR, ch: chR, g: gR, kcal: kcalR };
+        },
+
+        // Detecta correctamente el entrenamiento original del día
         infoEntrenoOriginalDia(diaNombre) {
           const buscado = this.normalizar(diaNombre);
-          if (this.resumenSemanalSheet && this.resumenSemanalSheet.length > 2) {
-            for (let i = 0; i < this.resumenSemanalSheet.length; i++) {
-              const r = this.resumenSemanalSheet[i];
-              if (this.normalizar(r[0]) === buscado && r[1]) {
-                const txt = r[1].toString().trim();
-                const n = this.normalizar(txt);
-                let tipo = 'unica_cf';
-                if (n.includes('trail') || n.includes('precarga') || n.includes('tirada')) tipo = 'trail';
-                else if (n.includes('+')) tipo = 'doble';
-                else if (n.includes('descanso')) tipo = 'descanso';
-                return { entreno: txt, tipo };
-              }
-            }
+          // Primero comprueba el diccionario oficial de tu RESUMEN_SEMANAL
+          if (ENTRENOS_SEMANA_OFICIAL[buscado]) {
+            return ENTRENOS_SEMANA_OFICIAL[buscado];
           }
-          return ENTRENOS_SEMANA_RESPALDO[diaNombre] || { entreno: 'CrossFit / Carrera', tipo: 'unica_cf' };
+          return { entreno: 'CrossFit / Carrera', tipo: 'unica_cf' };
         },
 
         entrenoOriginalDeDia(diaNombre) {
           return this.infoEntrenoOriginalDia(diaNombre).entreno;
         },
 
-        // Gestión de Permutación de Días (ej. Miércoles <-> Jueves)
         diaFuenteEfectivo(diaNombre) {
           return this.permutacionesDias[diaNombre] || diaNombre;
         },
@@ -1066,14 +1131,12 @@
         },
 
         permutarDias(diaA, diaB) {
-          // Limpiar permutación previa de diaA si existía
           const anteriorB = this.permutacionesDias[diaA];
           if (anteriorB) {
             delete this.permutacionesDias[anteriorB];
             delete this.permutacionesDias[diaA];
           }
           if (diaB && diaB !== diaA) {
-            // Si diaB estaba permutado con otro, limpiarlo
             const antDeB = this.permutacionesDias[diaB];
             if (antDeB) delete this.permutacionesDias[antDeB];
             this.permutacionesDias[diaA] = diaB;
@@ -1084,7 +1147,6 @@
           this.sincronizarEstadoRemoto('permutacionesDias', this.permutacionesDias);
         },
 
-        // Gestión de Carga de Entrenamiento en Vivo (Descanso / Sesión Única / Doble Sesión / Trail)
         obtenerCargaAtleta(diaNombre, atletaKey) {
           return (this.cargasEntreno[diaNombre] && this.cargasEntreno[diaNombre][atletaKey]) ? this.cargasEntreno[diaNombre][atletaKey] : 'auto';
         },
@@ -1135,7 +1197,7 @@
           const cAra = this.obtenerCargaAtleta(diaNombre, 'arantxa');
 
           if (cFede !== 'auto' && cFede === cAra) {
-            return `Entreno adaptado a: ${NOMBRES_PERFIL_CARGA[cFede]} (Fede y Arantxa)`;
+            return `Adaptado a: ${NOMBRES_PERFIL_CARGA[cFede]} (Fede y Arantxa)`;
           }
           if (cFede !== 'auto' || cAra !== 'auto') {
             const txtF = cFede !== 'auto' ? NOMBRES_PERFIL_CARGA[cFede] : infoBase.entreno;
@@ -1145,13 +1207,11 @@
           return infoBase.entreno;
         },
 
-        subtituloCargaEfectiva(diaNombre) {
-          const tFede = this.tipoCargaEfectivaAtleta(diaNombre, 'fede');
-          const tAra = this.tipoCargaEfectivaAtleta(diaNombre, 'arantxa');
-          return `Objetivo comida real hoy → Fede: ~${TARGET_CH_COMIDA_REAL.fede[tFede]}g CH | Arantxa: ~${TARGET_CH_COMIDA_REAL.arantxa[tAra]}g CH`;
+        resumenKcalPorCarga(diaNombre) {
+          const tot = this.totalesDia();
+          return `Balance real hoy → Fede: ${tot.fede.kcal} kcal (${tot.fede.ch}g CH) · Arantxa: ${tot.arantxa.kcal} kcal (${tot.arantxa.ch}g CH)`;
         },
 
-        // Devuelve solo las comidas reales del día (aplicando permutación si existe y filtrando filas de geles/agua)
         comidasDelDiaPara(diaNombre) {
           const diaFuente = this.diaFuenteEfectivo(diaNombre);
           const buscado = this.normalizar(diaFuente);
@@ -1164,16 +1224,45 @@
           return this.comidasDelDiaPara(this.diaSeleccionado);
         },
 
-        // Calcula el factor de escala de carbohidratos si el usuario cambió el tipo de entrenamiento del día
+        // Calcula cuántos gramos reales de CH tiene el día originalmente en comida sólida
+        chBaseRealesDelDia(diaNombre, atletaKey) {
+          const comidas = this.comidasDelDiaPara(diaNombre);
+          let totalCH = 0;
+          comidas.forEach(c => {
+            const raw = atletaKey === 'fede' ? c.fede : c.arantxa;
+            const limpio = this.limpiarSuplementosDeTexto(raw);
+            totalCH += this.calcularNutricionExactaDeTexto(limpio).ch;
+          });
+          return totalCH || 300;
+        },
+
+        /**
+         * FACTOR DE ESCALA ESTRICTO Y MONOTÓNICO:
+         * Compara los CH reales que suman las comidas originales del día contra el objetivo de la carga elegida.
+         * Además, si el usuario baja de nivel de entreno, garantiza matemáticamente que el factor sea < 1.0.
+         */
         factorEscalaEntrenoCH(diaNombre, atletaKey) {
+          const modoManual = this.obtenerCargaAtleta(diaNombre, atletaKey);
+          if (!modoManual || modoManual === 'auto') return 1.0;
+
           const diaBase = this.diaFuenteEfectivo(diaNombre);
           const tipoOrig = this.infoEntrenoOriginalDia(diaBase).tipo;
-          const tipoNuevo = this.tipoCargaEfectivaAtleta(diaNombre, atletaKey);
-          if (tipoOrig === tipoNuevo) return 1.0;
+          if (modoManual === tipoOrig) return 1.0;
 
-          const chOrig = TARGET_CH_COMIDA_REAL[atletaKey][tipoOrig] || 325;
-          const chNuevo = TARGET_CH_COMIDA_REAL[atletaKey][tipoNuevo] || 325;
-          return chNuevo / chOrig;
+          const chActualesBase = this.chBaseRealesDelDia(diaNombre, atletaKey);
+          const targetNuevoCH = OBJETIVO_CH_POR_CARGA[atletaKey][modoManual] || 300;
+          const targetOrigTeorico = OBJETIVO_CH_POR_CARGA[atletaKey][tipoOrig] || 300;
+
+          // Usamos la proporción directa entre los niveles de carga y la anclamos a los CH reales del día
+          const ratioNiveles = targetNuevoCH / targetOrigTeorico;
+          const ratioReal = targetNuevoCH / chActualesBase;
+
+          // Si el usuario baja de sesión (ej. de Doble a Única o Descanso), forzamos que SIEMPRE reduzca (< 1.0)
+          if (targetNuevoCH < targetOrigTeorico) {
+            return Math.min(ratioNiveles, ratioReal, 0.92);
+          }
+          // Si sube de sesión (ej. de Única a Doble o Trail), forzamos que SIEMPRE aumente (> 1.0)
+          return Math.max(ratioNiveles, ratioReal, 1.08);
         },
 
         formatearFechaISO(raw) {
@@ -1309,43 +1398,26 @@
           return null;
         },
 
-        parsearMacrosIndividuales(txt) {
-          if (!txt) return { p: 0, ch: 0, g: 0, kcal: 0 };
-          const mP = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*P\b/i);
-          const mCH = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*CH\b/i);
-          const mG = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*G\b/i);
-          const mKcal = txt.match(/(\d+(?:[.,]\d+)?)\s*kcal/i);
-
-          const p = mP ? parseFloat(mP[1].replace(',', '.')) : 0;
-          const ch = mCH ? parseFloat(mCH[1].replace(',', '.')) : 0;
-          const g = mG ? parseFloat(mG[1].replace(',', '.')) : 0;
-          let kcal = 0;
-          if (mKcal) kcal = parseFloat(mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
-          else kcal = (p * 4) + (ch * 4) + (g * 9);
-          return { p, ch, g, kcal };
-        },
-
         /**
-         * MOTOR CENTRAL: Calcula comida real (sin suplementos), aplica adaptación de entreno,
-         * modo cena libre e intercambio 3x3 (Proteína + Hidrato + AOVE).
+         * MOTOR CENTRAL DETERMINISTA:
+         * 1. Calcula la nutrición base real sumando los gramos de los ingredientes originales (sin depender de textos mal sumados en el Excel).
+         * 2. Aplica el factor de entrenamiento del día, el Modo Cena Libre y el Intercambio 3x3.
+         * 3. Recalcula los macros finales pesando los gramos resultantes finales.
          */
         comidaCalculadaParaDia(diaNombre, comida, idx, atletaKey) {
           const rawTexto = atletaKey === 'fede' ? comida.fede : comida.arantxa;
           const textoOriginal = this.limpiarSuplementosDeTexto(rawTexto);
-          const macrosRaw = atletaKey === 'fede' ? comida.macrosFede : comida.macrosArantxa;
-          const macrosMeta = this.parsearMacrosIndividuales(macrosRaw);
+          const macrosBaseReales = this.calcularNutricionExactaDeTexto(textoOriginal);
           const esPreCena = this.isPreCena(comida.ventana);
           const swapConfig = this.swapsActivos[diaNombre + '_' + idx] || {};
 
           if (!textoOriginal) {
-            return { texto: '', macrosObj: macrosMeta, macrosTexto: macrosRaw, notaAjuste: '' };
+            return { texto: '', macrosObj: macrosBaseReales, macrosBase: macrosBaseReales, macrosTexto: '', notaAjuste: '' };
           }
 
-          // Factor por cambio de entrenamiento del día + factor por Modo Cena Libre
           const factorEntrenoCH = this.factorEscalaEntrenoCH(diaNombre, atletaKey);
           const factorCenaCH = (this.cenaSocialActiva && esPreCena && diaNombre === this.diaSeleccionado) ? 0.65 : 1.0;
           const factorCenaG = (this.cenaSocialActiva && esPreCena && diaNombre === this.diaSeleccionado) ? 0.65 : 1.0;
-
           const factorTotalCH = factorEntrenoCH * factorCenaCH;
 
           let partes = textoOriginal.split('+').map(p => p.trim()).filter(Boolean);
@@ -1380,47 +1452,45 @@
           const haySwapCH = !!(swapConfig.ch && idxCH !== -1 && CATALOGO_NUTRICIONAL[swapConfig.ch]);
           const hayCambioCarga = Math.abs(factorTotalCH - 1.0) > 0.01 || Math.abs(factorCenaG - 1.0) > 0.01;
 
+          // Si no hay ningún cambio activo, devuelve los ingredientes originales con su cálculo bromatológico exacto
           if (!haySwapProt && !haySwapCH && !hayCambioCarga) {
             return {
               texto: textoOriginal,
-              macrosObj: {
-                p: Math.round(macrosMeta.p), ch: Math.round(macrosMeta.ch),
-                g: Math.round(macrosMeta.g), kcal: Math.round(macrosMeta.kcal),
-                ahorroKcal: 0, ahorroCH: 0
-              },
-              macrosTexto: `${Math.round(macrosMeta.p)}g P | ${Math.round(macrosMeta.ch)}g CH | ${Math.round(macrosMeta.g)}g G | ${Math.round(macrosMeta.kcal)} kcal`,
+              macrosObj: { ...macrosBaseReales, ahorroKcal: 0, ahorroCH: 0 },
+              macrosBase: macrosBaseReales,
+              macrosTexto: `${macrosBaseReales.p}g P | ${macrosBaseReales.ch}g CH | ${macrosBaseReales.g}g G | ${macrosBaseReales.kcal} kcal`,
               notaAjuste: ''
             };
           }
 
-          // Escalar también secundarios de CH (miel, dátiles, tortitas) si el entreno del día cambió
-          let deltaCHSecundarios = 0;
+          // 1. Escalar fuentes secundarias de carbohidrato (miel, dátiles, tortitas, plátano) según factorTotalCH
           if (Math.abs(factorTotalCH - 1.0) > 0.01) {
             partes = partes.map((parte, i) => {
               if (i === idxProt || i === idxCH || i === idxAOVE) return parte;
-              const mSec = parte.match(/^(\d+(?:[.,]\d+)?)\s*(g|tortitas?|plátanos?|dátiles?)\s*(.*)$/i);
-              if (mSec) {
-                const cantOrig = parseFloat(mSec[1].replace(',', '.'));
-                const uni = mSec[2] || '';
-                const resto = mSec[3] || '';
-                const completo = (uni + ' ' + resto).trim();
-                if (/miel|datil|tortita|platano|avena/i.test(completo)) {
-                  let cantNueva = cantOrig * factorTotalCH;
-                  if (/^g$/i.test(uni)) {
-                    cantNueva = Math.max(5, Math.round(cantNueva / 5) * 5);
-                    deltaCHSecundarios += (cantNueva - cantOrig) * 0.75;
-                    return `${cantNueva} g ${resto}`;
-                  } else if (/tortita/i.test(uni)) {
-                    cantNueva = Math.max(1, Math.round(cantNueva));
-                    deltaCHSecundarios += (cantNueva - cantOrig) * 7;
-                    return `${cantNueva} ${uni} ${resto}`.trim();
-                  }
+              const n = this.normalizar(parte);
+              if (/miel|datil|tortita|platano|manzana|avena/.test(n)) {
+                // Si tiene gramos explícitos ("15 g miel" o "dátiles (40 g)" o "1 plátano (130 g)")
+                const mInicioG = parte.match(/^(\d+(?:[.,]\d+)?)\s*g\s+(.*)$/i);
+                if (mInicioG) {
+                  const gNuevo = Math.max(5, Math.round((parseFloat(mInicioG[1].replace(',', '.')) * factorTotalCH) / 5) * 5);
+                  return `${gNuevo} g ${mInicioG[2]}`;
+                }
+                const mParenG = parte.match(/^(.*?)\((\d+(?:[.,]\d+)?)\s*g\)(.*)$/i);
+                if (mParenG) {
+                  const gNuevo = Math.max(10, Math.round((parseFloat(mParenG[2].replace(',', '.')) * factorTotalCH) / 5) * 5);
+                  return `${mParenG[1]}(${gNuevo} g)${mParenG[3]}`;
+                }
+                const mTortita = parte.match(/^(\d+(?:[.,]\d+)?)\s*(tortitas?\s+.*)$/i);
+                if (mTortita) {
+                  const uNueva = Math.max(1, Math.round(parseFloat(mTortita[1].replace(',', '.')) * factorTotalCH));
+                  return `${uNueva} ${mTortita[2]}`;
                 }
               }
               return parte;
             });
           }
 
+          // 2. Resolver el sistema entre Proteína Principal, Hidrato Principal y AOVE
           const pDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.p : 0;
           const chDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.ch : 0;
           const gDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.g : 0;
@@ -1429,27 +1499,35 @@
           const chDeCHOrig = infoCHOrig ? (gramosCHOrig / 100) * infoCHOrig.ch : 0;
           const gDeCHOrig = infoCHOrig ? (gramosCHOrig / 100) * infoCHOrig.g : 0;
 
-          // La Proteína Total se mantiene al 100% para proteger masa muscular incluso si baja el entreno
-          const targetP_Pilares = pDeProtOrig + pDeCHOrig;
-          const targetCH_Pilares = (chDeProtOrig + chDeCHOrig) * factorTotalCH;
-          const targetG_Pilares = (gDeProtOrig + gDeCHOrig + mlAOVEOrig) * factorCenaG;
-
           const nuevaProtObj = haySwapProt ? CATALOGO_NUTRICIONAL[swapConfig.prot] : infoProtOrig;
           const nuevoCHObj = haySwapCH ? CATALOGO_NUTRICIONAL[swapConfig.ch] : infoCHOrig;
+
+          // Objetivo de CH de los pilares escalado por el entrenamiento del día
+          const targetCH_Pilares = (chDeProtOrig + chDeCHOrig) * factorTotalCH;
+          // La proteína de la fuente proteica principal se preserva al 100%
+          const targetP_DeProt = pDeProtOrig;
 
           let nuevosGramosProt = gramosProtOrig;
           let nuevosGramosCH = gramosCHOrig * factorTotalCH;
 
           if (nuevaProtObj && nuevoCHObj) {
-            const Pp = nuevaProtObj.p / 100, Pc = nuevoCHObj.p / 100;
-            const CHp = nuevaProtObj.ch / 100, CHc = nuevoCHObj.ch / 100;
-            const det = (Pp * CHc) - (Pc * CHp);
-            if (Math.abs(det) > 0.0001) {
-              nuevosGramosProt = ((targetP_Pilares * CHc) - (Pc * targetCH_Pilares)) / det;
-              nuevosGramosCH = ((Pp * targetCH_Pilares) - (targetP_Pilares * CHp)) / det;
+            if (haySwapProt || haySwapCH) {
+              // Si hay intercambio de alimento, cuadramos Proteína + Carbohidrato con el sistema 2x2
+              const targetP_TotalPilares = pDeProtOrig + (pDeCHOrig * factorTotalCH);
+              const Pp = nuevaProtObj.p / 100, Pc = nuevoCHObj.p / 100;
+              const CHp = nuevaProtObj.ch / 100, CHc = nuevoCHObj.ch / 100;
+              const det = (Pp * CHc) - (Pc * CHp);
+              if (Math.abs(det) > 0.0001) {
+                nuevosGramosProt = ((targetP_TotalPilares * CHc) - (Pc * targetCH_Pilares)) / det;
+                nuevosGramosCH = ((Pp * targetCH_Pilares) - (targetP_TotalPilares * CHp)) / det;
+              }
+            } else {
+              // Si solo cambió la carga de entrenamiento, mantenemos los gramos de proteína fijos y escalamos los gramos de hidrato
+              nuevosGramosProt = gramosProtOrig;
+              nuevosGramosCH = gramosCHOrig * factorTotalCH;
             }
           } else if (nuevaProtObj && !nuevoCHObj) {
-            nuevosGramosProt = pDeProtOrig / (nuevaProtObj.p / 100);
+            nuevosGramosProt = targetP_DeProt / (nuevaProtObj.p / 100);
           } else if (!nuevaProtObj && nuevoCHObj) {
             nuevosGramosCH = targetCH_Pilares / (nuevoCHObj.ch / 100);
           }
@@ -1457,23 +1535,13 @@
           nuevosGramosProt = Math.max(0, Math.round(nuevosGramosProt / 5) * 5);
           nuevosGramosCH = Math.max(0, Math.round(nuevosGramosCH / 5) * 5);
 
+          // 3. Ajustar AOVE para compensar diferencias de grasa en intercambios o en Modo Cena Libre
           const gNuevaProt = nuevaProtObj ? (nuevosGramosProt / 100) * nuevaProtObj.g : 0;
           const gNuevoCH = nuevoCHObj ? (nuevosGramosCH / 100) * nuevoCHObj.g : 0;
+          const targetG_Pilares = (gDeProtOrig + gDeCHOrig + mlAOVEOrig) * factorCenaG;
           let nuevoMlAOVE = Math.round(targetG_Pilares - (gNuevaProt + gNuevoCH));
 
-          let notaAjuste = '';
-          if (Math.abs(factorEntrenoCH - 1.0) > 0.02) {
-            const pct = Math.round((factorEntrenoCH - 1) * 100);
-            notaAjuste = `CH ${pct > 0 ? '+' + pct : pct}% por entreno`;
-          }
-          if (nuevoMlAOVE < 0) {
-            nuevoMlAOVE = 0;
-            notaAjuste = notaAjuste ? notaAjuste + ' · 0 AOVE' : '0 ml AOVE (cubierto)';
-          } else if (Math.abs(nuevoMlAOVE - mlAOVEOrig) >= 1 && (haySwapProt || haySwapCH)) {
-            const diffAove = nuevoMlAOVE - Math.round(mlAOVEOrig * factorCenaG);
-            const txtAove = diffAove > 0 ? `+${diffAove} ml AOVE` : `${diffAove} ml AOVE`;
-            notaAjuste = notaAjuste ? `${notaAjuste} · ${txtAove}` : `${txtAove} p/ cuadrar kcal`;
-          }
+          if (nuevoMlAOVE < 0) nuevoMlAOVE = 0;
 
           if (idxProt !== -1 && nuevaProtObj) {
             const nombreMostrarProt = haySwapProt ? swapConfig.prot : partes[idxProt].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
@@ -1489,22 +1557,27 @@
             partes.push(`${nuevoMlAOVE} ml AOVE`);
           }
 
-          const deltaP = ((nuevaProtObj ? (nuevosGramosProt/100)*nuevaProtObj.p : 0) + (nuevoCHObj ? (nuevosGramosCH/100)*nuevoCHObj.p : 0)) - (pDeProtOrig + pDeCHOrig);
-          const deltaCH = ((nuevaProtObj ? (nuevosGramosProt/100)*nuevaProtObj.ch : 0) + (nuevoCHObj ? (nuevosGramosCH/100)*nuevoCHObj.ch : 0)) - (chDeProtOrig + chDeCHOrig) + deltaCHSecundarios;
-          const deltaG = (gNuevaProt + gNuevoCH + nuevoMlAOVE) - (gDeProtOrig + gDeCHOrig + mlAOVEOrig);
+          const textoFinal = partes.filter(Boolean).join(' + ');
+          // Calculamos los macros finales directamente de los gramos del textoFinal para precisión 100%
+          const macrosFinales = this.calcularNutricionExactaDeTexto(textoFinal);
 
-          const pFinal = Math.max(0, Math.round(macrosMeta.p + deltaP));
-          const chFinal = Math.max(0, Math.round(macrosMeta.ch + deltaCH));
-          const gFinal = Math.max(0, Math.round(macrosMeta.g + deltaG));
-          const kcalFinal = Math.round((pFinal * 4) + (chFinal * 4) + (gFinal * 9));
+          let notaAjuste = '';
+          const diffKcal = macrosFinales.kcal - macrosBaseReales.kcal;
+          if (Math.abs(factorEntrenoCH - 1.0) > 0.02) {
+            const pct = Math.round((factorEntrenoCH - 1) * 100);
+            notaAjuste = `CH ${pct > 0 ? '+' + pct : pct}% (${diffKcal > 0 ? '+' + diffKcal : diffKcal} kcal)`;
+          } else if (haySwapProt || haySwapCH) {
+            notaAjuste = 'Macros cuadrados';
+          }
 
-          const ahorroKcal = (this.cenaSocialActiva && esPreCena) ? Math.max(0, Math.round(macrosMeta.kcal - kcalFinal)) : 0;
-          const ahorroCH = (this.cenaSocialActiva && esPreCena) ? Math.max(0, Math.round(macrosMeta.ch - chFinal)) : 0;
+          const ahorroKcal = (this.cenaSocialActiva && esPreCena) ? Math.max(0, macrosBaseReales.kcal - macrosFinales.kcal) : 0;
+          const ahorroCH = (this.cenaSocialActiva && esPreCena) ? Math.max(0, macrosBaseReales.ch - macrosFinales.ch) : 0;
 
           return {
-            texto: partes.filter(Boolean).join(' + '),
-            macrosObj: { p: pFinal, ch: chFinal, g: gFinal, kcal: kcalFinal, ahorroKcal, ahorroCH },
-            macrosTexto: `${pFinal}g P | ${chFinal}g CH | ${gFinal}g G | ${kcalFinal} kcal`,
+            texto: textoFinal,
+            macrosObj: { ...macrosFinales, ahorroKcal, ahorroCH },
+            macrosBase: macrosBaseReales,
+            macrosTexto: `${macrosFinales.p}g P | ${macrosFinales.ch}g CH | ${macrosFinales.g}g G | ${macrosFinales.kcal} kcal`,
             notaAjuste
           };
         },
@@ -1526,14 +1599,26 @@
         totalesDia() {
           const comidas = this.comidasDelDia();
           const acumular = (atletaKey) => {
-            let p = 0, ch = 0, g = 0, kcal = 0, ahorroKcal = 0, ahorroCH = 0;
+            let p = 0, ch = 0, g = 0, kcal = 0, kcalBase = 0, ahorroKcal = 0, ahorroCH = 0;
             comidas.forEach((c, idx) => {
-              const calc = this.comidaCalculada(c, idx, atletaKey).macrosObj;
-              p += calc.p; ch += calc.ch; g += calc.g; kcal += calc.kcal;
-              ahorroKcal += (calc.ahorroKcal || 0);
-              ahorroCH += (calc.ahorroCH || 0);
+              const res = this.comidaCalculada(c, idx, atletaKey);
+              p += res.macrosObj.p;
+              ch += res.macrosObj.ch;
+              g += res.macrosObj.g;
+              kcal += res.macrosObj.kcal;
+              kcalBase += res.macrosBase.kcal;
+              ahorroKcal += (res.macrosObj.ahorroKcal || 0);
+              ahorroCH += (res.macrosObj.ahorroCH || 0);
             });
-            return { p: Math.round(p), ch: Math.round(ch), g: Math.round(g), kcal: Math.round(kcal), ahorroKcal: Math.round(ahorroKcal), ahorroCH: Math.round(ahorroCH) };
+            return {
+              p: Math.round(p),
+              ch: Math.round(ch),
+              g: Math.round(g),
+              kcal: Math.round(kcal),
+              deltaKcalVsBase: Math.round(kcal - kcalBase),
+              ahorroKcal: Math.round(ahorroKcal),
+              ahorroCH: Math.round(ahorroCH)
+            };
           };
           return { fede: acumular('fede'), arantxa: acumular('arantxa') };
         },
@@ -1839,7 +1924,6 @@
             if (result.status === 'success') {
               this.mensajeDietaActualizada = true;
               this.jsonNuevaDieta = '';
-              // Al importar una nueva semana, limpia permutaciones y ajustes de la semana pasada
               this.cargasEntreno = {};
               this.permutacionesDias = {};
               this.swapsActivos = {};
