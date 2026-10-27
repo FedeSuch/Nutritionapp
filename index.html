@@ -34,7 +34,6 @@
               light: '#EAF3F0',
               border: '#C2DDD4'
             },
-            /* Identidad cromática diferenciada por atleta */
             fede: {
               bg: '#F0F7FF',
               surface: '#E0F0FF',
@@ -73,19 +72,9 @@
   <style>
     [x-cloak] { display: none !important; }
     .tabular-nums { font-variant-numeric: tabular-nums; }
-    
-    /* Respetar área segura del notch / Dynamic Island en iOS */
-    .safe-top {
-      padding-top: max(0.75rem, env(safe-area-inset-top));
-    }
-    .safe-bottom {
-      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-    }
-
-    *:focus-visible {
-      outline: 2px solid #1E5645 !important;
-      outline-offset: 2px !important;
-    }
+    .safe-top { padding-top: max(0.75rem, env(safe-area-inset-top)); }
+    .safe-bottom { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+    *:focus-visible { outline: 2px solid #1E5645 !important; outline-offset: 2px !important; }
   </style>
 </head>
 
@@ -103,14 +92,13 @@
         <div class="flex items-center justify-between px-2">
           <div>
             <span class="text-xs font-bold uppercase tracking-widest text-sage block">Hybrid Athlete</span>
-            <h1 class="text-xl font-extrabold tracking-tight text-ink">Nutrición & Trail</h1>
+            <h1 class="text-xl font-extrabold tracking-tight text-ink">Nutrición Real</h1>
           </div>
           <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" class="w-10 h-10 rounded-lg border border-border flex items-center justify-center text-ink-secondary hover:bg-subtle hover:text-ink transition" title="Sincronizar con Google Sheets">
             <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
         </div>
 
-        <!-- Selector de Atleta en Escritorio -->
         <div class="bg-canvas p-1.5 rounded-xl border border-border">
           <div class="grid grid-cols-3 gap-1" role="group" aria-label="Modo de visualización">
             <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-fede-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-lg text-xs transition">
@@ -128,7 +116,7 @@
         <nav class="space-y-1.5">
           <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-            <span>Plan Diario y Registro</span>
+            <span>Plan Diario y Entreno</span>
           </button>
 
           <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm border transition">
@@ -154,31 +142,30 @@
       <div class="p-3.5 rounded-xl bg-canvas border border-border text-xs space-y-1">
         <div class="flex items-center gap-2 font-semibold text-ink">
           <span class="w-2 h-2 rounded-full" :class="errorConexion ? 'bg-amber-500' : 'bg-sage'"></span>
-          <span x-text="errorConexion ? 'Guardado en Memoria Local' : 'Sincronizado con Sheets'"></span>
+          <span x-text="errorConexion ? 'Modo Local Activo' : 'Sincronizado con Sheets'"></span>
         </div>
-        <p class="text-ink-secondary" x-text="'Hoy: ' + nombreDiaHoy()"></p>
+        <p class="text-ink-secondary">100% Comida Real (Sin geles/supl.)</p>
       </div>
     </aside>
 
     <!-- ==========================================
-         CABECERA MÓVIL DESPEJADA Y CON SAFE-AREA
+         CABECERA MÓVIL CON SAFE-AREA Y SELECTOR ACCESIBLE
          ========================================== -->
     <header class="lg:hidden bg-surface border-b border-border px-4 pb-3 safe-top">
       <div class="max-w-3xl mx-auto space-y-3">
-        <!-- Fila 1: Título y Botón Sync -->
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-base font-extrabold tracking-tight text-ink">Nutrición & Trail</h1>
-            <p class="text-xs text-ink-secondary" x-text="'Hoy es ' + nombreDiaHoy() + ' · Mostrando ' + diaSeleccionado"></p>
+            <h1 class="text-base font-extrabold tracking-tight text-ink">Nutrición & Entreno</h1>
+            <p class="text-xs text-ink-secondary" x-text="'Hoy es ' + nombreDiaHoy() + ' · Viendo ' + diaSeleccionado"></p>
           </div>
-          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" aria-label="Sincronizar con Google Sheets" class="px-3 py-2 rounded-xl border border-border bg-canvas flex items-center gap-1.5 text-xs font-bold text-ink active:bg-subtle transition min-h-[42px]">
+          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" class="px-3 py-2 rounded-xl border border-border bg-canvas flex items-center gap-1.5 text-xs font-bold text-ink active:bg-subtle transition min-h-[42px]">
             <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <span>Sync</span>
           </button>
         </div>
 
-        <!-- Fila 2: Selector de Atleta GRANDE y accesible con el pulgar (nunca tapado por iOS) -->
-        <div class="bg-canvas p-1 rounded-xl border border-border grid grid-cols-3 gap-1" role="group" aria-label="Seleccionar vista de atleta">
+        <!-- Selector de Atleta Fede (Azul) / Ara (Verde) / Dual -->
+        <div class="bg-canvas p-1 rounded-xl border border-border grid grid-cols-3 gap-1" role="group">
           <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-fede-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-current"></span>
             <span>Solo Fede</span>
@@ -201,17 +188,17 @@
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-8">
 
         <!-- =========================================================
-             VISTA 1: PLAN DIARIO, BALANCE EXACTO Y COMIDAS
+             VISTA 1: PLAN DIARIO + ADAPTADOR DE ENTRENAMIENTO EN VIVO
              ========================================================= -->
         <section x-show="tab === 'dieta'" class="space-y-5">
 
-          <!-- Selector de Días de la Semana (Marca automáticamente el día real de hoy) -->
+          <!-- Selector de Días de la Semana -->
           <div class="bg-surface border border-border rounded-2xl p-3 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 px-1">
               <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-ink-secondary">Día de la semana</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-ink-secondary">Calendario Semanal</span>
                 <button x-show="diaSeleccionado !== nombreDiaHoy()" type="button" @click="irAHoy()" class="text-xs font-bold text-sage underline">
-                  Volver a Hoy (<span x-text="nombreDiaHoy()"></span>)
+                  Ir a Hoy (<span x-text="nombreDiaHoy()"></span>)
                 </button>
               </div>
               <div class="flex items-center gap-2">
@@ -232,14 +219,117 @@
                   :aria-selected="(diaSeleccionado === d).toString()"
                   @click="seleccionarDia(d)"
                   :class="diaSeleccionado === d ? 'bg-sage text-white font-bold shadow-sm' : (d === nombreDiaHoy() ? 'bg-sage-light text-sage font-bold border border-sage-border' : 'bg-canvas text-ink-secondary hover:bg-subtle font-semibold')"
-                  class="py-2.5 sm:py-3 rounded-xl text-center transition flex flex-col items-center justify-center min-h-[48px] relative"
+                  class="py-2.5 sm:py-3 rounded-xl text-center transition flex flex-col items-center justify-center min-h-[50px] relative"
                 >
                   <span class="text-xs sm:hidden" x-text="abreviarDia(d)"></span>
                   <span class="hidden sm:inline text-xs" x-text="d"></span>
-                  <!-- Punto indicador de HOY -->
-                  <span x-show="d === nombreDiaHoy()" :class="diaSeleccionado === d ? 'bg-white' : 'bg-sage'" class="w-1.5 h-1.5 rounded-full mt-1" title="Hoy"></span>
+                  <div class="flex items-center gap-1 mt-1">
+                    <span x-show="d === nombreDiaHoy()" :class="diaSeleccionado === d ? 'bg-white' : 'bg-sage'" class="w-1.5 h-1.5 rounded-full" title="Hoy"></span>
+                    <span x-show="tieneModificacionEntrenoDia(d)" :class="diaSeleccionado === d ? 'bg-amber-300' : 'bg-amber-500'" class="w-1.5 h-1.5 rounded-full" title="Entreno adaptado"></span>
+                  </div>
                 </button>
               </template>
+            </div>
+          </div>
+
+          <!-- =========================================================================
+               NUEVO MÓDULO: PLANIFICADOR Y ADAPTADOR DE ENTRENAMIENTO DEL DÍA
+               Permite cambiar el tipo de sesión (ej. pasar el Tempo del Miércoles al Jueves)
+               o permutar el día entero con otro día de la semana, recalculando CH y Kcal.
+               ========================================================================= -->
+          <div class="bg-surface border border-border rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-sage-light border border-sage-border flex items-center justify-center text-sage font-extrabold shrink-0 text-sm">
+                  ⚡
+                </div>
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="'Entrenamiento del ' + diaSeleccionado"></span>
+                    <span x-show="diaPermutadoCon(diaSeleccionado)" class="text-[11px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300" x-text="'⇄ Permutado con ' + diaPermutadoCon(diaSeleccionado)"></span>
+                    <span x-show="tieneCargaAdaptada(diaSeleccionado)" class="text-[11px] font-bold bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-md border border-indigo-300">⚡ Carga Recalculada</span>
+                  </div>
+                  <p class="text-sm font-bold text-ink mt-0.5" x-text="descripcionEntrenoEfectivo(diaSeleccionado)"></p>
+                  <p class="text-xs text-ink-secondary" x-text="subtituloCargaEfectiva(diaSeleccionado)"></p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="panelEntrenoAbierto = !panelEntrenoAbierto"
+                  :class="(tieneModificacionEntrenoDia(diaSeleccionado) || panelEntrenoAbierto) ? 'bg-ink text-white border-ink' : 'bg-canvas text-ink border-border hover:bg-subtle'"
+                  class="px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 min-h-[40px]"
+                >
+                  <span>⚙️ Cambiar Entreno / Mover Día</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel Desplegable para Modificar el Entrenamiento o Permutar el Día -->
+            <div x-show="panelEntrenoAbierto" x-cloak class="bg-canvas border border-border rounded-xl p-4 space-y-4 mt-2">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
+                <div>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Adaptar Nutrición al Entrenamiento Real</h3>
+                  <p class="text-xs text-ink-secondary">Si has movido una sesión (ej. pasas el Tempo 10km del miércoles al jueves y hoy solo haces CrossFit), cambia el tipo de sesión aquí abajo o permuta el día entero.</p>
+                </div>
+                <button x-show="tieneModificacionEntrenoDia(diaSeleccionado)" type="button" @click="restaurarEntrenoDia(diaSeleccionado)" class="px-3 py-1.5 rounded-lg bg-white border border-border text-xs font-bold text-rose-700 hover:bg-rose-50 shrink-0">
+                  Restaurar plan original del <span x-text="diaSeleccionado"></span>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- OPCIÓN 1: Cambiar el Tipo de Carga del Día (Escala CH y Kcal de tus comidas reales) -->
+                <div class="bg-surface border border-border rounded-xl p-3.5 space-y-3">
+                  <div>
+                    <span class="text-xs font-extrabold text-sage uppercase block">Opción A · Ajustar Carga de Hoy (Mismos Platos)</span>
+                    <p class="text-[11px] text-ink-secondary mt-0.5">Mantiene los platos de hoy pero reescala los gramos en crudo de carbohidratos (pan, arroz, patata, avena) según el desgaste real. Proteína intacta al 100%.</p>
+                  </div>
+
+                  <div class="space-y-2">
+                    <div>
+                      <label class="block text-xs font-bold text-fede-dark mb-1">Carga de hoy para FEDE:</label>
+                      <select :value="obtenerCargaAtleta(diaSeleccionado, 'fede')" @change="fijarCargaAtleta(diaSeleccionado, 'fede', $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2 text-xs font-semibold text-ink">
+                        <option value="auto">Según plan original del día</option>
+                        <option value="descanso">🧘‍♂️ Descanso Total (~220g CH · ~2.350 kcal)</option>
+                        <option value="unica_cf">🏋️‍♂️ Sesión Única: Solo CrossFit / Carrera suave (~320g CH · ~2.755 kcal)</option>
+                        <option value="doble">🔥 Doble Sesión: Running (Series/Tempo) + CrossFit/Gym (~435g CH · ~3.250 kcal)</option>
+                        <option value="trail">⛰️ Tirada Larga Trail / Precarga (~480g CH · ~3.400 kcal)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-bold text-ara-dark mb-1">Carga de hoy para ARANTXA:</label>
+                      <select :value="obtenerCargaAtleta(diaSeleccionado, 'arantxa')" @change="fijarCargaAtleta(diaSeleccionado, 'arantxa', $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2 text-xs font-semibold text-ink">
+                        <option value="auto">Según plan original del día</option>
+                        <option value="descanso">🧘‍♀️ Descanso Total (~160g CH · ~1.650 kcal)</option>
+                        <option value="unica_cf">🏋️‍♀️ Sesión Única: Solo CrossFit / Carrera suave (~225g CH · ~1.920 kcal)</option>
+                        <option value="doble">🔥 Doble Sesión: Running (Series/Tempo) + CrossFit/Gym (~305g CH · ~2.280 kcal)</option>
+                        <option value="trail">⛰️ Tirada Larga Trail / Precarga (~340g CH · ~2.420 kcal)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- OPCIÓN 2: Permutar Día Entero con otro día de la semana -->
+                <div class="bg-surface border border-border rounded-xl p-3.5 flex flex-col justify-between space-y-3">
+                  <div>
+                    <span class="text-xs font-extrabold text-indigo-800 uppercase block">Opción B · Permutar Día Completo (Menú + Entreno)</span>
+                    <p class="text-[11px] text-ink-secondary mt-0.5">Intercambia todas las comidas y el entrenamiento del <strong x-text="diaSeleccionado"></strong> con otro día de la semana (ej. cambiar el Miércoles entero por el Jueves).</p>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="block text-xs font-bold text-ink">Intercambiar todo el <span x-text="diaSeleccionado"></span> con:</label>
+                    <select :value="diaPermutadoCon(diaSeleccionado) || ''" @change="permutarDias(diaSeleccionado, $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2.5 text-xs font-semibold text-ink">
+                      <option value="">-- Sin permutar (Mantener en su día) --</option>
+                      <template x-for="dAlt in diasSemana.filter(x => x !== diaSeleccionado)" :key="dAlt">
+                        <option :value="dAlt" x-text="'⇄ Intercambiar con ' + dAlt + ' (' + entrenoOriginalDeDia(dAlt) + ')'"></option>
+                      </template>
+                    </select>
+                    <p class="text-[11px] text-ink-muted">Al permutar dos días, el otro día recibe automáticamente el menú y entreno de este para que tu compra semanal cuadre al 100%.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -247,7 +337,7 @@
           <div x-show="cenaSocialActiva" x-cloak class="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-950">
             <div>
               <span class="font-bold uppercase tracking-wider text-amber-800 block mb-0.5">Modo Cena Libre Activo (-35% CH y Grasas pre-cena)</span>
-              <span>Proteína intacta al 100%. Las cantidades en crudo de las tarjetas de desayuno, comida y post-entreno ya muestran el recorte aplicado.</span>
+              <span>Proteína intacta al 100%. Las cantidades en crudo de las tarjetas previas a la cena ya muestran el recorte aplicado.</span>
             </div>
             <div class="font-mono font-bold text-amber-900 shrink-0 bg-white px-3 py-2 rounded-lg border border-amber-200 tabular-nums">
               <span class="block" x-text="'Colchón Fede: ' + totalesDia().fede.ahorroKcal + ' kcal (' + totalesDia().fede.ahorroCH + 'g CH)'"></span>
@@ -255,25 +345,25 @@
             </div>
           </div>
 
-          <!-- PANEL DE TOTALES DIARIOS CON COLORES DIFERENCIADOS (AZUL FEDE / ESMERALDA ARANTXA) -->
+          <!-- PANEL DE TOTALES DIARIOS DE COMIDA REAL (AZUL FEDE / ESMERALDA ARANTXA) -->
           <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
             
-            <!-- Tarjeta Totales FEDE (Identidad Azul Cobalto) -->
+            <!-- Totales FEDE -->
             <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-fede-bg border-2 border-fede-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
               <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-fede-border pb-3">
                 <div>
                   <div class="flex items-center gap-2">
                     <span class="px-2 py-0.5 rounded-md bg-fede-badge text-white text-xs font-extrabold uppercase tracking-wider">Fede</span>
-                    <span class="text-xs font-bold text-fede-dark" x-text="diaSeleccionado"></span>
-                    <span class="text-xs text-fede-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' hechas'"></span>
+                    <span class="text-xs font-bold text-fede-dark" x-text="etiquetaPerfilAtleta(diaSeleccionado, 'fede')"></span>
+                    <span class="text-xs text-fede-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' tomas'"></span>
                   </div>
                   <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
                     <span class="text-2xl sm:text-3xl font-extrabold font-mono text-fede-dark" x-text="totalesDia().fede.kcal"></span>
-                    <span class="text-xs font-bold text-fede-text">kcal totales hoy</span>
+                    <span class="text-xs font-bold text-fede-text">kcal comida real hoy</span>
                   </div>
                 </div>
                 <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-fede-border">
-                  <span class="text-[11px] font-semibold text-fede-text block">Ya consumido / Restante</span>
+                  <span class="text-[11px] font-semibold text-fede-text block">Consumido / Restante</span>
                   <span class="text-xs font-mono font-bold text-fede-dark">
                     <span x-text="consumidoDia('fede').kcal + ' kcal'"></span>
                     <span class="text-slate-400"> / </span>
@@ -321,22 +411,22 @@
               </div>
             </div>
 
-            <!-- Tarjeta Totales ARANTXA (Identidad Verde Esmeralda) -->
+            <!-- Totales ARANTXA -->
             <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-ara-bg border-2 border-ara-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
               <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-ara-border pb-3">
                 <div>
                   <div class="flex items-center gap-2">
                     <span class="px-2 py-0.5 rounded-md bg-ara-badge text-white text-xs font-extrabold uppercase tracking-wider">Arantxa</span>
-                    <span class="text-xs font-bold text-ara-dark" x-text="diaSeleccionado"></span>
-                    <span class="text-xs text-ara-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' hechas'"></span>
+                    <span class="text-xs font-bold text-ara-dark" x-text="etiquetaPerfilAtleta(diaSeleccionado, 'arantxa')"></span>
+                    <span class="text-xs text-ara-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' tomas'"></span>
                   </div>
                   <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
                     <span class="text-2xl sm:text-3xl font-extrabold font-mono text-ara-dark" x-text="totalesDia().arantxa.kcal"></span>
-                    <span class="text-xs font-bold text-ara-text">kcal totales hoy</span>
+                    <span class="text-xs font-bold text-ara-text">kcal comida real hoy</span>
                   </div>
                 </div>
                 <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-ara-border">
-                  <span class="text-[11px] font-semibold text-ara-text block">Ya consumido / Restante</span>
+                  <span class="text-[11px] font-semibold text-ara-text block">Consumido / Restante</span>
                   <span class="text-xs font-mono font-bold text-ara-dark">
                     <span x-text="consumidoDia('arantxa').kcal + ' kcal'"></span>
                     <span class="text-slate-400"> / </span>
@@ -385,22 +475,19 @@
             </div>
           </div>
 
-          <!-- LISTA DE COMIDAS DEL DÍA -->
+          <!-- LISTA DE COMIDAS REALES DEL DÍA (EXCLUIDOS GELES, HIDRATACIÓN Y SUPLEMENTOS) -->
           <div class="space-y-4">
             <template x-for="(comida, idx) in comidasDelDia()" :key="diaSeleccionado + '_' + idx">
               <article class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
                 
-                <!-- Cabecera de Toma -->
                 <div class="px-4 sm:px-5 py-3.5 bg-canvas/80 border-b border-border flex flex-wrap items-center justify-between gap-2">
                   <div class="flex items-center gap-3">
-                    <!-- Botón Check Persistente -->
                     <button
                       type="button"
                       @click="toggleComidaCompletada(idx)"
                       :aria-pressed="esComidaCompletada(idx).toString()"
                       :class="esComidaCompletada(idx) ? 'bg-sage border-sage text-white shadow-sm' : 'bg-white border-stone-300 text-transparent hover:border-sage'"
                       class="w-8 h-8 rounded-xl border-2 flex items-center justify-center transition shrink-0"
-                      title="Marcar comida como realizada"
                     >
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </button>
@@ -409,7 +496,7 @@
                       <div class="flex flex-wrap items-center gap-1.5">
                         <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="comida.ventana"></span>
                         <span x-show="esComidaCompletada(idx)" class="text-[11px] font-bold bg-sage-light text-sage px-2 py-0.5 rounded-md border border-sage-border">✓ Completada</span>
-                        <span x-show="tieneSwapActivo(idx)" class="text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md border border-indigo-200">⇄ Receta Recalculada (Isocalórica)</span>
+                        <span x-show="tieneSwapActivo(idx)" class="text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md border border-indigo-200">⇄ Alimento Intercambiado</span>
                       </div>
                       <h3 class="text-base font-extrabold text-ink mt-0.5" :class="esComidaCompletada(idx) ? 'line-through text-ink-muted' : ''" x-text="tituloPlatoAdaptado(comida, idx)"></h3>
                     </div>
@@ -429,12 +516,12 @@
                 </div>
 
                 <div class="p-4 sm:p-5 space-y-4">
-                  <!-- PANEL DE INTERCAMBIO MATRICIAL 3x3 (CUADRA P, CH, G y KCAL AL MILÍMETRO) -->
+                  <!-- PANEL DE INTERCAMBIO DE ALIMENTOS (SISTEMA MATRICIAL 3x3) -->
                   <div x-show="swapAbiertoIdx === idx" x-cloak class="bg-indigo-50/70 border-2 border-indigo-200 rounded-2xl p-4 space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 pb-2.5">
                       <div>
-                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-indigo-950">Motor de Balanceo Exacto de Macronutrientes (P + CH + G + Kcal)</h4>
-                        <p class="text-xs text-indigo-900 mt-0.5">Al cambiar un alimento, el sistema recalcula simultáneamente los gramos de proteína, de carbohidrato y de aceite para que los macros y calorías de esta comida no se descuadren ni un gramo.</p>
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-indigo-950">Intercambio Exacto de Alimento (Cuadra P + CH + G + Kcal)</h4>
+                        <p class="text-xs text-indigo-900 mt-0.5">Recalcula proteína, guarnición de carbohidrato y aceite de oliva para mantener los macros de esta toma exactos.</p>
                       </div>
                       <button type="button" @click="resetSwap(idx)" class="px-3 py-1.5 rounded-lg bg-white border border-indigo-300 text-xs font-bold text-indigo-900 hover:bg-indigo-100 shrink-0">
                         Restaurar original
@@ -443,7 +530,7 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label class="block text-xs font-bold text-indigo-950 mb-1">Sustituir Proteína Principal por:</label>
+                        <label class="block text-xs font-bold text-indigo-950 mb-1">Cambiar Proteína por:</label>
                         <select :value="obtenerValorSwap(idx, 'prot')" @change="aplicarSwap(idx, 'prot', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
                           <option value="">-- Mantener proteína original --</option>
                           <option value="pechuga pollo">Pechuga de pollo (23g P | 0g CH | 1g G)</option>
@@ -459,7 +546,7 @@
                         </select>
                       </div>
                       <div>
-                        <label class="block text-xs font-bold text-indigo-950 mb-1">Sustituir Carbohidrato Principal por:</label>
+                        <label class="block text-xs font-bold text-indigo-950 mb-1">Cambiar Carbohidrato por:</label>
                         <select :value="obtenerValorSwap(idx, 'ch')" @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
                           <option value="">-- Mantener carbohidrato original --</option>
                           <option value="arroz basmati">Arroz blanco / basmati en crudo (78g CH | 7g P)</option>
@@ -474,7 +561,7 @@
                     </div>
                   </div>
 
-                  <!-- OLLA COMÚN (SUMA EN CRUDO DE LOS DOS) -->
+                  <!-- OLLA COMÚN -->
                   <div x-show="mostrarSumaComun" class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5">
                     <span class="text-xs font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5 mb-2">
                       <span>🍲</span> Olla Común · Pesar junto en crudo (Fede + Arantxa)
@@ -486,16 +573,16 @@
                     </div>
                   </div>
 
-                  <!-- TARJETAS PARALELAS CON COLOR DIFERENCIADO: AZUL (FEDE) vs ESMERALDA (ARANTXA) -->
+                  <!-- TARJETAS PARALELAS DIFERENCIADAS POR COLOR: AZUL (FEDE) vs ESMERALDA (ARANTXA) -->
                   <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
                     
-                    <!-- BLOQUE FEDE (AZUL COBALTO) -->
+                    <!-- Ración FEDE -->
                     <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-fede-bg border-2 border-fede-border rounded-xl p-4 flex flex-col justify-between space-y-3">
                       <div>
                         <div class="flex items-center justify-between border-b border-fede-border pb-2 mb-2.5">
                           <div class="flex items-center gap-2">
                             <span class="px-2 py-0.5 rounded bg-fede-badge text-white text-[11px] font-extrabold uppercase">Fede</span>
-                            <span class="text-xs font-bold text-fede-dark">Pesos en crudo</span>
+                            <span class="text-xs font-bold text-fede-dark">Comida real en crudo</span>
                           </div>
                           <span class="text-xs font-mono font-extrabold text-fede-dark" x-text="comidaCalculada(comida, idx, 'fede').macrosObj.kcal + ' kcal'"></span>
                         </div>
@@ -508,19 +595,19 @@
                           </template>
                         </ul>
                       </div>
-                      <div class="pt-2 border-t border-fede-border flex items-center justify-between text-xs font-mono font-bold text-fede-text">
+                      <div class="pt-2 border-t border-fede-border flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-fede-text">
                         <span x-text="comidaCalculada(comida, idx, 'fede').macrosTexto"></span>
                         <span x-show="comidaCalculada(comida, idx, 'fede').notaAjuste" class="text-[10px] bg-white px-2 py-0.5 rounded border border-fede-border text-indigo-700" x-text="comidaCalculada(comida, idx, 'fede').notaAjuste"></span>
                       </div>
                     </div>
 
-                    <!-- BLOQUE ARANTXA (VERDE ESMERALDA) -->
+                    <!-- Ración ARANTXA -->
                     <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-ara-bg border-2 border-ara-border rounded-xl p-4 flex flex-col justify-between space-y-3">
                       <div>
                         <div class="flex items-center justify-between border-b border-ara-border pb-2 mb-2.5">
                           <div class="flex items-center gap-2">
                             <span class="px-2 py-0.5 rounded bg-ara-badge text-white text-[11px] font-extrabold uppercase">Arantxa</span>
-                            <span class="text-xs font-bold text-ara-dark">Pesos en crudo</span>
+                            <span class="text-xs font-bold text-ara-dark">Comida real en crudo</span>
                           </div>
                           <span class="text-xs font-mono font-extrabold text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').macrosObj.kcal + ' kcal'"></span>
                         </div>
@@ -533,7 +620,7 @@
                           </template>
                         </ul>
                       </div>
-                      <div class="pt-2 border-t border-ara-border flex items-center justify-between text-xs font-mono font-bold text-ara-text">
+                      <div class="pt-2 border-t border-ara-border flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-ara-text">
                         <span x-text="comidaCalculada(comida, idx, 'arantxa').macrosTexto"></span>
                         <span x-show="comidaCalculada(comida, idx, 'arantxa').notaAjuste" class="text-[10px] bg-white px-2 py-0.5 rounded border border-ara-border text-indigo-700" x-text="comidaCalculada(comida, idx, 'arantxa').notaAjuste"></span>
                       </div>
@@ -547,7 +634,7 @@
         </section>
 
         <!-- =========================================================
-             VISTA 2: LISTA DE LA COMPRA SEMANAL
+             VISTA 2: LISTA DE LA COMPRA SEMANAL (SOLO COMIDA REAL)
              ========================================================= -->
         <section x-show="tab === 'compra'" x-cloak class="space-y-6">
           <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
@@ -555,7 +642,7 @@
               <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-sage">Cero Desperdicio · 7 Días</span>
                 <h2 class="text-xl font-extrabold text-ink mt-0.5">Lista de la Compra Semanal</h2>
-                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo (incluyendo los intercambios que hayas aplicado en la semana).</p>
+                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo de los 7 días teniendo en cuenta tus adaptaciones de entreno e intercambios. Sin suplementos ni geles.</p>
               </div>
               <button type="button" @click="limpiarChecksCompra()" class="px-3.5 py-2.5 rounded-xl border border-border bg-canvas hover:bg-subtle text-xs font-semibold text-ink transition min-h-[42px]">
                 Desmarcar todo
@@ -563,7 +650,7 @@
             </div>
 
             <div class="mb-5">
-              <input type="search" x-model="filtroCompra" placeholder="Filtrar ingrediente (ej. pollo, arroz, patata)..." class="w-full bg-canvas border border-border rounded-xl px-4 py-3 text-sm text-ink">
+              <input type="search" x-model="filtroCompra" placeholder="Filtrar alimento (ej. pollo, arroz, patata)..." class="w-full bg-canvas border border-border rounded-xl px-4 py-3 text-sm text-ink">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -714,6 +801,7 @@
         <section x-show="tab === 'ia'" x-cloak class="space-y-6">
           <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 max-w-3xl">
             <h2 class="text-xl font-extrabold text-ink">Publicar Nueva Dieta desde Gemini</h2>
+            <p class="text-xs text-ink-secondary">Al importar una nueva semana se limpian automáticamente las permutaciones o adaptaciones puntuales de la semana anterior.</p>
             <textarea x-model="jsonNuevaDieta" rows="9" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno",...}]' class="w-full bg-canvas border border-border rounded-xl p-4 text-xs font-mono text-ink"></textarea>
             <button type="button" @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]">
               <span x-text="enviando ? 'Escribiendo los 7 días en Google Sheets...' : 'Publicar Nueva Semana en Google Sheets'"></span>
@@ -752,7 +840,7 @@
   </div>
 
   <!-- ==========================================
-       MOTOR MATEMÁTICO DE NUTRICIÓN Y ESTADO
+       LÓGICA DE NEGOCIO, FILTRO COMIDA REAL Y ADAPTADOR DE ENTRENO
        ========================================== -->
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwiBFN8Jo15OC9NppoNY21WA1p88M8M08W4QG4Iwl84VinasRmDUqjK8FUsgAq2UUqB/exec";
@@ -769,10 +857,30 @@
       "Arantxa": { peso: "67", pecho: "89", cintura: "80", cadera: "84", brazo: "28", muslo: "53" }
     };
 
-    /**
-     * BASE DE DATOS BROMATOLÓGICA EXACTA (Macros por cada 100g en crudo)
-     * Permite resolver el sistema 3x3 (Proteína + Carbohidrato + Grasa/AOVE) sin descuadrar ni 1 kcal.
-     */
+    // Respaldo de RESUMEN_SEMANAL de tu Excel actual
+    const ENTRENOS_SEMANA_RESPALDO = {
+      "Lunes":     { entreno: "CrossFit 17:30",                           tipo: "unica_cf" },
+      "Martes":    { entreno: "Cuestas 8 km (08:30) + Gym Torso (18:30)", tipo: "doble" },
+      "Miércoles": { entreno: "Tempo 10 km (08:30) + CrossFit (17:30)",   tipo: "doble" },
+      "Jueves":    { entreno: "Carrera fácil 8 km (18:30)",               tipo: "unica_cf" },
+      "Viernes":   { entreno: "CrossFit 17:30",                           tipo: "unica_cf" },
+      "Sábado":    { entreno: "Descanso activo (Precarga Trail)",         tipo: "trail" },
+      "Domingo":   { entreno: "Trail 22 km (08:30)",                      tipo: "trail" }
+    };
+
+    // Presupuesto objetivo de Carbohidratos de COMIDA REAL por tipo de sesión (sin contar geles)
+    const TARGET_CH_COMIDA_REAL = {
+      fede:    { descanso: 220, unica_cf: 325, doble: 425, trail: 475 },
+      arantxa: { descanso: 155, unica_cf: 228, doble: 295, trail: 335 }
+    };
+
+    const NOMBRES_PERFIL_CARGA = {
+      descanso: "Descanso",
+      unica_cf: "Sesión Única",
+      doble:    "Doble Sesión",
+      trail:    "Trail Largo / Precarga"
+    };
+
     const CATALOGO_NUTRICIONAL = {
       // PROTEÍNAS
       "pechuga pollo":              { tipo: 'prot', p: 23.0, ch: 0.0,  g: 1.2 },
@@ -786,7 +894,7 @@
       "salmón fresco":              { tipo: 'prot', p: 20.0, ch: 0.0,  g: 13.0 },
       "hamburguesa ave magra":      { tipo: 'prot', p: 21.0, ch: 1.0,  g: 4.0 },
       "huevos enteros":             { tipo: 'prot', p: 13.0, ch: 1.0,  g: 11.0 },
-      // CARBOHIDRATOS
+      // CARBOHIDRATOS DE COMIDA REAL
       "arroz basmati":              { tipo: 'ch',   p: 7.5,  ch: 78.0, g: 0.9 },
       "patata":                     { tipo: 'ch',   p: 2.0,  ch: 18.0, g: 0.1 },
       "boniato":                    { tipo: 'ch',   p: 1.6,  ch: 20.0, g: 0.1 },
@@ -802,6 +910,7 @@
         vistaAtleta: localStorage.getItem('hybrid_vista_atleta') || 'Dual',
         diasSemana: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
         diaSeleccionado: 'Martes',
+        panelEntrenoAbierto: false,
         cenaSocialActiva: false,
         mostrarSumaComun: true,
         cargandoDieta: false,
@@ -813,10 +922,13 @@
         filtroCompra: '',
         jsonNuevaDieta: '',
         dietaCompleta: JSON.parse(localStorage.getItem('hybrid_cache_dieta') || '[]'),
+        resumenSemanalSheet: JSON.parse(localStorage.getItem('hybrid_cache_resumen') || '[]'),
         progresionFede: JSON.parse(localStorage.getItem('hybrid_cache_prog_fede') || '[]'),
         progresionArantxa: JSON.parse(localStorage.getItem('hybrid_cache_prog_ara') || '[]'),
         swapAbiertoIdx: null,
         swapsActivos: JSON.parse(localStorage.getItem('hybrid_swaps_activos') || '{}'),
+        cargasEntreno: JSON.parse(localStorage.getItem('hybrid_cargas_entreno') || '{}'),
+        permutacionesDias: JSON.parse(localStorage.getItem('hybrid_permutaciones_dias') || '{}'),
         comidasCompletadas: JSON.parse(localStorage.getItem('hybrid_comidas_completadas') || '{}'),
         itemsComprados: JSON.parse(localStorage.getItem('hybrid_compra_checks') || '{}'),
         form: {
@@ -832,10 +944,7 @@
         },
 
         init() {
-          // 1. Poner siempre el día real de hoy al entrar en la WebApp
           this.irAHoy();
-
-          // 2. Si el usuario vuelve a abrir la app desde segundo plano otro día, actualizar al día de hoy
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
               const ultimoDiaAbierto = sessionStorage.getItem('hybrid_dia_sesion');
@@ -846,7 +955,6 @@
               }
             }
           });
-
           this.sincronizarFechaSemana();
           this.cargarDatos();
         },
@@ -888,6 +996,186 @@
           return str.toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         },
 
+        /**
+         * FILTRO ESTRICTO DE COMIDA REAL:
+         * 1. Descarta filas que son exclusivamente geles intra-entreno o hidratación con sales en ayunas.
+         * 2. Limpia suplementos ("+ 7 g creatina", "+ sales", "+ gel", etc.) de las comidas reales.
+         */
+        esFilaSoloSuplementoOCarrera(comida) {
+          const v = this.normalizar(comida.ventana);
+          const p = this.normalizar(comida.plato);
+          const f = this.normalizar(comida.fede);
+          if (p.includes('intra-entreno') || p.includes('hidratacion en ayunas') || v.includes('intra')) return true;
+          if (/^\d+\s*ml\s*agua/i.test(f) && !/pan|avena|arroz|huevo|skyr|pollo|pavo|patata|jamon|queso/i.test(f)) return true;
+          if (/^\d+\s*gel/i.test(f) && !/pan|avena|arroz|huevo|skyr|pollo|pavo|patata/i.test(f)) return true;
+          return false;
+        },
+
+        limpiarSuplementosDeTexto(str) {
+          if (!str) return '';
+          return str.split('+')
+            .map(p => p.trim())
+            .filter(parte => {
+              const n = this.normalizar(parte);
+              if (!n) return false;
+              // Excluir creatina, geles, sales, isotónicos, agua con sales
+              if (/\bcreatina\b|\bgel\b|\bgeles\b|\bisotonico\b|\bsales\b|\belectrolitos\b|\bevocarb\b|\bcafeina\b|\bprobiotico\b/.test(n)) return false;
+              if (/^\d+\s*ml\s*agua/.test(n)) return false;
+              return true;
+            })
+            .join(' + ');
+        },
+
+        limpiarSuplementosDeTitulo(titulo) {
+          if (!titulo) return '';
+          return titulo.replace(/\s+y\s+creatina/gi, '').replace(/\s*\+\s*creatina/gi, '').trim();
+        },
+
+        // Detecta el entrenamiento original del día leyendo RESUMEN_SEMANAL o el respaldo
+        infoEntrenoOriginalDia(diaNombre) {
+          const buscado = this.normalizar(diaNombre);
+          if (this.resumenSemanalSheet && this.resumenSemanalSheet.length > 2) {
+            for (let i = 0; i < this.resumenSemanalSheet.length; i++) {
+              const r = this.resumenSemanalSheet[i];
+              if (this.normalizar(r[0]) === buscado && r[1]) {
+                const txt = r[1].toString().trim();
+                const n = this.normalizar(txt);
+                let tipo = 'unica_cf';
+                if (n.includes('trail') || n.includes('precarga') || n.includes('tirada')) tipo = 'trail';
+                else if (n.includes('+')) tipo = 'doble';
+                else if (n.includes('descanso')) tipo = 'descanso';
+                return { entreno: txt, tipo };
+              }
+            }
+          }
+          return ENTRENOS_SEMANA_RESPALDO[diaNombre] || { entreno: 'CrossFit / Carrera', tipo: 'unica_cf' };
+        },
+
+        entrenoOriginalDeDia(diaNombre) {
+          return this.infoEntrenoOriginalDia(diaNombre).entreno;
+        },
+
+        // Gestión de Permutación de Días (ej. Miércoles <-> Jueves)
+        diaFuenteEfectivo(diaNombre) {
+          return this.permutacionesDias[diaNombre] || diaNombre;
+        },
+
+        diaPermutadoCon(diaNombre) {
+          const dest = this.permutacionesDias[diaNombre];
+          return (dest && dest !== diaNombre) ? dest : null;
+        },
+
+        permutarDias(diaA, diaB) {
+          // Limpiar permutación previa de diaA si existía
+          const anteriorB = this.permutacionesDias[diaA];
+          if (anteriorB) {
+            delete this.permutacionesDias[anteriorB];
+            delete this.permutacionesDias[diaA];
+          }
+          if (diaB && diaB !== diaA) {
+            // Si diaB estaba permutado con otro, limpiarlo
+            const antDeB = this.permutacionesDias[diaB];
+            if (antDeB) delete this.permutacionesDias[antDeB];
+            this.permutacionesDias[diaA] = diaB;
+            this.permutacionesDias[diaB] = diaA;
+          }
+          this.permutacionesDias = { ...this.permutacionesDias };
+          localStorage.setItem('hybrid_permutaciones_dias', JSON.stringify(this.permutacionesDias));
+          this.sincronizarEstadoRemoto('permutacionesDias', this.permutacionesDias);
+        },
+
+        // Gestión de Carga de Entrenamiento en Vivo (Descanso / Sesión Única / Doble Sesión / Trail)
+        obtenerCargaAtleta(diaNombre, atletaKey) {
+          return (this.cargasEntreno[diaNombre] && this.cargasEntreno[diaNombre][atletaKey]) ? this.cargasEntreno[diaNombre][atletaKey] : 'auto';
+        },
+
+        fijarCargaAtleta(diaNombre, atletaKey, nuevoModo) {
+          if (!this.cargasEntreno[diaNombre]) this.cargasEntreno[diaNombre] = { fede: 'auto', arantxa: 'auto' };
+          this.cargasEntreno[diaNombre][atletaKey] = nuevoModo;
+          this.cargasEntreno = { ...this.cargasEntreno };
+          localStorage.setItem('hybrid_cargas_entreno', JSON.stringify(this.cargasEntreno));
+          this.sincronizarEstadoRemoto('cargasEntreno', this.cargasEntreno);
+        },
+
+        tieneCargaAdaptada(diaNombre) {
+          const c = this.cargasEntreno[diaNombre];
+          return !!(c && ((c.fede && c.fede !== 'auto') || (c.arantxa && c.arantxa !== 'auto')));
+        },
+
+        tieneModificacionEntrenoDia(diaNombre) {
+          return !!(this.diaPermutadoCon(diaNombre) || this.tieneCargaAdaptada(diaNombre));
+        },
+
+        restaurarEntrenoDia(diaNombre) {
+          this.permutarDias(diaNombre, '');
+          if (this.cargasEntreno[diaNombre]) {
+            delete this.cargasEntreno[diaNombre];
+            this.cargasEntreno = { ...this.cargasEntreno };
+            localStorage.setItem('hybrid_cargas_entreno', JSON.stringify(this.cargasEntreno));
+            this.sincronizarEstadoRemoto('cargasEntreno', this.cargasEntreno);
+          }
+        },
+
+        tipoCargaEfectivaAtleta(diaNombre, atletaKey) {
+          const manual = this.obtenerCargaAtleta(diaNombre, atletaKey);
+          if (manual && manual !== 'auto') return manual;
+          const diaBase = this.diaFuenteEfectivo(diaNombre);
+          return this.infoEntrenoOriginalDia(diaBase).tipo;
+        },
+
+        etiquetaPerfilAtleta(diaNombre, atletaKey) {
+          const tipo = this.tipoCargaEfectivaAtleta(diaNombre, atletaKey);
+          return NOMBRES_PERFIL_CARGA[tipo] || 'Sesión Única';
+        },
+
+        descripcionEntrenoEfectivo(diaNombre) {
+          const diaBase = this.diaFuenteEfectivo(diaNombre);
+          const infoBase = this.infoEntrenoOriginalDia(diaBase);
+          const cFede = this.obtenerCargaAtleta(diaNombre, 'fede');
+          const cAra = this.obtenerCargaAtleta(diaNombre, 'arantxa');
+
+          if (cFede !== 'auto' && cFede === cAra) {
+            return `Entreno adaptado a: ${NOMBRES_PERFIL_CARGA[cFede]} (Fede y Arantxa)`;
+          }
+          if (cFede !== 'auto' || cAra !== 'auto') {
+            const txtF = cFede !== 'auto' ? NOMBRES_PERFIL_CARGA[cFede] : infoBase.entreno;
+            const txtA = cAra !== 'auto' ? NOMBRES_PERFIL_CARGA[cAra] : infoBase.entreno;
+            return `Fede: ${txtF} · Ara: ${txtA}`;
+          }
+          return infoBase.entreno;
+        },
+
+        subtituloCargaEfectiva(diaNombre) {
+          const tFede = this.tipoCargaEfectivaAtleta(diaNombre, 'fede');
+          const tAra = this.tipoCargaEfectivaAtleta(diaNombre, 'arantxa');
+          return `Objetivo comida real hoy → Fede: ~${TARGET_CH_COMIDA_REAL.fede[tFede]}g CH | Arantxa: ~${TARGET_CH_COMIDA_REAL.arantxa[tAra]}g CH`;
+        },
+
+        // Devuelve solo las comidas reales del día (aplicando permutación si existe y filtrando filas de geles/agua)
+        comidasDelDiaPara(diaNombre) {
+          const diaFuente = this.diaFuenteEfectivo(diaNombre);
+          const buscado = this.normalizar(diaFuente);
+          return this.dietaCompleta
+            .filter(c => this.normalizar(c.dia).includes(buscado))
+            .filter(c => !this.esFilaSoloSuplementoOCarrera(c));
+        },
+
+        comidasDelDia() {
+          return this.comidasDelDiaPara(this.diaSeleccionado);
+        },
+
+        // Calcula el factor de escala de carbohidratos si el usuario cambió el tipo de entrenamiento del día
+        factorEscalaEntrenoCH(diaNombre, atletaKey) {
+          const diaBase = this.diaFuenteEfectivo(diaNombre);
+          const tipoOrig = this.infoEntrenoOriginalDia(diaBase).tipo;
+          const tipoNuevo = this.tipoCargaEfectivaAtleta(diaNombre, atletaKey);
+          if (tipoOrig === tipoNuevo) return 1.0;
+
+          const chOrig = TARGET_CH_COMIDA_REAL[atletaKey][tipoOrig] || 325;
+          const chNuevo = TARGET_CH_COMIDA_REAL[atletaKey][tipoNuevo] || 325;
+          return chNuevo / chOrig;
+        },
+
         formatearFechaISO(raw) {
           if (!raw) return '';
           const str = raw.toString().trim();
@@ -919,6 +1207,10 @@
               }));
               localStorage.setItem('hybrid_cache_dieta', JSON.stringify(this.dietaCompleta));
             }
+            if (data.resumenSemanal) {
+              this.resumenSemanalSheet = data.resumenSemanal;
+              localStorage.setItem('hybrid_cache_resumen', JSON.stringify(this.resumenSemanalSheet));
+            }
             if (data.progresionFede) {
               this.progresionFede = data.progresionFede;
               localStorage.setItem('hybrid_cache_prog_fede', JSON.stringify(this.progresionFede));
@@ -927,22 +1219,20 @@
               this.progresionArantxa = data.progresionArantxa;
               localStorage.setItem('hybrid_cache_prog_ara', JSON.stringify(this.progresionArantxa));
             }
-            // Si el Sheet tiene estado sincronizado (checks de comidas e intercambios), los fusiona con localStorage
             if (data.estadoApp) {
-              if (data.estadoApp.comidasCompletadas) {
-                try {
-                  const remoto = JSON.parse(data.estadoApp.comidasCompletadas);
-                  this.comidasCompletadas = { ...remoto, ...this.comidasCompletadas };
-                  localStorage.setItem('hybrid_comidas_completadas', JSON.stringify(this.comidasCompletadas));
-                } catch(e) {}
-              }
-              if (data.estadoApp.swapsActivos) {
-                try {
-                  const remotoSwaps = JSON.parse(data.estadoApp.swapsActivos);
-                  this.swapsActivos = { ...remotoSwaps, ...this.swapsActivos };
-                  localStorage.setItem('hybrid_swaps_activos', JSON.stringify(this.swapsActivos));
-                } catch(e) {}
-              }
+              const fusionar = (claveremota, claveLocal, prop) => {
+                if (data.estadoApp[claveremota]) {
+                  try {
+                    const rem = JSON.parse(data.estadoApp[claveremota]);
+                    this[prop] = { ...rem, ...this[prop] };
+                    localStorage.setItem(claveLocal, JSON.stringify(this[prop]));
+                  } catch(e) {}
+                }
+              };
+              fusionar('comidasCompletadas', 'hybrid_comidas_completadas', 'comidasCompletadas');
+              fusionar('swapsActivos', 'hybrid_swaps_activos', 'swapsActivos');
+              fusionar('cargasEntreno', 'hybrid_cargas_entreno', 'cargasEntreno');
+              fusionar('permutacionesDias', 'hybrid_permutaciones_dias', 'permutacionesDias');
             }
             this.sincronizarFechaSemana();
           } catch (e) {
@@ -951,7 +1241,6 @@
           this.cargandoDieta = false;
         },
 
-        // Guarda en segundo plano en Google Sheets para que el PC y el Móvil compartan los checks
         async sincronizarEstadoRemoto(clave, objeto) {
           try {
             fetch(API_URL, {
@@ -961,7 +1250,6 @@
           } catch (e) {}
         },
 
-        // Fecha de inicio de la semana actual (Lunes de esta semana) para que los checks sean únicos por semana
         claveSemanaActual() {
           const hoy = new Date();
           const dia = hoy.getDay() || 7;
@@ -979,8 +1267,8 @@
         toggleComidaCompletada(idx) {
           const kSem = this.claveSemanaActual() + '_' + this.diaSeleccionado + '_' + idx;
           const kSimple = this.diaSeleccionado + '_' + idx;
-          const nuevoEstado = !this.esComidaCompletada(idx);
-          if (nuevoEstado) {
+          const nuevo = !this.esComidaCompletada(idx);
+          if (nuevo) {
             this.comidasCompletadas[kSem] = true;
             this.comidasCompletadas[kSimple] = true;
           } else {
@@ -998,7 +1286,6 @@
           return count;
         },
 
-        // Detecta qué alimento del catálogo nutricional es una cadena de texto ("240 g merluza" -> "merluza blanca")
         identificarAlimentoCatalogo(nombreRaw) {
           const n = this.normalizar(nombreRaw);
           if (n.includes('merluza') && n.includes('empanada')) return 'merluza empanada Mercadona';
@@ -1033,36 +1320,36 @@
           const ch = mCH ? parseFloat(mCH[1].replace(',', '.')) : 0;
           const g = mG ? parseFloat(mG[1].replace(',', '.')) : 0;
           let kcal = 0;
-          if (mKcal) {
-            kcal = parseFloat(mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
-          } else {
-            kcal = (p * 4) + (ch * 4) + (g * 9);
-          }
+          if (mKcal) kcal = parseFloat(mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
+          else kcal = (p * 4) + (ch * 4) + (g * 9);
           return { p, ch, g, kcal };
         },
 
         /**
-         * MOTOR ESCUPULOSO DE INTERCAMBIO Y BALANCEO 3x3 (Proteína + Hidrato + AOVE)
-         * Resuelve los gramos exactos de la proteína, el carbohidrato y el aceite para clavar P, CH, G y Kcal de la toma.
+         * MOTOR CENTRAL: Calcula comida real (sin suplementos), aplica adaptación de entreno,
+         * modo cena libre e intercambio 3x3 (Proteína + Hidrato + AOVE).
          */
-        comidaCalculada(comida, idx, atletaKey) {
-          const textoOriginal = atletaKey === 'fede' ? comida.fede : comida.arantxa;
+        comidaCalculadaParaDia(diaNombre, comida, idx, atletaKey) {
+          const rawTexto = atletaKey === 'fede' ? comida.fede : comida.arantxa;
+          const textoOriginal = this.limpiarSuplementosDeTexto(rawTexto);
           const macrosRaw = atletaKey === 'fede' ? comida.macrosFede : comida.macrosArantxa;
           const macrosMeta = this.parsearMacrosIndividuales(macrosRaw);
           const esPreCena = this.isPreCena(comida.ventana);
-          const swapConfig = this.swapsActivos[this.diaSeleccionado + '_' + idx] || {};
+          const swapConfig = this.swapsActivos[diaNombre + '_' + idx] || {};
 
           if (!textoOriginal) {
             return { texto: '', macrosObj: macrosMeta, macrosTexto: macrosRaw, notaAjuste: '' };
           }
 
-          // Factor de Cena Libre (si está activo antes de la cena, reduce CH y G objetivo en un 35%)
-          const factorCH = (this.cenaSocialActiva && esPreCena) ? 0.65 : 1.0;
-          const factorG = (this.cenaSocialActiva && esPreCena) ? 0.65 : 1.0;
+          // Factor por cambio de entrenamiento del día + factor por Modo Cena Libre
+          const factorEntrenoCH = this.factorEscalaEntrenoCH(diaNombre, atletaKey);
+          const factorCenaCH = (this.cenaSocialActiva && esPreCena && diaNombre === this.diaSeleccionado) ? 0.65 : 1.0;
+          const factorCenaG = (this.cenaSocialActiva && esPreCena && diaNombre === this.diaSeleccionado) ? 0.65 : 1.0;
+
+          const factorTotalCH = factorEntrenoCH * factorCenaCH;
 
           let partes = textoOriginal.split('+').map(p => p.trim()).filter(Boolean);
 
-          // Localizar el ingrediente de Proteína Principal, Carbohidrato Principal y AOVE en la receta original
           let idxProt = -1, infoProtOrig = null, gramosProtOrig = 0;
           let idxCH = -1, infoCHOrig = null, gramosCHOrig = 0;
           let idxAOVE = -1, mlAOVEOrig = 0;
@@ -1081,13 +1368,9 @@
               if (idCat && CATALOGO_NUTRICIONAL[idCat]) {
                 const catObj = CATALOGO_NUTRICIONAL[idCat];
                 if (catObj.tipo === 'prot' && idxProt === -1) {
-                  idxProt = i;
-                  infoProtOrig = catObj;
-                  gramosProtOrig = gVal;
+                  idxProt = i; infoProtOrig = catObj; gramosProtOrig = gVal;
                 } else if (catObj.tipo === 'ch' && idxCH === -1) {
-                  idxCH = i;
-                  infoCHOrig = catObj;
-                  gramosCHOrig = gVal;
+                  idxCH = i; infoCHOrig = catObj; gramosCHOrig = gVal;
                 }
               }
             }
@@ -1095,25 +1378,49 @@
 
           const haySwapProt = !!(swapConfig.prot && idxProt !== -1 && CATALOGO_NUTRICIONAL[swapConfig.prot]);
           const haySwapCH = !!(swapConfig.ch && idxCH !== -1 && CATALOGO_NUTRICIONAL[swapConfig.ch]);
+          const hayCambioCarga = Math.abs(factorTotalCH - 1.0) > 0.01 || Math.abs(factorCenaG - 1.0) > 0.01;
 
-          // Si no hay intercambios ni modo cena libre, devuelve los datos originales intactos
-          if (!haySwapProt && !haySwapCH && !(this.cenaSocialActiva && esPreCena)) {
+          if (!haySwapProt && !haySwapCH && !hayCambioCarga) {
             return {
               texto: textoOriginal,
               macrosObj: {
-                p: Math.round(macrosMeta.p),
-                ch: Math.round(macrosMeta.ch),
-                g: Math.round(macrosMeta.g),
-                kcal: Math.round(macrosMeta.kcal),
-                ahorroKcal: 0,
-                ahorroCH: 0
+                p: Math.round(macrosMeta.p), ch: Math.round(macrosMeta.ch),
+                g: Math.round(macrosMeta.g), kcal: Math.round(macrosMeta.kcal),
+                ahorroKcal: 0, ahorroCH: 0
               },
               macrosTexto: `${Math.round(macrosMeta.p)}g P | ${Math.round(macrosMeta.ch)}g CH | ${Math.round(macrosMeta.g)}g G | ${Math.round(macrosMeta.kcal)} kcal`,
               notaAjuste: ''
             };
           }
 
-          // Calcular cuánto aportaban la Proteína, el Carbohidrato y el AOVE originales
+          // Escalar también secundarios de CH (miel, dátiles, tortitas) si el entreno del día cambió
+          let deltaCHSecundarios = 0;
+          if (Math.abs(factorTotalCH - 1.0) > 0.01) {
+            partes = partes.map((parte, i) => {
+              if (i === idxProt || i === idxCH || i === idxAOVE) return parte;
+              const mSec = parte.match(/^(\d+(?:[.,]\d+)?)\s*(g|tortitas?|plátanos?|dátiles?)\s*(.*)$/i);
+              if (mSec) {
+                const cantOrig = parseFloat(mSec[1].replace(',', '.'));
+                const uni = mSec[2] || '';
+                const resto = mSec[3] || '';
+                const completo = (uni + ' ' + resto).trim();
+                if (/miel|datil|tortita|platano|avena/i.test(completo)) {
+                  let cantNueva = cantOrig * factorTotalCH;
+                  if (/^g$/i.test(uni)) {
+                    cantNueva = Math.max(5, Math.round(cantNueva / 5) * 5);
+                    deltaCHSecundarios += (cantNueva - cantOrig) * 0.75;
+                    return `${cantNueva} g ${resto}`;
+                  } else if (/tortita/i.test(uni)) {
+                    cantNueva = Math.max(1, Math.round(cantNueva));
+                    deltaCHSecundarios += (cantNueva - cantOrig) * 7;
+                    return `${cantNueva} ${uni} ${resto}`.trim();
+                  }
+                }
+              }
+              return parte;
+            });
+          }
+
           const pDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.p : 0;
           const chDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.ch : 0;
           const gDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.g : 0;
@@ -1122,22 +1429,18 @@
           const chDeCHOrig = infoCHOrig ? (gramosCHOrig / 100) * infoCHOrig.ch : 0;
           const gDeCHOrig = infoCHOrig ? (gramosCHOrig / 100) * infoCHOrig.g : 0;
 
-          // Presupuesto exacto de P, CH y G que deben cubrir los 3 pilares (Proteína + Hidrato + AOVE)
+          // La Proteína Total se mantiene al 100% para proteger masa muscular incluso si baja el entreno
           const targetP_Pilares = pDeProtOrig + pDeCHOrig;
-          const targetCH_Pilares = (chDeProtOrig + chDeCHOrig) * factorCH;
-          const targetG_Pilares = (gDeProtOrig + gDeCHOrig + mlAOVEOrig) * factorG;
+          const targetCH_Pilares = (chDeProtOrig + chDeCHOrig) * factorTotalCH;
+          const targetG_Pilares = (gDeProtOrig + gDeCHOrig + mlAOVEOrig) * factorCenaG;
 
           const nuevaProtObj = haySwapProt ? CATALOGO_NUTRICIONAL[swapConfig.prot] : infoProtOrig;
           const nuevoCHObj = haySwapCH ? CATALOGO_NUTRICIONAL[swapConfig.ch] : infoCHOrig;
 
           let nuevosGramosProt = gramosProtOrig;
-          let nuevosGramosCH = gramosCHOrig * factorCH;
+          let nuevosGramosCH = gramosCHOrig * factorTotalCH;
 
-          // RESOLUCIÓN DEL SISTEMA DE ECUACIONES 2x2 ENTRE PROTEÍNA E HIDRATO (Porque ambos tienen P y CH)
           if (nuevaProtObj && nuevoCHObj) {
-            // Sistema:
-            // (gp/100)*Pp + (gc/100)*Pc = targetP_Pilares
-            // (gp/100)*CHp + (gc/100)*CHc = targetCH_Pilares
             const Pp = nuevaProtObj.p / 100, Pc = nuevoCHObj.p / 100;
             const CHp = nuevaProtObj.ch / 100, CHc = nuevoCHObj.ch / 100;
             const det = (Pp * CHc) - (Pc * CHp);
@@ -1146,31 +1449,32 @@
               nuevosGramosCH = ((Pp * targetCH_Pilares) - (targetP_Pilares * CHp)) / det;
             }
           } else if (nuevaProtObj && !nuevoCHObj) {
-            nuevosGramosProt = (pDeProtOrig / (nuevaProtObj.p / 100));
+            nuevosGramosProt = pDeProtOrig / (nuevaProtObj.p / 100);
           } else if (!nuevaProtObj && nuevoCHObj) {
-            nuevosGramosCH = (chDeCHOrig * factorCH) / (nuevoCHObj.ch / 100);
+            nuevosGramosCH = targetCH_Pilares / (nuevoCHObj.ch / 100);
           }
 
-          // Redondeo limpio a múltiplos de 5g para báscula de cocina
           nuevosGramosProt = Math.max(0, Math.round(nuevosGramosProt / 5) * 5);
           nuevosGramosCH = Math.max(0, Math.round(nuevosGramosCH / 5) * 5);
 
-          // PASO 3: Calcular la grasa real generada por los nuevos gramos de proteína e hidrato y cuadrar con el AOVE
           const gNuevaProt = nuevaProtObj ? (nuevosGramosProt / 100) * nuevaProtObj.g : 0;
           const gNuevoCH = nuevoCHObj ? (nuevosGramosCH / 100) * nuevoCHObj.g : 0;
           let nuevoMlAOVE = Math.round(targetG_Pilares - (gNuevaProt + gNuevoCH));
 
           let notaAjuste = '';
+          if (Math.abs(factorEntrenoCH - 1.0) > 0.02) {
+            const pct = Math.round((factorEntrenoCH - 1) * 100);
+            notaAjuste = `CH ${pct > 0 ? '+' + pct : pct}% por entreno`;
+          }
           if (nuevoMlAOVE < 0) {
             nuevoMlAOVE = 0;
-            notaAjuste = 'Sin AOVE extra (cubierto por alimento)';
-          } else if (Math.abs(nuevoMlAOVE - mlAOVEOrig) >= 1) {
-            const diffAove = nuevoMlAOVE - Math.round(mlAOVEOrig * factorG);
-            if (diffAove > 0) notaAjuste = `+${diffAove} ml AOVE p/ cuadrar kcal`;
-            else if (diffAove < 0) notaAjuste = `${diffAove} ml AOVE p/ cuadrar kcal`;
+            notaAjuste = notaAjuste ? notaAjuste + ' · 0 AOVE' : '0 ml AOVE (cubierto)';
+          } else if (Math.abs(nuevoMlAOVE - mlAOVEOrig) >= 1 && (haySwapProt || haySwapCH)) {
+            const diffAove = nuevoMlAOVE - Math.round(mlAOVEOrig * factorCenaG);
+            const txtAove = diffAove > 0 ? `+${diffAove} ml AOVE` : `${diffAove} ml AOVE`;
+            notaAjuste = notaAjuste ? `${notaAjuste} · ${txtAove}` : `${txtAove} p/ cuadrar kcal`;
           }
 
-          // Reconstruir lista de ingredientes con los pesos exactos recalculados
           if (idxProt !== -1 && nuevaProtObj) {
             const nombreMostrarProt = haySwapProt ? swapConfig.prot : partes[idxProt].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
             partes[idxProt] = `${nuevosGramosProt} g ${nombreMostrarProt}`;
@@ -1185,9 +1489,8 @@
             partes.push(`${nuevoMlAOVE} ml AOVE`);
           }
 
-          // Calcular macros finales exactos de la comida tras el ajuste
           const deltaP = ((nuevaProtObj ? (nuevosGramosProt/100)*nuevaProtObj.p : 0) + (nuevoCHObj ? (nuevosGramosCH/100)*nuevoCHObj.p : 0)) - (pDeProtOrig + pDeCHOrig);
-          const deltaCH = ((nuevaProtObj ? (nuevosGramosProt/100)*nuevaProtObj.ch : 0) + (nuevoCHObj ? (nuevosGramosCH/100)*nuevoCHObj.ch : 0)) - (chDeProtOrig + chDeCHOrig);
+          const deltaCH = ((nuevaProtObj ? (nuevosGramosProt/100)*nuevaProtObj.ch : 0) + (nuevoCHObj ? (nuevosGramosCH/100)*nuevoCHObj.ch : 0)) - (chDeProtOrig + chDeCHOrig) + deltaCHSecundarios;
           const deltaG = (gNuevaProt + gNuevoCH + nuevoMlAOVE) - (gDeProtOrig + gDeCHOrig + mlAOVEOrig);
 
           const pFinal = Math.max(0, Math.round(macrosMeta.p + deltaP));
@@ -1195,8 +1498,8 @@
           const gFinal = Math.max(0, Math.round(macrosMeta.g + deltaG));
           const kcalFinal = Math.round((pFinal * 4) + (chFinal * 4) + (gFinal * 9));
 
-          const ahorroKcal = Math.max(0, Math.round(macrosMeta.kcal - kcalFinal));
-          const ahorroCH = Math.max(0, Math.round(macrosMeta.ch - chFinal));
+          const ahorroKcal = (this.cenaSocialActiva && esPreCena) ? Math.max(0, Math.round(macrosMeta.kcal - kcalFinal)) : 0;
+          const ahorroCH = (this.cenaSocialActiva && esPreCena) ? Math.max(0, Math.round(macrosMeta.ch - chFinal)) : 0;
 
           return {
             texto: partes.filter(Boolean).join(' + '),
@@ -1206,13 +1509,18 @@
           };
         },
 
+        comidaCalculada(comida, idx, atletaKey) {
+          return this.comidaCalculadaParaDia(this.diaSeleccionado, comida, idx, atletaKey);
+        },
+
         tituloPlatoAdaptado(comida, idx) {
+          const baseLimpio = this.limpiarSuplementosDeTitulo(comida.plato);
           const s = this.swapsActivos[this.diaSeleccionado + '_' + idx];
-          if (!s || (!s.prot && !s.ch)) return comida.plato;
+          if (!s || (!s.prot && !s.ch)) return baseLimpio;
           const etiquetas = [];
           if (s.prot) etiquetas.push(s.prot);
           if (s.ch) etiquetas.push(s.ch);
-          return `${comida.plato} (→ ${etiquetas.join(' + ')})`;
+          return `${baseLimpio} (→ ${etiquetas.join(' + ')})`;
         },
 
         totalesDia() {
@@ -1344,11 +1652,6 @@
           return n > 0 ? '+' + n.toFixed(1) : n.toFixed(1);
         },
 
-        comidasDelDia() {
-          const buscado = this.normalizar(this.diaSeleccionado);
-          return this.dietaCompleta.filter(c => this.normalizar(c.dia).includes(buscado));
-        },
-
         isPreCena(ventana) {
           return !this.normalizar(ventana).includes('cena');
         },
@@ -1444,16 +1747,10 @@
           };
 
           this.diasSemana.forEach(diaNombre => {
-            const buscado = this.normalizar(diaNombre);
-            const comidasDia = this.dietaCompleta.filter(c => this.normalizar(c.dia).includes(buscado));
+            const comidasDia = this.comidasDelDiaPara(diaNombre);
             comidasDia.forEach((comida, idx) => {
-              // Usa las cantidades ya adaptadas si el usuario hizo algún intercambio en la semana
-              const swap = this.swapsActivos[diaNombre + '_' + idx];
-              const backupDia = this.diaSeleccionado;
-              this.diaSeleccionado = diaNombre;
-              const txtFede = swap ? this.comidaCalculada(comida, idx, 'fede').texto : comida.fede;
-              const txtAra = swap ? this.comidaCalculada(comida, idx, 'arantxa').texto : comida.arantxa;
-              this.diaSeleccionado = backupDia;
+              const txtFede = this.comidaCalculadaParaDia(diaNombre, comida, idx, 'fede').texto;
+              const txtAra = this.comidaCalculadaParaDia(diaNombre, comida, idx, 'arantxa').texto;
 
               [txtFede, txtAra].forEach(texto => {
                 if (!texto) return;
@@ -1542,6 +1839,13 @@
             if (result.status === 'success') {
               this.mensajeDietaActualizada = true;
               this.jsonNuevaDieta = '';
+              // Al importar una nueva semana, limpia permutaciones y ajustes de la semana pasada
+              this.cargasEntreno = {};
+              this.permutacionesDias = {};
+              this.swapsActivos = {};
+              localStorage.removeItem('hybrid_cargas_entreno');
+              localStorage.removeItem('hybrid_permutaciones_dias');
+              localStorage.removeItem('hybrid_swaps_activos');
               await this.cargarDatos();
               setTimeout(() => {
                 this.mensajeDietaActualizada = false;
