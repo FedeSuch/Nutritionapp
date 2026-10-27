@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Kinetix — Nutrición Deportiva de Precisión</title>
   
-  <!-- Tipografías Editoriales y Numéricas Tabulares -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,27 +19,44 @@
             mono: ['"JetBrains Mono"', 'monospace'],
           },
           colors: {
-            canvas: '#F7F6F2',
+            canvas: '#F6F5F0',
             surface: '#FFFFFF',
-            subtle: '#EFECE6',
-            border: '#E4E2DD',
+            subtle: '#EDEBE4',
+            border: '#E2E0D8',
             ink: {
               DEFAULT: '#18181B',
               secondary: '#52525B',
               muted: '#71717A'
             },
             sage: {
-              DEFAULT: '#1F5E4B',
-              hover: '#17493A',
-              light: '#EBF3F0',
-              border: '#C6DFD6'
+              DEFAULT: '#1E5645',
+              hover: '#164235',
+              light: '#EAF3F0',
+              border: '#C2DDD4'
+            },
+            /* Identidad cromática diferenciada por atleta */
+            fede: {
+              bg: '#F0F7FF',
+              surface: '#E0F0FF',
+              border: '#B9DCFF',
+              text: '#0369A1',
+              dark: '#0C4A6E',
+              badge: '#0284C7'
+            },
+            ara: {
+              bg: '#ECFDF5',
+              surface: '#D1FAE5',
+              border: '#A7F3D0',
+              text: '#047857',
+              dark: '#064E3B',
+              badge: '#059669'
             },
             macro: {
-              prot: '#C2410C',     /* Terracota profundo - WCAG AA */
+              prot: '#C2410C',
               protBg: '#FFF7ED',
-              carb: '#B45309',     /* Ámbar ocre - WCAG AA */
+              carb: '#B45309',
               carbBg: '#FFFBEB',
-              fat: '#3730A3',      /* Índigo pizarra - WCAG AA */
+              fat: '#3730A3',
               fatBg: '#EEF2FF'
             }
           }
@@ -52,528 +68,475 @@
   
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#F7F6F2">
+  <meta name="theme-color" content="#FFFFFF">
 
   <style>
     [x-cloak] { display: none !important; }
     .tabular-nums { font-variant-numeric: tabular-nums; }
     
-    /* Accesibilidad: Foco de teclado altamente visible */
+    /* Respetar área segura del notch / Dynamic Island en iOS */
+    .safe-top {
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+    .safe-bottom {
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+
     *:focus-visible {
-      outline: 2px solid #1F5E4B !important;
+      outline: 2px solid #1E5645 !important;
       outline-offset: 2px !important;
     }
-
-    /* Respeto estricto a movimiento reducido */
-    @media (prefers-reduced-motion: reduce) {
-      *, ::before, ::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-      }
-    }
-
-    /* Scrollbar sutil en escritorio */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #D4D2CD; border-radius: 9999px; }
   </style>
 </head>
 
 <body class="bg-canvas text-ink font-sans antialiased min-h-full selection:bg-sage-light selection:text-sage" x-data="appData()">
 
-  <!-- Enlace de salto directo para accesibilidad por teclado -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-sage focus:text-white focus:px-4 focus:py-2.5 focus:rounded-lg focus:font-semibold focus:shadow-lg">
-    Saltar al contenido principal
-  </a>
-
-  <!-- Región ARIA Live para anunciar cambios de estado a lectores de pantalla -->
   <div class="sr-only" aria-live="polite" x-text="anuncioAccesible"></div>
 
   <div class="min-h-screen flex flex-col lg:flex-row">
 
     <!-- ==========================================
-         NAVEGACIÓN LATERAL (ESCRITORIO >= 1024px)
+         SIDEBAR LATERAL (ESCRITORIO >= 1024px)
          ========================================== -->
-    <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-surface border-r border-border px-5 py-6 justify-between z-30" aria-label="Navegación principal de escritorio">
-      <div class="space-y-8">
-        <!-- Identidad de marca -->
+    <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-surface border-r border-border px-5 py-6 justify-between z-30">
+      <div class="space-y-7">
         <div class="flex items-center justify-between px-2">
           <div>
             <span class="text-xs font-bold uppercase tracking-widest text-sage block">Hybrid Athlete</span>
             <h1 class="text-xl font-extrabold tracking-tight text-ink">Nutrición & Trail</h1>
           </div>
-          <button @click="cargarDatos()" :disabled="cargandoDieta" aria-label="Sincronizar datos con Google Sheets" class="w-10 h-10 rounded-lg border border-border flex items-center justify-center text-ink-secondary hover:bg-subtle hover:text-ink transition disabled:opacity-50" title="Sincronizar con Google Sheets">
-            <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
+          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" class="w-10 h-10 rounded-lg border border-border flex items-center justify-center text-ink-secondary hover:bg-subtle hover:text-ink transition" title="Sincronizar con Google Sheets">
+            <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
         </div>
 
-        <!-- Selector Global de Atleta / Modo de Vista -->
+        <!-- Selector de Atleta en Escritorio -->
         <div class="bg-canvas p-1.5 rounded-xl border border-border">
-          <span class="sr-only">Seleccionar vista de atleta</span>
-          <div class="grid grid-cols-3 gap-1" role="group" aria-label="Filtro de atleta">
-            <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-surface text-ink font-bold shadow-sm border border-border/60' : 'text-ink-secondary hover:text-ink font-medium'" class="py-2 px-2 rounded-lg text-xs transition">
-              Fede
+          <div class="grid grid-cols-3 gap-1" role="group" aria-label="Modo de visualización">
+            <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-fede-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-lg text-xs transition">
+              🔵 Fede
             </button>
-            <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-surface text-ink font-bold shadow-sm border border-border/60' : 'text-ink-secondary hover:text-ink font-medium'" class="py-2 px-2 rounded-lg text-xs transition">
-              Arantxa
+            <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-lg text-xs transition">
+              🟢 Ara
             </button>
-            <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-surface text-ink font-bold shadow-sm border border-border/60' : 'text-ink-secondary hover:text-ink font-medium'" class="py-2 px-2 rounded-lg text-xs transition">
+            <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-lg text-xs transition">
               Ambos
             </button>
           </div>
         </div>
 
-        <!-- Menú Principal -->
-        <nav class="space-y-1.5" aria-label="Secciones de la aplicación">
-          <button type="button" @click="cambiarTab('dieta')" :aria-current="tab === 'dieta' ? 'page' : null" :class="tab === 'dieta' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <nav class="space-y-1.5">
+          <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
             <span>Plan Diario y Registro</span>
           </button>
 
-          <button type="button" @click="cambiarTab('compra')" :aria-current="tab === 'compra' ? 'page' : null" :class="tab === 'compra' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm border transition">
+          <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm border transition">
             <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
               <span>Despensa y Compra</span>
             </div>
             <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-subtle text-ink-secondary" x-text="contarPendientesCompra()"></span>
           </button>
 
-          <button type="button" @click="cambiarTab('checkin')" :aria-current="tab === 'checkin' ? 'page' : null" :class="tab === 'checkin' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             <span>Biometría y Progreso</span>
           </button>
 
-          <button type="button" @click="cambiarTab('ia')" :aria-current="tab === 'ia' ? 'page' : null" :class="tab === 'ia' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <button type="button" @click="cambiarTab('ia')" :class="tab === 'ia' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             <span>Importar Plan IA</span>
           </button>
         </nav>
       </div>
 
-      <!-- Estado de Conexión Inferior -->
       <div class="p-3.5 rounded-xl bg-canvas border border-border text-xs space-y-1">
         <div class="flex items-center gap-2 font-semibold text-ink">
-          <span class="w-2 h-2 rounded-full" :class="errorConexion ? 'bg-red-600' : 'bg-sage'"></span>
-          <span x-text="errorConexion ? 'Modo Offline (Local)' : 'Google Sheets Activo'"></span>
+          <span class="w-2 h-2 rounded-full" :class="errorConexion ? 'bg-amber-500' : 'bg-sage'"></span>
+          <span x-text="errorConexion ? 'Guardado en Memoria Local' : 'Sincronizado con Sheets'"></span>
         </div>
-        <p class="text-ink-secondary">Meta Ultratrail: 30 Ene 2027</p>
+        <p class="text-ink-secondary" x-text="'Hoy: ' + nombreDiaHoy()"></p>
       </div>
     </aside>
 
     <!-- ==========================================
-         CABECERA MÓVIL Y TABLET (< 1024px)
+         CABECERA MÓVIL DESPEJADA Y CON SAFE-AREA
          ========================================== -->
-    <header class="lg:hidden sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-border px-4 py-3">
-      <div class="flex items-center justify-between gap-2 max-w-3xl mx-auto">
-        <div>
-          <h1 class="text-base font-extrabold tracking-tight text-ink">Nutrición & Trail</h1>
-          <p class="text-xs text-ink-secondary" x-text="subtituloCabecera()"></p>
+    <header class="lg:hidden bg-surface border-b border-border px-4 pb-3 safe-top">
+      <div class="max-w-3xl mx-auto space-y-3">
+        <!-- Fila 1: Título y Botón Sync -->
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-base font-extrabold tracking-tight text-ink">Nutrición & Trail</h1>
+            <p class="text-xs text-ink-secondary" x-text="'Hoy es ' + nombreDiaHoy() + ' · Mostrando ' + diaSeleccionado"></p>
+          </div>
+          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" aria-label="Sincronizar con Google Sheets" class="px-3 py-2 rounded-xl border border-border bg-canvas flex items-center gap-1.5 text-xs font-bold text-ink active:bg-subtle transition min-h-[42px]">
+            <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>Sync</span>
+          </button>
         </div>
 
-        <div class="flex items-center gap-2">
-          <!-- Conmutador rápido de Atleta en Móvil -->
-          <div class="bg-canvas p-1 rounded-lg border border-border flex items-center" role="group" aria-label="Seleccionar atleta activo">
-            <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-surface text-ink font-bold shadow-sm' : 'text-ink-secondary'" class="px-2.5 py-1.5 rounded-md text-xs transition min-h-[34px]">
-              Fede
-            </button>
-            <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-surface text-ink font-bold shadow-sm' : 'text-ink-secondary'" class="px-2.5 py-1.5 rounded-md text-xs transition min-h-[34px]">
-              Ara
-            </button>
-            <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-surface text-ink font-bold shadow-sm' : 'text-ink-secondary'" class="px-2.5 py-1.5 rounded-md text-xs transition min-h-[34px]">
-              Dual
-            </button>
-          </div>
-
-          <!-- Botón Sincronizar -->
-          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" aria-label="Sincronizar con Google Sheets" class="w-11 h-11 rounded-lg border border-border bg-surface flex items-center justify-center text-ink-secondary active:bg-subtle transition">
-            <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
+        <!-- Fila 2: Selector de Atleta GRANDE y accesible con el pulgar (nunca tapado por iOS) -->
+        <div class="bg-canvas p-1 rounded-xl border border-border grid grid-cols-3 gap-1" role="group" aria-label="Seleccionar vista de atleta">
+          <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-fede-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-current"></span>
+            <span>Solo Fede</span>
+          </button>
+          <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-current"></span>
+            <span>Solo Ara</span>
+          </button>
+          <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
+            <span>Vista Dual</span>
           </button>
         </div>
       </div>
     </header>
 
     <!-- ==========================================
-         ÁREA DE CONTENIDO PRINCIPAL
+         CONTENIDO PRINCIPAL
          ========================================== -->
     <main id="main-content" class="flex-1 lg:pl-64 pb-28 lg:pb-12">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-8">
 
-        <!-- Banner de Error de Red si ocurre -->
-        <div x-show="errorConexion" x-cloak role="alert" class="mb-6 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl p-4 flex items-center justify-between gap-4">
-          <div class="text-xs sm:text-sm">
-            <p class="font-bold">Mostrando copia en caché local</p>
-            <p class="text-amber-800">No se pudo conectar en directo con Google Sheets. Verifica tu conexión o pulsa reintentar.</p>
-          </div>
-          <button type="button" @click="cargarDatos()" class="px-3.5 py-2 rounded-lg bg-amber-900 text-white text-xs font-bold shrink-0 hover:bg-amber-800">
-            Reintentar
-          </button>
-        </div>
-
         <!-- =========================================================
-             VISTA 1: PLAN DIARIO, BALANCE DE MACROS Y COMIDAS
+             VISTA 1: PLAN DIARIO, BALANCE EXACTO Y COMIDAS
              ========================================================= -->
-        <section x-show="tab === 'dieta'" aria-labelledby="heading-dieta" class="space-y-6">
-          <h2 id="heading-dieta" class="sr-only">Plan nutricional diario y seguimiento de macronutrientes</h2>
+        <section x-show="tab === 'dieta'" class="space-y-5">
 
-          <!-- Selector Horizontal de Días de la Semana (Píldoras Accesibles) -->
-          <div class="bg-surface border border-border rounded-2xl p-2 sm:p-3 shadow-sm">
-            <div class="flex items-center justify-between mb-2 px-1">
-              <span class="text-xs font-bold uppercase tracking-wider text-ink-secondary">Día de entrenamiento</span>
-              <div class="flex items-center gap-3">
-                <!-- Toggle Olla Común -->
-                <button type="button" @click="mostrarSumaComun = !mostrarSumaComun" :aria-pressed="mostrarSumaComun.toString()" :class="mostrarSumaComun ? 'bg-sage-light text-sage border-sage-border' : 'bg-canvas text-ink-secondary border-border'" class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center gap-1.5 min-h-[36px]">
-                  <span aria-hidden="true">🍲</span>
-                  <span>Olla Común</span>
+          <!-- Selector de Días de la Semana (Marca automáticamente el día real de hoy) -->
+          <div class="bg-surface border border-border rounded-2xl p-3 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 px-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-ink-secondary">Día de la semana</span>
+                <button x-show="diaSeleccionado !== nombreDiaHoy()" type="button" @click="irAHoy()" class="text-xs font-bold text-sage underline">
+                  Volver a Hoy (<span x-text="nombreDiaHoy()"></span>)
                 </button>
-                <!-- Toggle Modo Cena Libre -->
-                <button type="button" @click="cenaSocialActiva = !cenaSocialActiva" :aria-pressed="cenaSocialActiva.toString()" :class="cenaSocialActiva ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-canvas text-ink-secondary border-border'" class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center gap-1.5 min-h-[36px]">
-                  <span aria-hidden="true">🍷</span>
-                  <span>Cena Libre</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" @click="mostrarSumaComun = !mostrarSumaComun" :class="mostrarSumaComun ? 'bg-sage-light text-sage border-sage-border' : 'bg-canvas text-ink-secondary border-border'" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition min-h-[36px]">
+                  🍲 Olla Común
+                </button>
+                <button type="button" @click="cenaSocialActiva = !cenaSocialActiva" :class="cenaSocialActiva ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-canvas text-ink-secondary border-border'" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition min-h-[36px]">
+                  🍷 Cena Libre
                 </button>
               </div>
             </div>
 
-            <div class="grid grid-cols-7 gap-1 sm:gap-2" role="tablist" aria-label="Días de la semana">
+            <div class="grid grid-cols-7 gap-1 sm:gap-2" role="tablist">
               <template x-for="d in diasSemana" :key="d">
                 <button
                   type="button"
                   role="tab"
                   :aria-selected="(diaSeleccionado === d).toString()"
                   @click="seleccionarDia(d)"
-                  :class="diaSeleccionado === d ? 'bg-sage text-white font-bold shadow-sm' : 'bg-canvas/70 text-ink-secondary hover:bg-subtle hover:text-ink font-medium'"
-                  class="py-2.5 sm:py-3 rounded-xl text-center transition flex flex-col items-center justify-center min-h-[48px]"
+                  :class="diaSeleccionado === d ? 'bg-sage text-white font-bold shadow-sm' : (d === nombreDiaHoy() ? 'bg-sage-light text-sage font-bold border border-sage-border' : 'bg-canvas text-ink-secondary hover:bg-subtle font-semibold')"
+                  class="py-2.5 sm:py-3 rounded-xl text-center transition flex flex-col items-center justify-center min-h-[48px] relative"
                 >
                   <span class="text-xs sm:hidden" x-text="abreviarDia(d)"></span>
                   <span class="hidden sm:inline text-xs" x-text="d"></span>
+                  <!-- Punto indicador de HOY -->
+                  <span x-show="d === nombreDiaHoy()" :class="diaSeleccionado === d ? 'bg-white' : 'bg-sage'" class="w-1.5 h-1.5 rounded-full mt-1" title="Hoy"></span>
                 </button>
               </template>
             </div>
           </div>
 
-          <!-- Aviso contextual si el Modo Cena Libre está activo -->
-          <div x-show="cenaSocialActiva" x-cloak class="bg-amber-50/90 border border-amber-300/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-950">
+          <!-- Banner Cena Libre -->
+          <div x-show="cenaSocialActiva" x-cloak class="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-950">
             <div>
-              <span class="font-bold uppercase tracking-wider text-amber-800 block mb-0.5">Buffer Calórico para Cena Social Activo</span>
-              <span>Se ha aplicado un recorte automático del 35% a los carbohidratos y grasas en las comidas previas a la cena, preservando el 100% de la proteína.</span>
+              <span class="font-bold uppercase tracking-wider text-amber-800 block mb-0.5">Modo Cena Libre Activo (-35% CH y Grasas pre-cena)</span>
+              <span>Proteína intacta al 100%. Las cantidades en crudo de las tarjetas de desayuno, comida y post-entreno ya muestran el recorte aplicado.</span>
             </div>
             <div class="font-mono font-bold text-amber-900 shrink-0 bg-white px-3 py-2 rounded-lg border border-amber-200 tabular-nums">
-              <span class="block" x-text="'Reserva Fede: ' + totalesDia().fede.ahorroKcal + ' kcal (' + totalesDia().fede.ahorroCH + 'g CH)'"></span>
-              <span class="block" x-text="'Reserva Ara: ' + totalesDia().arantxa.ahorroKcal + ' kcal (' + totalesDia().arantxa.ahorroCH + 'g CH)'"></span>
+              <span class="block" x-text="'Colchón Fede: ' + totalesDia().fede.ahorroKcal + ' kcal (' + totalesDia().fede.ahorroCH + 'g CH)'"></span>
+              <span class="block" x-text="'Colchón Ara: ' + totalesDia().arantxa.ahorroKcal + ' kcal (' + totalesDia().arantxa.ahorroCH + 'g CH)'"></span>
             </div>
           </div>
 
-          <!-- PANEL DE BALANCE ENERGÉTICO Y MACRONUTRIENTES (CONSUMIDO VS OBJETIVO) -->
+          <!-- PANEL DE TOTALES DIARIOS CON COLORES DIFERENCIADOS (AZUL FEDE / ESMERALDA ARANTXA) -->
           <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
             
-            <!-- Resumen Diario FEDE -->
-            <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-surface border border-border rounded-2xl p-5 shadow-sm space-y-5">
-              <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-4">
+            <!-- Tarjeta Totales FEDE (Identidad Azul Cobalto) -->
+            <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-fede-bg border-2 border-fede-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+              <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-fede-border pb-3">
                 <div>
                   <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-sage">Fede · Plan del <span x-text="diaSeleccionado"></span></span>
-                    <span class="text-xs text-ink-secondary font-medium" x-text="'(' + contarComidasCompletadas('Fede') + '/' + comidasDelDia().length + ' tomas registradas)'"></span>
+                    <span class="px-2 py-0.5 rounded-md bg-fede-badge text-white text-xs font-extrabold uppercase tracking-wider">Fede</span>
+                    <span class="text-xs font-bold text-fede-dark" x-text="diaSeleccionado"></span>
+                    <span class="text-xs text-fede-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' hechas'"></span>
                   </div>
-                  <div class="mt-1 flex items-baseline gap-2 tabular-nums">
-                    <span class="text-2xl sm:text-3xl font-extrabold font-mono text-ink" x-text="totalesDia().fede.kcal"></span>
-                    <span class="text-sm font-semibold text-ink-secondary">kcal objetivo hoy</span>
+                  <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
+                    <span class="text-2xl sm:text-3xl font-extrabold font-mono text-fede-dark" x-text="totalesDia().fede.kcal"></span>
+                    <span class="text-xs font-bold text-fede-text">kcal totales hoy</span>
                   </div>
                 </div>
-                <div class="text-right tabular-nums">
-                  <span class="text-xs text-ink-secondary block">Consumido / Restante</span>
-                  <span class="text-sm font-mono font-bold text-ink">
-                    <span class="text-sage" x-text="consumidoDia('fede').kcal + ' kcal'"></span>
-                    <span class="text-ink-muted"> · </span>
-                    <span x-text="'Quedan ' + Math.max(0, totalesDia().fede.kcal - consumidoDia('fede').kcal) + ' kcal'"></span>
+                <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-fede-border">
+                  <span class="text-[11px] font-semibold text-fede-text block">Ya consumido / Restante</span>
+                  <span class="text-xs font-mono font-bold text-fede-dark">
+                    <span x-text="consumidoDia('fede').kcal + ' kcal'"></span>
+                    <span class="text-slate-400"> / </span>
+                    <span class="text-fede-badge" x-text="'Faltan ' + Math.max(0, totalesDia().fede.kcal - consumidoDia('fede').kcal)"></span>
                   </span>
                 </div>
               </div>
 
-              <!-- Tres Barras Editoriales de Macronutrientes (Fede) -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 tabular-nums">
-                <!-- Proteína -->
-                <div class="bg-macro-protBg/60 border border-orange-200/70 rounded-xl p-3.5 space-y-2">
+              <div class="grid grid-cols-3 gap-2.5 tabular-nums">
+                <div class="bg-white border border-fede-border rounded-xl p-3 space-y-1.5">
                   <div class="flex justify-between items-baseline">
-                    <span class="text-xs font-bold text-macro-prot uppercase tracking-wide">Proteína</span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'p') + '%'"></span>
+                    <span class="text-[11px] font-extrabold text-macro-prot uppercase">Proteína</span>
+                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'p') + '%'"></span>
                   </div>
-                  <div class="flex items-baseline justify-between">
-                    <span class="text-lg font-extrabold font-mono text-ink" x-text="totalesDia().fede.p + ' g'"></span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').p + 'g'"></span>
-                  </div>
-                  <div class="w-full h-2 bg-orange-200/60 rounded-full overflow-hidden" role="progressbar" :aria-valuenow="porcentajeConsumido('fede', 'p')" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de proteína Fede">
-                    <div class="h-full bg-macro-prot rounded-full transition-all duration-300" :style="'width: ' + porcentajeConsumido('fede', 'p') + '%'"></div>
+                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().fede.p + 'g'"></div>
+                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').p + 'g'"></div>
+                  <div class="w-full h-1.5 bg-orange-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-macro-prot rounded-full transition-all" :style="'width: ' + porcentajeConsumido('fede', 'p') + '%'"></div>
                   </div>
                 </div>
 
-                <!-- Carbohidratos -->
-                <div class="bg-macro-carbBg/60 border border-amber-200/70 rounded-xl p-3.5 space-y-2">
+                <div class="bg-white border border-fede-border rounded-xl p-3 space-y-1.5">
                   <div class="flex justify-between items-baseline">
-                    <span class="text-xs font-bold text-macro-carb uppercase tracking-wide">Carbohidratos</span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'ch') + '%'"></span>
+                    <span class="text-[11px] font-extrabold text-macro-carb uppercase">Carbos</span>
+                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'ch') + '%'"></span>
                   </div>
-                  <div class="flex items-baseline justify-between">
-                    <span class="text-lg font-extrabold font-mono text-ink" x-text="totalesDia().fede.ch + ' g'"></span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').ch + 'g'"></span>
-                  </div>
-                  <div class="w-full h-2 bg-amber-200/60 rounded-full overflow-hidden" role="progressbar" :aria-valuenow="porcentajeConsumido('fede', 'ch')" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de carbohidratos Fede">
-                    <div class="h-full bg-macro-carb rounded-full transition-all duration-300" :style="'width: ' + porcentajeConsumido('fede', 'ch') + '%'"></div>
+                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().fede.ch + 'g'"></div>
+                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').ch + 'g'"></div>
+                  <div class="w-full h-1.5 bg-amber-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-macro-carb rounded-full transition-all" :style="'width: ' + porcentajeConsumido('fede', 'ch') + '%'"></div>
                   </div>
                 </div>
 
-                <!-- Grasas -->
-                <div class="bg-macro-fatBg/60 border border-indigo-200/70 rounded-xl p-3.5 space-y-2">
+                <div class="bg-white border border-fede-border rounded-xl p-3 space-y-1.5">
                   <div class="flex justify-between items-baseline">
-                    <span class="text-xs font-bold text-macro-fat uppercase tracking-wide">Grasas</span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'g') + '%'"></span>
+                    <span class="text-[11px] font-extrabold text-macro-fat uppercase">Grasas</span>
+                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'g') + '%'"></span>
                   </div>
-                  <div class="flex items-baseline justify-between">
-                    <span class="text-lg font-extrabold font-mono text-ink" x-text="totalesDia().fede.g + ' g'"></span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').g + 'g'"></span>
-                  </div>
-                  <div class="w-full h-2 bg-indigo-200/60 rounded-full overflow-hidden" role="progressbar" :aria-valuenow="porcentajeConsumido('fede', 'g')" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de grasas Fede">
-                    <div class="h-full bg-macro-fat rounded-full transition-all duration-300" :style="'width: ' + porcentajeConsumido('fede', 'g') + '%'"></div>
+                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().fede.g + 'g'"></div>
+                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').g + 'g'"></div>
+                  <div class="w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-macro-fat rounded-full transition-all" :style="'width: ' + porcentajeConsumido('fede', 'g') + '%'"></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Resumen Diario ARANTXA -->
-            <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-surface border border-border rounded-2xl p-5 shadow-sm space-y-5">
-              <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-4">
+            <!-- Tarjeta Totales ARANTXA (Identidad Verde Esmeralda) -->
+            <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-ara-bg border-2 border-ara-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+              <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-ara-border pb-3">
                 <div>
                   <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-sage">Arantxa · Plan del <span x-text="diaSeleccionado"></span></span>
-                    <span class="text-xs text-ink-secondary font-medium" x-text="'(' + contarComidasCompletadas('Arantxa') + '/' + comidasDelDia().length + ' tomas registradas)'"></span>
+                    <span class="px-2 py-0.5 rounded-md bg-ara-badge text-white text-xs font-extrabold uppercase tracking-wider">Arantxa</span>
+                    <span class="text-xs font-bold text-ara-dark" x-text="diaSeleccionado"></span>
+                    <span class="text-xs text-ara-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' hechas'"></span>
                   </div>
-                  <div class="mt-1 flex items-baseline gap-2 tabular-nums">
-                    <span class="text-2xl sm:text-3xl font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.kcal"></span>
-                    <span class="text-sm font-semibold text-ink-secondary">kcal objetivo hoy</span>
+                  <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
+                    <span class="text-2xl sm:text-3xl font-extrabold font-mono text-ara-dark" x-text="totalesDia().arantxa.kcal"></span>
+                    <span class="text-xs font-bold text-ara-text">kcal totales hoy</span>
                   </div>
                 </div>
-                <div class="text-right tabular-nums">
-                  <span class="text-xs text-ink-secondary block">Consumido / Restante</span>
-                  <span class="text-sm font-mono font-bold text-ink">
-                    <span class="text-sage" x-text="consumidoDia('arantxa').kcal + ' kcal'"></span>
-                    <span class="text-ink-muted"> · </span>
-                    <span x-text="'Quedan ' + Math.max(0, totalesDia().arantxa.kcal - consumidoDia('arantxa').kcal) + ' kcal'"></span>
+                <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-ara-border">
+                  <span class="text-[11px] font-semibold text-ara-text block">Ya consumido / Restante</span>
+                  <span class="text-xs font-mono font-bold text-ara-dark">
+                    <span x-text="consumidoDia('arantxa').kcal + ' kcal'"></span>
+                    <span class="text-slate-400"> / </span>
+                    <span class="text-ara-badge" x-text="'Faltan ' + Math.max(0, totalesDia().arantxa.kcal - consumidoDia('arantxa').kcal)"></span>
                   </span>
                 </div>
               </div>
 
-              <!-- Tres Barras Editoriales de Macronutrientes (Arantxa) -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 tabular-nums">
-                <!-- Proteína -->
-                <div class="bg-macro-protBg/60 border border-orange-200/70 rounded-xl p-3.5 space-y-2">
+              <div class="grid grid-cols-3 gap-2.5 tabular-nums">
+                <div class="bg-white border border-ara-border rounded-xl p-3 space-y-1.5">
                   <div class="flex justify-between items-baseline">
-                    <span class="text-xs font-bold text-macro-prot uppercase tracking-wide">Proteína</span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'p') + '%'"></span>
+                    <span class="text-[11px] font-extrabold text-macro-prot uppercase">Proteína</span>
+                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'p') + '%'"></span>
                   </div>
-                  <div class="flex items-baseline justify-between">
-                    <span class="text-lg font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.p + ' g'"></span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').p + 'g'"></span>
-                  </div>
-                  <div class="w-full h-2 bg-orange-200/60 rounded-full overflow-hidden" role="progressbar" :aria-valuenow="porcentajeConsumido('arantxa', 'p')" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de proteína Arantxa">
-                    <div class="h-full bg-macro-prot rounded-full transition-all duration-300" :style="'width: ' + porcentajeConsumido('arantxa', 'p') + '%'"></div>
+                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.p + 'g'"></div>
+                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').p + 'g'"></div>
+                  <div class="w-full h-1.5 bg-orange-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-macro-prot rounded-full transition-all" :style="'width: ' + porcentajeConsumido('arantxa', 'p') + '%'"></div>
                   </div>
                 </div>
 
-                <!-- Carbohidratos -->
-                <div class="bg-macro-carbBg/60 border border-amber-200/70 rounded-xl p-3.5 space-y-2">
+                <div class="bg-white border border-ara-border rounded-xl p-3 space-y-1.5">
                   <div class="flex justify-between items-baseline">
-                    <span class="text-xs font-bold text-macro-carb uppercase tracking-wide">Carbohidratos</span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'ch') + '%'"></span>
+                    <span class="text-[11px] font-extrabold text-macro-carb uppercase">Carbos</span>
+                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'ch') + '%'"></span>
                   </div>
-                  <div class="flex items-baseline justify-between">
-                    <span class="text-lg font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.ch + ' g'"></span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').ch + 'g'"></span>
-                  </div>
-                  <div class="w-full h-2 bg-amber-200/60 rounded-full overflow-hidden" role="progressbar" :aria-valuenow="porcentajeConsumido('arantxa', 'ch')" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de carbohidratos Arantxa">
-                    <div class="h-full bg-macro-carb rounded-full transition-all duration-300" :style="'width: ' + porcentajeConsumido('arantxa', 'ch') + '%'"></div>
+                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.ch + 'g'"></div>
+                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').ch + 'g'"></div>
+                  <div class="w-full h-1.5 bg-amber-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-macro-carb rounded-full transition-all" :style="'width: ' + porcentajeConsumido('arantxa', 'ch') + '%'"></div>
                   </div>
                 </div>
 
-                <!-- Grasas -->
-                <div class="bg-macro-fatBg/60 border border-indigo-200/70 rounded-xl p-3.5 space-y-2">
+                <div class="bg-white border border-ara-border rounded-xl p-3 space-y-1.5">
                   <div class="flex justify-between items-baseline">
-                    <span class="text-xs font-bold text-macro-fat uppercase tracking-wide">Grasas</span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'g') + '%'"></span>
+                    <span class="text-[11px] font-extrabold text-macro-fat uppercase">Grasas</span>
+                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'g') + '%'"></span>
                   </div>
-                  <div class="flex items-baseline justify-between">
-                    <span class="text-lg font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.g + ' g'"></span>
-                    <span class="text-xs font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').g + 'g'"></span>
-                  </div>
-                  <div class="w-full h-2 bg-indigo-200/60 rounded-full overflow-hidden" role="progressbar" :aria-valuenow="porcentajeConsumido('arantxa', 'g')" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de grasas Arantxa">
-                    <div class="h-full bg-macro-fat rounded-full transition-all duration-300" :style="'width: ' + porcentajeConsumido('arantxa', 'g') + '%'"></div>
+                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.g + 'g'"></div>
+                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').g + 'g'"></div>
+                  <div class="w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-macro-fat rounded-full transition-all" :style="'width: ' + porcentajeConsumido('arantxa', 'g') + '%'"></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Estado de Carga Skeleton -->
-          <template x-if="cargandoDieta && comidasDelDia().length === 0">
-            <div class="space-y-4" aria-busy="true">
-              <div class="bg-surface border border-border rounded-2xl p-6 animate-pulse space-y-3">
-                <div class="h-4 bg-subtle rounded w-1/4"></div>
-                <div class="h-6 bg-subtle rounded w-2/3"></div>
-                <div class="h-20 bg-subtle rounded-xl w-full"></div>
-              </div>
-              <div class="bg-surface border border-border rounded-2xl p-6 animate-pulse space-y-3">
-                <div class="h-4 bg-subtle rounded w-1/3"></div>
-                <div class="h-6 bg-subtle rounded w-1/2"></div>
-                <div class="h-20 bg-subtle rounded-xl w-full"></div>
-              </div>
-            </div>
-          </template>
-
-          <!-- LISTA CRONOLÓGICA DE COMIDAS Y REGISTRO RÁPIDO -->
+          <!-- LISTA DE COMIDAS DEL DÍA -->
           <div class="space-y-4">
             <template x-for="(comida, idx) in comidasDelDia()" :key="diaSeleccionado + '_' + idx">
-              <article class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm transition hover:border-stone-300">
+              <article class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
                 
-                <!-- Cabecera de la Toma -->
-                <div class="px-5 py-3.5 bg-canvas/60 border-b border-border flex flex-wrap items-center justify-between gap-2">
+                <!-- Cabecera de Toma -->
+                <div class="px-4 sm:px-5 py-3.5 bg-canvas/80 border-b border-border flex flex-wrap items-center justify-between gap-2">
                   <div class="flex items-center gap-3">
-                    <!-- Botón Checkbox Accesible para marcar comida como registrada/completada -->
+                    <!-- Botón Check Persistente -->
                     <button
                       type="button"
                       @click="toggleComidaCompletada(idx)"
                       :aria-pressed="esComidaCompletada(idx).toString()"
-                      :aria-label="'Marcar ' + comida.ventana + ' como completada'"
-                      :class="esComidaCompletada(idx) ? 'bg-sage border-sage text-white' : 'bg-surface border-stone-300 text-transparent hover:border-sage'"
-                      class="w-7 h-7 rounded-lg border-2 flex items-center justify-center transition shrink-0"
+                      :class="esComidaCompletada(idx) ? 'bg-sage border-sage text-white shadow-sm' : 'bg-white border-stone-300 text-transparent hover:border-sage'"
+                      class="w-8 h-8 rounded-xl border-2 flex items-center justify-center transition shrink-0"
+                      title="Marcar comida como realizada"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </button>
 
                     <div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-sage" x-text="comida.ventana"></span>
-                        <span x-show="cenaSocialActiva && isPreCena(comida.ventana)" class="text-xs font-semibold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">-35% CH/G</span>
-                        <span x-show="tieneSwapActivo(idx)" class="text-xs font-semibold bg-sage-light text-sage px-2 py-0.5 rounded-md border border-sage-border">Ingrediente adaptado</span>
+                      <div class="flex flex-wrap items-center gap-1.5">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="comida.ventana"></span>
+                        <span x-show="esComidaCompletada(idx)" class="text-[11px] font-bold bg-sage-light text-sage px-2 py-0.5 rounded-md border border-sage-border">✓ Completada</span>
+                        <span x-show="tieneSwapActivo(idx)" class="text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md border border-indigo-200">⇄ Receta Recalculada (Isocalórica)</span>
                       </div>
-                      <h3 class="text-base font-bold text-ink mt-0.5" :class="esComidaCompletada(idx) ? 'line-through text-ink-muted' : ''" x-text="comida.plato"></h3>
+                      <h3 class="text-base font-extrabold text-ink mt-0.5" :class="esComidaCompletada(idx) ? 'line-through text-ink-muted' : ''" x-text="tituloPlatoAdaptado(comida, idx)"></h3>
                     </div>
                   </div>
 
-                  <!-- Acciones de la Toma -->
                   <div class="flex items-center gap-2">
-                    <span class="text-xs font-mono text-ink-secondary bg-surface border border-border px-2.5 py-1 rounded-lg" x-text="calcularReparto(textoComidaFede(comida, idx), textoComidaAra(comida, idx))"></span>
+                    <span class="text-xs font-mono font-semibold text-ink-secondary bg-white border border-border px-2.5 py-1.5 rounded-lg" x-text="calcularReparto(comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)"></span>
                     <button
                       type="button"
                       @click="abrirSwap(idx)"
-                      :aria-expanded="(swapAbiertoIdx === idx).toString()"
-                      class="px-3 py-2 rounded-lg border border-border bg-surface hover:bg-subtle text-ink text-xs font-semibold transition flex items-center gap-1.5 min-h-[38px]"
+                      :class="tieneSwapActivo(idx) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-ink border-border hover:bg-subtle'"
+                      class="px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 min-h-[40px]"
                     >
-                      <svg class="w-3.5 h-3.5 text-sage" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                      <span>Intercambiar</span>
+                      <span>⇄ Intercambiar</span>
                     </button>
                   </div>
                 </div>
 
-                <div class="p-5 space-y-4">
-                  <!-- PANEL DE INTERCAMBIO DE INGREDIENTES (CON COMPENSACIÓN AUTOMÁTICA DE LÍPIDOS) -->
-                  <div x-show="swapAbiertoIdx === idx" x-cloak class="bg-canvas border border-border rounded-xl p-4 space-y-3">
-                    <div class="flex items-center justify-between border-b border-border pb-2">
+                <div class="p-4 sm:p-5 space-y-4">
+                  <!-- PANEL DE INTERCAMBIO MATRICIAL 3x3 (CUADRA P, CH, G y KCAL AL MILÍMETRO) -->
+                  <div x-show="swapAbiertoIdx === idx" x-cloak class="bg-indigo-50/70 border-2 border-indigo-200 rounded-2xl p-4 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 pb-2.5">
                       <div>
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-ink">Sustitución Nutricional Equivalente</h4>
-                        <p class="text-xs text-ink-secondary">Recalcula gramos en crudo y ajusta automáticamente los ml de AOVE si cambia la grasa del alimento.</p>
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-indigo-950">Motor de Balanceo Exacto de Macronutrientes (P + CH + G + Kcal)</h4>
+                        <p class="text-xs text-indigo-900 mt-0.5">Al cambiar un alimento, el sistema recalcula simultáneamente los gramos de proteína, de carbohidrato y de aceite para que los macros y calorías de esta comida no se descuadren ni un gramo.</p>
                       </div>
-                      <button type="button" @click="resetSwap(idx)" class="text-xs font-semibold text-sage hover:underline shrink-0">
-                        Restaurar receta original
+                      <button type="button" @click="resetSwap(idx)" class="px-3 py-1.5 rounded-lg bg-white border border-indigo-300 text-xs font-bold text-indigo-900 hover:bg-indigo-100 shrink-0">
+                        Restaurar original
                       </button>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label :for="'swap-prot-' + idx" class="block text-xs font-semibold text-ink mb-1">Sustituir fuente de proteína:</label>
-                        <select :id="'swap-prot-' + idx" @change="aplicarSwap(idx, 'prot', $event.target.value)" class="w-full bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-ink font-medium">
-                          <option value="">Mantener proteína original</option>
-                          <option value="pechuga pollo">Pechuga de pollo (Magra)</option>
-                          <option value="pechuga pavo">Pechuga de pavo (Magra)</option>
-                          <option value="atún al natural">Atún al natural (Escurrido)</option>
-                          <option value="merluza empanada Mercadona">Merluza empanada Mercadona</option>
-                          <option value="merluza blanca">Merluza / Pescado blanco</option>
-                          <option value="solomillo ternera">Solomillo / Ternera magra</option>
-                          <option value="lomo embuchado">Lomo embuchado</option>
-                          <option value="salmón crudo/marinado">Salmón crudo / marinado (Graso)</option>
-                          <option value="huevos enteros">Huevos enteros (Grasos)</option>
+                        <label class="block text-xs font-bold text-indigo-950 mb-1">Sustituir Proteína Principal por:</label>
+                        <select :value="obtenerValorSwap(idx, 'prot')" @change="aplicarSwap(idx, 'prot', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
+                          <option value="">-- Mantener proteína original --</option>
+                          <option value="pechuga pollo">Pechuga de pollo (23g P | 0g CH | 1g G)</option>
+                          <option value="pechuga pavo">Pechuga de pavo (24g P | 0g CH | 1g G)</option>
+                          <option value="atún al natural">Atún al natural (24g P | 0g CH | 1g G)</option>
+                          <option value="merluza blanca">Merluza / Pescado blanco (18g P | 0g CH | 1.5g G)</option>
+                          <option value="merluza empanada Mercadona">Merluza empanada Mercadona (16g P | 14g CH | 6g G)</option>
+                          <option value="solomillo ternera">Solomillo / Ternera magra (22g P | 0g CH | 4.5g G)</option>
+                          <option value="lomo embuchado">Lomo embuchado (32g P | 0g CH | 8g G)</option>
+                          <option value="jamón serrano">Jamón serrano (30g P | 0g CH | 12g G)</option>
+                          <option value="salmón fresco">Salmón fresco / marinado (20g P | 0g CH | 13g G)</option>
+                          <option value="huevos enteros">Huevos enteros (13g P | 1g CH | 11g G)</option>
                         </select>
                       </div>
                       <div>
-                        <label :for="'swap-ch-' + idx" class="block text-xs font-semibold text-ink mb-1">Sustituir fuente de carbohidrato:</label>
-                        <select :id="'swap-ch-' + idx" @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-surface border border-border rounded-lg px-3 py-2.5 text-sm text-ink font-medium">
-                          <option value="">Mantener carbohidrato original</option>
-                          <option value="arroz blanco/basmati">Arroz blanco / basmati (crudo)</option>
-                          <option value="patata">Patata (cruda)</option>
-                          <option value="boniato">Boniato (crudo)</option>
-                          <option value="pasta blanca">Pasta blanca (cruda)</option>
-                          <option value="pan masa madre">Pan de masa madre</option>
-                          <option value="copos de avena">Copos de avena</option>
+                        <label class="block text-xs font-bold text-indigo-950 mb-1">Sustituir Carbohidrato Principal por:</label>
+                        <select :value="obtenerValorSwap(idx, 'ch')" @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
+                          <option value="">-- Mantener carbohidrato original --</option>
+                          <option value="arroz basmati">Arroz blanco / basmati en crudo (78g CH | 7g P)</option>
+                          <option value="patata">Patata en crudo (18g CH | 2g P)</option>
+                          <option value="boniato">Boniato en crudo (20g CH | 1.5g P)</option>
+                          <option value="pasta blanca">Pasta blanca en crudo (74g CH | 12g P)</option>
+                          <option value="pan masa madre">Pan de masa madre (48g CH | 9g P)</option>
+                          <option value="copos de avena">Copos de avena (60g CH | 14g P | 7g G)</option>
+                          <option value="tortitas de arroz">Tortitas de arroz (80g CH | 7g P)</option>
                         </select>
                       </div>
                     </div>
                   </div>
 
-                  <!-- BLOQUE MODO OLLA COMÚN (SUMA TOTAL PARA COCINAR JUNTOS) -->
-                  <div x-show="mostrarSumaComun" class="bg-sage-light/60 border border-sage-border rounded-xl p-3.5">
-                    <div class="flex items-center justify-between mb-2">
-                      <span class="text-xs font-bold uppercase tracking-wider text-sage flex items-center gap-1.5">
-                        <span aria-hidden="true">🍲</span> Peso Total en Crudo para la Olla (Fede + Arantxa)
-                      </span>
-                    </div>
+                  <!-- OLLA COMÚN (SUMA EN CRUDO DE LOS DOS) -->
+                  <div x-show="mostrarSumaComun" class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5 mb-2">
+                      <span>🍲</span> Olla Común · Pesar junto en crudo (Fede + Arantxa)
+                    </span>
                     <div class="flex flex-wrap gap-2">
-                      <template x-for="item in sumarIngredientes(textoComidaFede(comida, idx), textoComidaAra(comida, idx))" :key="item">
-                        <span class="bg-surface border border-sage-border text-ink text-xs font-mono font-semibold px-3 py-1.5 rounded-lg shadow-sm" x-text="item"></span>
+                      <template x-for="(item, iItem) in sumarIngredientes(comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)" :key="iItem + '_' + item">
+                        <span class="bg-white border border-amber-300 text-ink text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow-sm" x-text="item"></span>
                       </template>
                     </div>
                   </div>
 
-                  <!-- DESGLOSE DE CANTIDADES EN CRUDO POR ATLETA -->
+                  <!-- TARJETAS PARALELAS CON COLOR DIFERENCIADO: AZUL (FEDE) vs ESMERALDA (ARANTXA) -->
                   <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
                     
-                    <!-- Ración Fede -->
-                    <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-canvas/70 rounded-xl p-4 border border-border flex flex-col justify-between space-y-3">
+                    <!-- BLOQUE FEDE (AZUL COBALTO) -->
+                    <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-fede-bg border-2 border-fede-border rounded-xl p-4 flex flex-col justify-between space-y-3">
                       <div>
-                        <div class="flex items-center justify-between mb-2">
-                          <span class="text-xs font-bold uppercase tracking-wider text-ink">Ración Fede (Crudo)</span>
-                          <span class="text-xs font-mono text-ink-secondary" x-text="extraerKcalTexto(comida.macrosFede)"></span>
+                        <div class="flex items-center justify-between border-b border-fede-border pb-2 mb-2.5">
+                          <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-fede-badge text-white text-[11px] font-extrabold uppercase">Fede</span>
+                            <span class="text-xs font-bold text-fede-dark">Pesos en crudo</span>
+                          </div>
+                          <span class="text-xs font-mono font-extrabold text-fede-dark" x-text="comidaCalculada(comida, idx, 'fede').macrosObj.kcal + ' kcal'"></span>
                         </div>
                         <ul class="space-y-1.5 text-sm text-ink font-medium">
-                          <template x-for="ing in desglosarListaIngredientes(textoComidaFede(comida, idx))" :key="ing">
-                            <li class="flex items-baseline justify-between border-b border-border/60 pb-1 last:border-0 last:pb-0">
-                              <span x-text="ing.nombre"></span>
-                              <span class="font-mono font-bold text-ink ml-2 shrink-0" x-text="ing.cantidad"></span>
+                          <template x-for="(ing, iIng) in desglosarListaIngredientes(comidaCalculada(comida, idx, 'fede').texto)" :key="iIng + '_' + ing.nombre + '_' + ing.cantidad">
+                            <li class="flex items-baseline justify-between border-b border-fede-border/60 pb-1 last:border-0 last:pb-0">
+                              <span class="text-slate-800" x-text="ing.nombre"></span>
+                              <span class="font-mono font-bold text-fede-dark ml-2 shrink-0 bg-white px-2 py-0.5 rounded border border-fede-border" x-text="ing.cantidad"></span>
                             </li>
                           </template>
                         </ul>
                       </div>
-                      <div x-show="comida.macrosFede" class="pt-2 border-t border-border text-xs font-mono text-ink-secondary flex justify-between" x-text="comida.macrosFede"></div>
+                      <div class="pt-2 border-t border-fede-border flex items-center justify-between text-xs font-mono font-bold text-fede-text">
+                        <span x-text="comidaCalculada(comida, idx, 'fede').macrosTexto"></span>
+                        <span x-show="comidaCalculada(comida, idx, 'fede').notaAjuste" class="text-[10px] bg-white px-2 py-0.5 rounded border border-fede-border text-indigo-700" x-text="comidaCalculada(comida, idx, 'fede').notaAjuste"></span>
+                      </div>
                     </div>
 
-                    <!-- Ración Arantxa -->
-                    <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-canvas/70 rounded-xl p-4 border border-border flex flex-col justify-between space-y-3">
+                    <!-- BLOQUE ARANTXA (VERDE ESMERALDA) -->
+                    <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-ara-bg border-2 border-ara-border rounded-xl p-4 flex flex-col justify-between space-y-3">
                       <div>
-                        <div class="flex items-center justify-between mb-2">
-                          <span class="text-xs font-bold uppercase tracking-wider text-ink">Ración Arantxa (Crudo)</span>
-                          <span class="text-xs font-mono text-ink-secondary" x-text="extraerKcalTexto(comida.macrosArantxa)"></span>
+                        <div class="flex items-center justify-between border-b border-ara-border pb-2 mb-2.5">
+                          <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-ara-badge text-white text-[11px] font-extrabold uppercase">Arantxa</span>
+                            <span class="text-xs font-bold text-ara-dark">Pesos en crudo</span>
+                          </div>
+                          <span class="text-xs font-mono font-extrabold text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').macrosObj.kcal + ' kcal'"></span>
                         </div>
                         <ul class="space-y-1.5 text-sm text-ink font-medium">
-                          <template x-for="ing in desglosarListaIngredientes(textoComidaAra(comida, idx))" :key="ing">
-                            <li class="flex items-baseline justify-between border-b border-border/60 pb-1 last:border-0 last:pb-0">
-                              <span x-text="ing.nombre"></span>
-                              <span class="font-mono font-bold text-ink ml-2 shrink-0" x-text="ing.cantidad"></span>
+                          <template x-for="(ing, iIng) in desglosarListaIngredientes(comidaCalculada(comida, idx, 'arantxa').texto)" :key="iIng + '_' + ing.nombre + '_' + ing.cantidad">
+                            <li class="flex items-baseline justify-between border-b border-ara-border/60 pb-1 last:border-0 last:pb-0">
+                              <span class="text-slate-800" x-text="ing.nombre"></span>
+                              <span class="font-mono font-bold text-ara-dark ml-2 shrink-0 bg-white px-2 py-0.5 rounded border border-ara-border" x-text="ing.cantidad"></span>
                             </li>
                           </template>
                         </ul>
                       </div>
-                      <div x-show="comida.macrosArantxa" class="pt-2 border-t border-border text-xs font-mono text-ink-secondary flex justify-between" x-text="comida.macrosArantxa"></div>
+                      <div class="pt-2 border-t border-ara-border flex items-center justify-between text-xs font-mono font-bold text-ara-text">
+                        <span x-text="comidaCalculada(comida, idx, 'arantxa').macrosTexto"></span>
+                        <span x-show="comidaCalculada(comida, idx, 'arantxa').notaAjuste" class="text-[10px] bg-white px-2 py-0.5 rounded border border-ara-border text-indigo-700" x-text="comidaCalculada(comida, idx, 'arantxa').notaAjuste"></span>
+                      </div>
                     </div>
 
                   </div>
@@ -584,53 +547,38 @@
         </section>
 
         <!-- =========================================================
-             VISTA 2: LISTA DE LA COMPRA Y DESPENSA SEMANAL
+             VISTA 2: LISTA DE LA COMPRA SEMANAL
              ========================================================= -->
-        <section x-show="tab === 'compra'" x-cloak aria-labelledby="heading-compra" class="space-y-6">
+        <section x-show="tab === 'compra'" x-cloak class="space-y-6">
           <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4 mb-5">
               <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-sage">Cero Desperdicio · 7 Días</span>
-                <h2 id="heading-compra" class="text-xl font-extrabold text-ink mt-0.5">Lista de la Compra Semanal</h2>
-                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo de las raciones de Fede y Arantxa de lunes a domingo (excluidos suplementos de carrera).</p>
+                <h2 class="text-xl font-extrabold text-ink mt-0.5">Lista de la Compra Semanal</h2>
+                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo (incluyendo los intercambios que hayas aplicado en la semana).</p>
               </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button type="button" @click="limpiarChecksCompra()" class="px-3.5 py-2.5 rounded-xl border border-border bg-canvas hover:bg-subtle text-xs font-semibold text-ink transition min-h-[42px]">
-                  Restaurar lista
-                </button>
-              </div>
+              <button type="button" @click="limpiarChecksCompra()" class="px-3.5 py-2.5 rounded-xl border border-border bg-canvas hover:bg-subtle text-xs font-semibold text-ink transition min-h-[42px]">
+                Desmarcar todo
+              </button>
             </div>
 
-            <!-- Buscador / Filtro rápido de productos -->
-            <div class="mb-6">
-              <label for="buscar-compra" class="sr-only">Filtrar ingrediente en la lista de la compra</label>
-              <input
-                id="buscar-compra"
-                type="search"
-                x-model="filtroCompra"
-                placeholder="Buscar ingrediente (ej. pollo, arroz, calabacín)..."
-                class="w-full bg-canvas border border-border rounded-xl px-4 py-3 text-sm text-ink placeholder:text-ink-muted"
-              >
+            <div class="mb-5">
+              <input type="search" x-model="filtroCompra" placeholder="Filtrar ingrediente (ej. pollo, arroz, patata)..." class="w-full bg-canvas border border-border rounded-xl px-4 py-3 text-sm text-ink">
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <template x-for="cat in listaCompraAgrupada()" :key="cat.categoria">
-                <div class="bg-canvas/50 border border-border rounded-xl p-4 space-y-3">
-                  <h3 class="text-xs font-bold uppercase tracking-wider text-ink-secondary border-b border-border pb-2" x-text="cat.categoria"></h3>
+                <div class="bg-canvas/60 border border-border rounded-xl p-4 space-y-3">
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink-secondary border-b border-border pb-2" x-text="cat.categoria"></h3>
                   <ul class="divide-y divide-border/70">
                     <template x-for="prod in cat.items" :key="prod.clave">
                       <li>
-                        <button
-                          type="button"
-                          @click="toggleCheckCompra(prod.clave)"
-                          :aria-pressed="(!!itemsComprados[prod.clave]).toString()"
-                          class="w-full py-2.5 flex items-center justify-between gap-3 text-left group min-h-[44px]"
-                        >
+                        <button type="button" @click="toggleCheckCompra(prod.clave)" class="w-full py-2.5 flex items-center justify-between gap-3 text-left min-h-[44px]">
                           <div class="flex items-center gap-3">
-                            <span :class="itemsComprados[prod.clave] ? 'bg-sage border-sage text-white' : 'bg-surface border-stone-300 text-transparent group-hover:border-sage'" class="w-5 h-5 rounded-md border flex items-center justify-center transition shrink-0">
-                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span :class="itemsComprados[prod.clave] ? 'bg-sage border-sage text-white' : 'bg-white border-stone-300 text-transparent'" class="w-5 h-5 rounded-md border flex items-center justify-center transition shrink-0">
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             </span>
-                            <span :class="itemsComprados[prod.clave] ? 'line-through text-ink-muted' : 'text-ink font-medium'" class="text-sm capitalize" x-text="prod.nombre"></span>
+                            <span :class="itemsComprados[prod.clave] ? 'line-through text-ink-muted' : 'text-ink font-semibold'" class="text-sm capitalize" x-text="prod.nombre"></span>
                           </div>
                           <span :class="itemsComprados[prod.clave] ? 'text-ink-muted bg-subtle' : 'text-sage bg-sage-light border border-sage-border'" class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg tabular-nums shrink-0" x-text="prod.totalFormateado"></span>
                         </button>
@@ -644,16 +592,14 @@
         </section>
 
         <!-- =========================================================
-             VISTA 3: BIOMETRÍA, PERÍMETROS Y EVOLUCIÓN CORPORAL
+             VISTA 3: BIOMETRÍA Y PROGRESO
              ========================================================= -->
-        <section x-show="tab === 'checkin'" x-cloak aria-labelledby="heading-biometria" class="space-y-6">
-          
-          <!-- Resumen de Recomposición Corporal y Meta Ultratrail -->
+        <section x-show="tab === 'checkin'" x-cloak class="space-y-6">
           <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
             <div class="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
               <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-sage" x-text="form.atleta === 'Fede' ? 'Ruta hacia Ultratrail 50km (30 Ene 2027)' : 'Seguimiento de Recomposición Corporal'"></span>
-                <h2 id="heading-biometria" class="text-xl font-extrabold text-ink mt-0.5" x-text="form.atleta === 'Fede' ? 'Objetivo: 87.5 kg (Preservando Masa Muscular)' : 'Objetivo: ~65.0 kg y Mejora de Fuerza'"></h2>
+                <h2 class="text-xl font-extrabold text-ink mt-0.5" x-text="form.atleta === 'Fede' ? 'Objetivo: 87.5 kg (Preservando Masa Muscular)' : 'Objetivo: ~65.0 kg y Mejora de Fuerza'"></h2>
               </div>
               <div class="bg-canvas border border-border px-4 py-2.5 rounded-xl text-right tabular-nums">
                 <span class="text-xs text-ink-secondary block" x-text="'Peso en ' + form.semana"></span>
@@ -661,22 +607,20 @@
               </div>
             </div>
 
-            <!-- Barra de Progreso de Fede hacia 87.5 kg -->
             <div x-show="form.atleta === 'Fede'" class="space-y-2 tabular-nums">
               <div class="flex justify-between text-xs font-semibold text-ink-secondary">
                 <span>Salida: 93.5 kg</span>
                 <span class="text-sage font-bold" x-text="progresoMetaFede() + '% del objetivo completado'"></span>
                 <span>Meta: 87.5 kg</span>
               </div>
-              <div class="w-full h-3 bg-canvas rounded-full overflow-hidden border border-border" role="progressbar" :aria-valuenow="progresoMetaFede()" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de pérdida de peso hacia 87.5 kg">
+              <div class="w-full h-3 bg-canvas rounded-full overflow-hidden border border-border">
                 <div class="h-full bg-sage rounded-full transition-all duration-500" :style="'width: ' + progresoMetaFede() + '%'"></div>
               </div>
             </div>
 
-            <!-- Indicadores Comparativos (Semana Seleccionada vs Semana 1) -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 tabular-nums">
               <div class="bg-canvas border border-border p-3.5 rounded-xl">
-                <span class="text-xs font-semibold text-ink-secondary block">Variación Peso (vs S1)</span>
+                <span class="text-xs font-semibold text-ink-secondary block">Peso (vs Sem 1)</span>
                 <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().peso <= 0 ? 'text-sage' : 'text-macro-prot'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
               </div>
               <div class="bg-canvas border border-border p-3.5 rounded-xl">
@@ -684,179 +628,97 @@
                 <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().cintura <= 0 ? 'text-sage' : 'text-macro-prot'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
               </div>
               <div class="bg-canvas border border-border p-3.5 rounded-xl">
-                <span class="text-xs font-semibold text-ink-secondary block">Perímetro Brazo</span>
+                <span class="text-xs font-semibold text-ink-secondary block">Brazo (Músculo)</span>
                 <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().brazo >= 0 ? 'text-sage' : 'text-macro-carb'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
               </div>
               <div class="bg-canvas border border-border p-3.5 rounded-xl">
-                <span class="text-xs font-semibold text-ink-secondary block">Perímetro Muslo</span>
+                <span class="text-xs font-semibold text-ink-secondary block">Muslo (Músculo)</span>
                 <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().muslo >= 0 ? 'text-sage' : 'text-macro-carb'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
               </div>
             </div>
           </div>
 
-          <!-- Formulario de Registro Antropométrico y Tabla Histórica en Rejilla -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- Formulario (7 columnas en escritorio) -->
-            <form @submit.prevent="enviarCheckin" class="lg:col-span-7 bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
-              <div class="border-b border-border pb-3">
-                <h3 class="text-base font-bold text-ink">Registrar o Editar Control Semanal</h3>
-                <p class="text-xs text-ink-secondary">Al cambiar de semana se carga automáticamente su Fecha de Control oficial y las medidas registradas.</p>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form @submit.prevent="enviarCheckin" class="lg:col-span-7 bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+              <h3 class="text-base font-bold text-ink border-b border-border pb-3">Registrar Control Semanal</h3>
+              <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label for="checkin-atleta" class="block text-xs font-bold text-ink mb-1.5">Atleta</label>
-                  <select id="checkin-atleta" x-model="form.atleta" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-xl px-3.5 py-3 text-sm text-ink font-semibold">
+                  <label class="block text-xs font-bold text-ink mb-1">Atleta</label>
+                  <select x-model="form.atleta" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-xl px-3 py-3 text-sm font-semibold">
                     <option value="Fede">Fede</option>
                     <option value="Arantxa">Arantxa</option>
                   </select>
                 </div>
                 <div>
-                  <label for="checkin-semana" class="block text-xs font-bold text-ink mb-1.5">Semana del Plan</label>
-                  <select id="checkin-semana" x-model="form.semana" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-xl px-3.5 py-3 text-sm text-ink font-semibold">
+                  <label class="block text-xs font-bold text-ink mb-1">Semana</label>
+                  <select x-model="form.semana" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-xl px-3 py-3 text-sm font-semibold">
                     <template x-for="n in 14" :key="n">
-                      <option :value="'Semana ' + n" x-text="'Semana ' + n + ' (' + (FECHAS_SEMANAS_DEFAULT['Semana ' + n] || '') + ')'"></option>
+                      <option :value="'Semana ' + n" x-text="'Semana ' + n"></option>
                     </template>
                   </select>
                 </div>
               </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label for="checkin-fecha" class="block text-xs font-bold text-ink mb-1.5">Fecha de Control</label>
-                  <input id="checkin-fecha" type="date" x-model="form.fecha" class="w-full bg-canvas border border-border rounded-xl px-3.5 py-3 text-sm font-mono text-ink font-semibold" required>
+                  <label class="block text-xs font-bold text-ink mb-1">Fecha Control</label>
+                  <input type="date" x-model="form.fecha" class="w-full bg-canvas border border-border rounded-xl px-3 py-3 text-sm font-mono font-semibold" required>
                 </div>
                 <div>
-                  <label for="checkin-peso" class="block text-xs font-bold text-sage mb-1.5">Peso en ayunas (kg)</label>
-                  <input id="checkin-peso" type="number" step="0.1" x-model="form.peso" placeholder="Ej. 93.5" class="w-full bg-surface border-2 border-sage rounded-xl px-3.5 py-3 text-sm font-mono text-ink font-bold" required>
+                  <label class="block text-xs font-bold text-sage mb-1">Peso en ayunas (kg)</label>
+                  <input type="number" step="0.1" x-model="form.peso" class="w-full bg-white border-2 border-sage rounded-xl px-3 py-3 text-sm font-mono font-bold" required>
                 </div>
               </div>
-
-              <fieldset class="border-t border-border pt-4">
-                <legend class="text-xs font-bold uppercase tracking-wider text-ink-secondary mb-3">Perímetros Corporales (cm)</legend>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label for="checkin-pecho" class="block text-xs font-medium text-ink-secondary mb-1">Pecho (cm)</label>
-                    <input id="checkin-pecho" type="number" step="0.5" x-model="form.pecho" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono text-ink">
-                  </div>
-                  <div>
-                    <label for="checkin-cintura" class="block text-xs font-bold text-ink mb-1">Cintura (cm)</label>
-                    <input id="checkin-cintura" type="number" step="0.5" x-model="form.cintura" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono text-ink">
-                  </div>
-                  <div>
-                    <label for="checkin-cadera" class="block text-xs font-medium text-ink-secondary mb-1">Cadera (cm)</label>
-                    <input id="checkin-cadera" type="number" step="0.5" x-model="form.cadera" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono text-ink">
-                  </div>
-                  <div>
-                    <label for="checkin-brazo" class="block text-xs font-bold text-ink mb-1">Brazo (cm)</label>
-                    <input id="checkin-brazo" type="number" step="0.5" x-model="form.brazo" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono text-ink">
-                  </div>
-                  <div class="col-span-2 sm:col-span-2">
-                    <label for="checkin-muslo" class="block text-xs font-bold text-ink mb-1">Muslo (cm)</label>
-                    <input id="checkin-muslo" type="number" step="0.5" x-model="form.muslo" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono text-ink">
-                  </div>
-                </div>
-              </fieldset>
-
-              <div class="pt-2">
-                <button type="submit" :disabled="enviando" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 px-6 rounded-xl text-sm shadow-sm transition disabled:opacity-50 min-h-[48px]">
-                  <span x-text="enviando ? 'Guardando en Google Sheets...' : 'Guardar Medidas de ' + form.semana + ' (' + form.atleta + ')'"></span>
-                </button>
-                <p x-show="mensajeExito" x-cloak role="status" class="text-sage text-xs font-bold text-center mt-2.5">✓ Medidas sincronizadas correctamente en Google Sheets</p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 border-t border-border pt-4">
+                <div><label class="block text-xs font-semibold text-ink-secondary mb-1">Pecho (cm)</label><input type="number" step="0.5" x-model="form.pecho" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
+                <div><label class="block text-xs font-bold text-ink mb-1">Cintura (cm)</label><input type="number" step="0.5" x-model="form.cintura" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
+                <div><label class="block text-xs font-semibold text-ink-secondary mb-1">Cadera (cm)</label><input type="number" step="0.5" x-model="form.cadera" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
+                <div><label class="block text-xs font-bold text-ink mb-1">Brazo (cm)</label><input type="number" step="0.5" x-model="form.brazo" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
+                <div class="col-span-2"><label class="block text-xs font-bold text-ink mb-1">Muslo (cm)</label><input type="number" step="0.5" x-model="form.muslo" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
               </div>
+              <button type="submit" :disabled="enviando" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition min-h-[48px]">
+                <span x-text="enviando ? 'Guardando en Google Sheets...' : 'Guardar Medidas de ' + form.semana + ' (' + form.atleta + ')'"></span>
+              </button>
+              <p x-show="mensajeExito" x-cloak class="text-sage text-xs font-bold text-center">✓ Guardado correctamente en Google Sheets</p>
             </form>
 
-            <!-- Tabla Histórica Interactiva (5 columnas en escritorio) -->
-            <div class="lg:col-span-5 bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-              <div class="space-y-4">
-                <div class="border-b border-border pb-3">
-                  <h3 class="text-base font-bold text-ink">Histórico de Semanas (<span x-text="form.atleta"></span>)</h3>
-                  <p class="text-xs text-ink-secondary">Pulsa sobre cualquier fila para cargar esa semana en el formulario.</p>
-                </div>
-
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left text-xs tabular-nums">
-                    <thead>
-                      <tr class="text-ink-secondary border-b border-border">
-                        <th scope="col" class="pb-2.5 font-bold">Sem</th>
-                        <th scope="col" class="pb-2.5 font-bold">Fecha</th>
-                        <th scope="col" class="pb-2.5 font-bold">Peso</th>
-                        <th scope="col" class="pb-2.5 font-bold">Cint.</th>
-                        <th scope="col" class="pb-2.5 font-bold">Brazo</th>
-                        <th scope="col" class="pb-2.5 font-bold">Muslo</th>
+            <div class="lg:col-span-5 bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
+              <h3 class="text-base font-bold text-ink border-b border-border pb-3 mb-3">Histórico (<span x-text="form.atleta"></span>)</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs tabular-nums">
+                  <thead>
+                    <tr class="text-ink-secondary border-b border-border">
+                      <th class="pb-2">Sem</th><th class="pb-2">Fecha</th><th class="pb-2">Peso</th><th class="pb-2">Cint.</th><th class="pb-2">Brazo</th><th class="pb-2">Muslo</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-border/70">
+                    <template x-for="fila in historicoAtleta()" :key="fila.semana">
+                      <tr @click="form.semana = fila.semana; sincronizarFechaSemana()" :class="form.semana === fila.semana ? 'bg-sage-light font-bold' : 'hover:bg-canvas'" class="cursor-pointer">
+                        <td class="py-2.5 font-bold" x-text="fila.semana.replace('Semana ', 'S')"></td>
+                        <td class="py-2.5 font-mono text-ink-secondary" x-text="fila.fecha"></td>
+                        <td class="py-2.5 font-mono font-bold text-sage" x-text="fila.peso ? fila.peso + 'kg' : '—'"></td>
+                        <td class="py-2.5 font-mono" x-text="fila.cintura || '—'"></td>
+                        <td class="py-2.5 font-mono" x-text="fila.brazo || '—'"></td>
+                        <td class="py-2.5 font-mono" x-text="fila.muslo || '—'"></td>
                       </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border/70">
-                      <template x-for="fila in historicoAtleta()" :key="fila.semana">
-                        <tr
-                          @click="form.semana = fila.semana; sincronizarFechaSemana()"
-                          :class="form.semana === fila.semana ? 'bg-sage-light/70 font-semibold' : 'hover:bg-canvas'"
-                          class="cursor-pointer transition"
-                        >
-                          <td class="py-2.5 font-bold text-ink" x-text="fila.semana.replace('Semana ', 'S')"></td>
-                          <td class="py-2.5 font-mono text-ink-secondary" x-text="fila.fecha"></td>
-                          <td class="py-2.5 font-mono font-bold text-sage" x-text="fila.peso ? fila.peso + 'kg' : '—'"></td>
-                          <td class="py-2.5 font-mono text-ink" x-text="fila.cintura ? fila.cintura : '—'"></td>
-                          <td class="py-2.5 font-mono text-ink" x-text="fila.brazo ? fila.brazo : '—'"></td>
-                          <td class="py-2.5 font-mono text-ink" x-text="fila.muslo ? fila.muslo : '—'"></td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </div>
+                    </template>
+                  </tbody>
+                </table>
               </div>
             </div>
-
           </div>
         </section>
 
         <!-- =========================================================
-             VISTA 4: IMPORTADOR DE PLAN SEMANAL GENERADO POR GEMINI
+             VISTA 4: IMPORTAR SEMANA DESDE GEMINI
              ========================================================= -->
-        <section x-show="tab === 'ia'" x-cloak aria-labelledby="heading-ia" class="space-y-6">
+        <section x-show="tab === 'ia'" x-cloak class="space-y-6">
           <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 max-w-3xl">
-            <div class="border-b border-border pb-4">
-              <span class="text-xs font-bold uppercase tracking-wider text-sage">Sincronización Semanal Automática</span>
-              <h2 id="heading-ia" class="text-xl font-extrabold text-ink mt-0.5">Publicar Nueva Dieta desde Gemini</h2>
-              <p class="text-xs sm:text-sm text-ink-secondary mt-1">Actualiza las 35 tomas semanales de Fede y Arantxa en un solo clic tras evaluar tus medidas y entrenamientos en Gemini.</p>
-            </div>
-
-            <ol class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-ink-secondary">
-              <li class="bg-canvas border border-border p-3.5 rounded-xl">
-                <strong class="text-ink block mb-1">1. Registra tu control</strong>
-                Guarda el peso en ayunas y perímetros del lunes en la sección <em>Biometría</em>.
-              </li>
-              <li class="bg-canvas border border-border p-3.5 rounded-xl">
-                <strong class="text-ink block mb-1">2. Envía tus entrenos</strong>
-                Sube la foto de tu semana de running e indica los días de CrossFit a tu skill de Gemini.
-              </li>
-              <li class="bg-canvas border border-border p-3.5 rounded-xl">
-                <strong class="text-ink block mb-1">3. Pega el JSON</strong>
-                Pega a continuación el bloque JSON que te devuelve Gemini para volcarlo al Google Sheet.
-              </li>
-            </ol>
-
-            <div>
-              <label for="json-gemini-input" class="block text-xs font-bold text-ink mb-2">Bloque JSON de la semana completa (Lunes a Domingo):</label>
-              <textarea
-                id="json-gemini-input"
-                x-model="jsonNuevaDieta"
-                rows="9"
-                placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno","plato":"...","fede_crudo":"...","fede_macros":"...","arantxa_crudo":"...","arantxa_macros":"..."}]'
-                class="w-full bg-canvas border border-border rounded-xl p-4 text-xs font-mono text-ink placeholder:text-ink-muted"
-              ></textarea>
-            </div>
-
-            <button
-              type="button"
-              @click="importarDietaGemini()"
-              :disabled="enviando || !jsonNuevaDieta"
-              class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 px-6 rounded-xl text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]"
-            >
+            <h2 class="text-xl font-extrabold text-ink">Publicar Nueva Dieta desde Gemini</h2>
+            <textarea x-model="jsonNuevaDieta" rows="9" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno",...}]' class="w-full bg-canvas border border-border rounded-xl p-4 text-xs font-mono text-ink"></textarea>
+            <button type="button" @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]">
               <span x-text="enviando ? 'Escribiendo los 7 días en Google Sheets...' : 'Publicar Nueva Semana en Google Sheets'"></span>
             </button>
-            <p x-show="mensajeDietaActualizada" x-cloak role="status" class="text-sage text-xs font-bold text-center">✓ ¡Plan semanal actualizado de lunes a domingo!</p>
+            <p x-show="mensajeDietaActualizada" x-cloak class="text-sage text-xs font-bold text-center">✓ ¡Plan semanal actualizado!</p>
           </div>
         </section>
 
@@ -864,27 +726,24 @@
     </main>
 
     <!-- ==========================================
-         BARRA DE NAVEGACIÓN INFERIOR (MÓVIL < 1024px)
+         BARRA INFERIOR MÓVIL
          ========================================== -->
-    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border px-2 pb-[env(safe-area-inset-bottom)]" aria-label="Navegación inferior móvil">
-      <div class="grid grid-cols-4 gap-1 max-w-md mx-auto py-1.5">
-        <button type="button" @click="cambiarTab('dieta')" :aria-current="tab === 'dieta' ? 'page' : null" :class="tab === 'dieta' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl transition min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border px-2 safe-bottom">
+      <div class="grid grid-cols-4 gap-1 max-w-md mx-auto py-1">
+        <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
+          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           <span class="text-[11px]">Hoy</span>
         </button>
-
-        <button type="button" @click="cambiarTab('compra')" :aria-current="tab === 'compra' ? 'page' : null" :class="tab === 'compra' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl transition min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+        <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
+          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
           <span class="text-[11px]">Compra</span>
         </button>
-
-        <button type="button" @click="cambiarTab('checkin')" :aria-current="tab === 'checkin' ? 'page' : null" :class="tab === 'checkin' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl transition min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
+          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
           <span class="text-[11px]">Biometría</span>
         </button>
-
-        <button type="button" @click="cambiarTab('ia')" :aria-current="tab === 'ia' ? 'page' : null" :class="tab === 'ia' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl transition min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <button type="button" @click="cambiarTab('ia')" :class="tab === 'ia' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
+          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
           <span class="text-[11px]">Importar</span>
         </button>
       </div>
@@ -893,26 +752,16 @@
   </div>
 
   <!-- ==========================================
-       LÓGICA DE NEGOCIO Y GESTIÓN DE ESTADO
+       MOTOR MATEMÁTICO DE NUTRICIÓN Y ESTADO
        ========================================== -->
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwiBFN8Jo15OC9NppoNY21WA1p88M8M08W4QG4Iwl84VinasRmDUqjK8FUsgAq2UUqB/exec";
 
     const FECHAS_SEMANAS_DEFAULT = {
-      "Semana 1": "2026-10-26",
-      "Semana 2": "2026-11-02",
-      "Semana 3": "2026-11-09",
-      "Semana 4": "2026-11-16",
-      "Semana 5": "2026-11-23",
-      "Semana 6": "2026-11-30",
-      "Semana 7": "2026-12-07",
-      "Semana 8": "2026-12-14",
-      "Semana 9": "2026-12-21",
-      "Semana 10": "2026-12-28",
-      "Semana 11": "2027-01-04",
-      "Semana 12": "2027-01-11",
-      "Semana 13": "2027-01-18",
-      "Semana 14": "2027-01-25"
+      "Semana 1": "2026-10-26", "Semana 2": "2026-11-02", "Semana 3": "2026-11-09", "Semana 4": "2026-11-16",
+      "Semana 5": "2026-11-23", "Semana 6": "2026-11-30", "Semana 7": "2026-12-07", "Semana 8": "2026-12-14",
+      "Semana 9": "2026-12-21", "Semana 10": "2026-12-28", "Semana 11": "2027-01-04", "Semana 12": "2027-01-11",
+      "Semana 13": "2027-01-18", "Semana 14": "2027-01-25"
     };
 
     const DATOS_SEMANA1_RESPALDO = {
@@ -920,22 +769,31 @@
       "Arantxa": { peso: "67", pecho: "89", cintura: "80", cadera: "84", brazo: "28", muslo: "53" }
     };
 
-    const MACROS_ALIMENTOS = {
-      "pechuga pollo": { p: 23, ch: 0, g: 1 },
-      "pechuga pavo": { p: 24, ch: 0, g: 1 },
-      "atún al natural": { p: 24, ch: 0, g: 1 },
-      "merluza empanada Mercadona": { p: 16, ch: 14, g: 6 },
-      "merluza blanca": { p: 18, ch: 0, g: 2 },
-      "solomillo ternera": { p: 22, ch: 0, g: 5 },
-      "lomo embuchado": { p: 32, ch: 0, g: 8 },
-      "salmón crudo/marinado": { p: 20, ch: 0, g: 13 },
-      "huevos enteros": { p: 13, ch: 0, g: 11 },
-      "arroz blanco/basmati": { p: 7, ch: 78, g: 1 },
-      "patata": { p: 2, ch: 18, g: 0.1 },
-      "boniato": { p: 1.5, ch: 20, g: 0.1 },
-      "pasta blanca": { p: 12, ch: 74, g: 1.5 },
-      "pan masa madre": { p: 9, ch: 48, g: 1 },
-      "copos de avena": { p: 14, ch: 60, g: 7 }
+    /**
+     * BASE DE DATOS BROMATOLÓGICA EXACTA (Macros por cada 100g en crudo)
+     * Permite resolver el sistema 3x3 (Proteína + Carbohidrato + Grasa/AOVE) sin descuadrar ni 1 kcal.
+     */
+    const CATALOGO_NUTRICIONAL = {
+      // PROTEÍNAS
+      "pechuga pollo":              { tipo: 'prot', p: 23.0, ch: 0.0,  g: 1.2 },
+      "pechuga pavo":               { tipo: 'prot', p: 24.0, ch: 0.0,  g: 1.0 },
+      "atún al natural":            { tipo: 'prot', p: 24.0, ch: 0.0,  g: 1.0 },
+      "merluza blanca":             { tipo: 'prot', p: 18.0, ch: 0.0,  g: 1.8 },
+      "merluza empanada Mercadona": { tipo: 'prot', p: 16.0, ch: 14.0, g: 6.0 },
+      "solomillo ternera":          { tipo: 'prot', p: 22.0, ch: 0.0,  g: 4.5 },
+      "lomo embuchado":             { tipo: 'prot', p: 32.0, ch: 0.0,  g: 8.0 },
+      "jamón serrano":              { tipo: 'prot', p: 30.0, ch: 0.0,  g: 12.0 },
+      "salmón fresco":              { tipo: 'prot', p: 20.0, ch: 0.0,  g: 13.0 },
+      "hamburguesa ave magra":      { tipo: 'prot', p: 21.0, ch: 1.0,  g: 4.0 },
+      "huevos enteros":             { tipo: 'prot', p: 13.0, ch: 1.0,  g: 11.0 },
+      // CARBOHIDRATOS
+      "arroz basmati":              { tipo: 'ch',   p: 7.5,  ch: 78.0, g: 0.9 },
+      "patata":                     { tipo: 'ch',   p: 2.0,  ch: 18.0, g: 0.1 },
+      "boniato":                    { tipo: 'ch',   p: 1.6,  ch: 20.0, g: 0.1 },
+      "pasta blanca":               { tipo: 'ch',   p: 12.0, ch: 74.0, g: 1.5 },
+      "pan masa madre":             { tipo: 'ch',   p: 9.0,  ch: 48.0, g: 1.2 },
+      "copos de avena":             { tipo: 'ch',   p: 13.5, ch: 60.0, g: 7.0 },
+      "tortitas de arroz":          { tipo: 'ch',   p: 7.5,  ch: 80.0, g: 2.5 }
     };
 
     function appData() {
@@ -943,7 +801,7 @@
         tab: 'dieta',
         vistaAtleta: localStorage.getItem('hybrid_vista_atleta') || 'Dual',
         diasSemana: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
-        diaSeleccionado: 'Lunes',
+        diaSeleccionado: 'Martes',
         cenaSocialActiva: false,
         mostrarSumaComun: true,
         cargandoDieta: false,
@@ -974,10 +832,34 @@
         },
 
         init() {
-          const mapa = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-          this.diaSeleccionado = mapa[new Date().getDay()] || 'Lunes';
+          // 1. Poner siempre el día real de hoy al entrar en la WebApp
+          this.irAHoy();
+
+          // 2. Si el usuario vuelve a abrir la app desde segundo plano otro día, actualizar al día de hoy
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              const ultimoDiaAbierto = sessionStorage.getItem('hybrid_dia_sesion');
+              const hoyReal = this.nombreDiaHoy();
+              if (ultimoDiaAbierto !== hoyReal) {
+                this.diaSeleccionado = hoyReal;
+                sessionStorage.setItem('hybrid_dia_sesion', hoyReal);
+              }
+            }
+          });
+
           this.sincronizarFechaSemana();
           this.cargarDatos();
+        },
+
+        nombreDiaHoy() {
+          const mapa = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+          return mapa[new Date().getDay()] || 'Lunes';
+        },
+
+        irAHoy() {
+          const hoy = this.nombreDiaHoy();
+          this.diaSeleccionado = hoy;
+          sessionStorage.setItem('hybrid_dia_sesion', hoy);
         },
 
         cambiarTab(nuevaTab) {
@@ -988,26 +870,17 @@
         cambiarVistaAtleta(modo) {
           this.vistaAtleta = modo;
           localStorage.setItem('hybrid_vista_atleta', modo);
-          this.anuncioAccesible = 'Vista cambiada a ' + modo;
         },
 
         seleccionarDia(d) {
           this.diaSeleccionado = d;
           this.cenaSocialActiva = false;
           this.swapAbiertoIdx = null;
-          this.anuncioAccesible = 'Mostrando dieta del ' + d;
         },
 
         abreviarDia(d) {
           const mapa = { 'Lunes': 'Lun', 'Martes': 'Mar', 'Miércoles': 'Mié', 'Jueves': 'Jue', 'Viernes': 'Vie', 'Sábado': 'Sáb', 'Domingo': 'Dom' };
           return mapa[d] || d.slice(0, 3);
-        },
-
-        subtituloCabecera() {
-          if (this.tab === 'dieta') return `${this.diaSeleccionado} · Vista ${this.vistaAtleta}`;
-          if (this.tab === 'compra') return 'Cesta semanal en crudo';
-          if (this.tab === 'checkin') return `Control antropométrico · ${this.form.atleta}`;
-          return 'Sincronización con Gemini';
         },
 
         normalizar(str) {
@@ -1054,97 +927,316 @@
               this.progresionArantxa = data.progresionArantxa;
               localStorage.setItem('hybrid_cache_prog_ara', JSON.stringify(this.progresionArantxa));
             }
+            // Si el Sheet tiene estado sincronizado (checks de comidas e intercambios), los fusiona con localStorage
+            if (data.estadoApp) {
+              if (data.estadoApp.comidasCompletadas) {
+                try {
+                  const remoto = JSON.parse(data.estadoApp.comidasCompletadas);
+                  this.comidasCompletadas = { ...remoto, ...this.comidasCompletadas };
+                  localStorage.setItem('hybrid_comidas_completadas', JSON.stringify(this.comidasCompletadas));
+                } catch(e) {}
+              }
+              if (data.estadoApp.swapsActivos) {
+                try {
+                  const remotoSwaps = JSON.parse(data.estadoApp.swapsActivos);
+                  this.swapsActivos = { ...remotoSwaps, ...this.swapsActivos };
+                  localStorage.setItem('hybrid_swaps_activos', JSON.stringify(this.swapsActivos));
+                } catch(e) {}
+              }
+            }
             this.sincronizarFechaSemana();
-            this.anuncioAccesible = 'Datos sincronizados con Google Sheets';
           } catch (e) {
-            console.error("Error sincronizando con Google Sheets:", e);
             this.errorConexion = true;
           }
           this.cargandoDieta = false;
         },
 
-        // Registro de Comidas Completadas
+        // Guarda en segundo plano en Google Sheets para que el PC y el Móvil compartan los checks
+        async sincronizarEstadoRemoto(clave, objeto) {
+          try {
+            fetch(API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'sync_estado', clave, valor: JSON.stringify(objeto) })
+            });
+          } catch (e) {}
+        },
+
+        // Fecha de inicio de la semana actual (Lunes de esta semana) para que los checks sean únicos por semana
+        claveSemanaActual() {
+          const hoy = new Date();
+          const dia = hoy.getDay() || 7;
+          const lunes = new Date(hoy);
+          lunes.setDate(hoy.getDate() - dia + 1);
+          return lunes.toISOString().split('T')[0];
+        },
+
         esComidaCompletada(idx) {
-          return !!this.comidasCompletadas[this.diaSeleccionado + '_' + idx];
+          const kSem = this.claveSemanaActual() + '_' + this.diaSeleccionado + '_' + idx;
+          const kSimple = this.diaSeleccionado + '_' + idx;
+          return !!(this.comidasCompletadas[kSem] || this.comidasCompletadas[kSimple]);
         },
 
         toggleComidaCompletada(idx) {
-          const key = this.diaSeleccionado + '_' + idx;
-          this.comidasCompletadas[key] = !this.comidasCompletadas[key];
+          const kSem = this.claveSemanaActual() + '_' + this.diaSeleccionado + '_' + idx;
+          const kSimple = this.diaSeleccionado + '_' + idx;
+          const nuevoEstado = !this.esComidaCompletada(idx);
+          if (nuevoEstado) {
+            this.comidasCompletadas[kSem] = true;
+            this.comidasCompletadas[kSimple] = true;
+          } else {
+            delete this.comidasCompletadas[kSem];
+            delete this.comidasCompletadas[kSimple];
+          }
           this.comidasCompletadas = { ...this.comidasCompletadas };
           localStorage.setItem('hybrid_comidas_completadas', JSON.stringify(this.comidasCompletadas));
+          this.sincronizarEstadoRemoto('comidasCompletadas', this.comidasCompletadas);
         },
 
         contarComidasCompletadas() {
-          const comidas = this.comidasDelDia();
           let count = 0;
-          comidas.forEach((_, idx) => {
-            if (this.esComidaCompletada(idx)) count++;
-          });
+          this.comidasDelDia().forEach((_, idx) => { if (this.esComidaCompletada(idx)) count++; });
           return count;
         },
 
-        // Parseo de un string de macros ("45g P | 43g CH | 26g G | 586 kcal")
-        parsearMacrosIndividuales(txt, ventana) {
-          if (!txt) return { p: 0, ch: 0, g: 0, kcal: 0, ahorroKcal: 0, ahorroCH: 0 };
+        // Detecta qué alimento del catálogo nutricional es una cadena de texto ("240 g merluza" -> "merluza blanca")
+        identificarAlimentoCatalogo(nombreRaw) {
+          const n = this.normalizar(nombreRaw);
+          if (n.includes('merluza') && n.includes('empanada')) return 'merluza empanada Mercadona';
+          if (n.includes('merluza') || n.includes('pescado blanco')) return 'merluza blanca';
+          if (n.includes('pollo')) return 'pechuga pollo';
+          if (n.includes('pavo')) return 'pechuga pavo';
+          if (n.includes('atun')) return 'atún al natural';
+          if (n.includes('ternera') || n.includes('solomillo')) return 'solomillo ternera';
+          if (n.includes('lomo')) return 'lomo embuchado';
+          if (n.includes('jamon')) return 'jamón serrano';
+          if (n.includes('salmon')) return 'salmón fresco';
+          if (n.includes('hamburguesa')) return 'hamburguesa ave magra';
+          if (n.includes('huevo')) return 'huevos enteros';
+          if (n.includes('arroz')) return 'arroz basmati';
+          if (n.includes('boniato')) return 'boniato';
+          if (n.includes('patata')) return 'patata';
+          if (n.includes('pasta')) return 'pasta blanca';
+          if (n.includes('pan')) return 'pan masa madre';
+          if (n.includes('avena')) return 'copos de avena';
+          if (n.includes('tortita')) return 'tortitas de arroz';
+          return null;
+        },
+
+        parsearMacrosIndividuales(txt) {
+          if (!txt) return { p: 0, ch: 0, g: 0, kcal: 0 };
           const mP = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*P\b/i);
           const mCH = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*CH\b/i);
           const mG = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*G\b/i);
           const mKcal = txt.match(/(\d+(?:[.,]\d+)?)\s*kcal/i);
 
-          let valP = mP ? parseFloat(mP[1].replace(',', '.')) : 0;
-          let valCH = mCH ? parseFloat(mCH[1].replace(',', '.')) : 0;
-          let valG = mG ? parseFloat(mG[1].replace(',', '.')) : 0;
-          let valKcal = 0;
+          const p = mP ? parseFloat(mP[1].replace(',', '.')) : 0;
+          const ch = mCH ? parseFloat(mCH[1].replace(',', '.')) : 0;
+          const g = mG ? parseFloat(mG[1].replace(',', '.')) : 0;
+          let kcal = 0;
           if (mKcal) {
-            const limpioKcal = mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
-            valKcal = parseFloat(limpioKcal);
+            kcal = parseFloat(mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
+          } else {
+            kcal = (p * 4) + (ch * 4) + (g * 9);
           }
-
-          let ahorroKcal = 0, ahorroCH = 0;
-          if (this.cenaSocialActiva && this.isPreCena(ventana)) {
-            ahorroCH = valCH * 0.35;
-            const gRecortado = valG * 0.35;
-            ahorroKcal = (ahorroCH * 4) + (gRecortado * 9);
-            valCH -= ahorroCH;
-            valG -= gRecortado;
-            valKcal = Math.max(0, valKcal - ahorroKcal);
-          }
-
-          return { p: valP, ch: valCH, g: valG, kcal: valKcal, ahorroKcal, ahorroCH };
+          return { p, ch, g, kcal };
         },
 
-        extraerKcalTexto(txt) {
-          if (!txt) return '';
-          const mKcal = txt.match(/(\d+(?:[.,]\d+)?)\s*kcal/i);
-          return mKcal ? mKcal[0] : '';
+        /**
+         * MOTOR ESCUPULOSO DE INTERCAMBIO Y BALANCEO 3x3 (Proteína + Hidrato + AOVE)
+         * Resuelve los gramos exactos de la proteína, el carbohidrato y el aceite para clavar P, CH, G y Kcal de la toma.
+         */
+        comidaCalculada(comida, idx, atletaKey) {
+          const textoOriginal = atletaKey === 'fede' ? comida.fede : comida.arantxa;
+          const macrosRaw = atletaKey === 'fede' ? comida.macrosFede : comida.macrosArantxa;
+          const macrosMeta = this.parsearMacrosIndividuales(macrosRaw);
+          const esPreCena = this.isPreCena(comida.ventana);
+          const swapConfig = this.swapsActivos[this.diaSeleccionado + '_' + idx] || {};
+
+          if (!textoOriginal) {
+            return { texto: '', macrosObj: macrosMeta, macrosTexto: macrosRaw, notaAjuste: '' };
+          }
+
+          // Factor de Cena Libre (si está activo antes de la cena, reduce CH y G objetivo en un 35%)
+          const factorCH = (this.cenaSocialActiva && esPreCena) ? 0.65 : 1.0;
+          const factorG = (this.cenaSocialActiva && esPreCena) ? 0.65 : 1.0;
+
+          let partes = textoOriginal.split('+').map(p => p.trim()).filter(Boolean);
+
+          // Localizar el ingrediente de Proteína Principal, Carbohidrato Principal y AOVE en la receta original
+          let idxProt = -1, infoProtOrig = null, gramosProtOrig = 0;
+          let idxCH = -1, infoCHOrig = null, gramosCHOrig = 0;
+          let idxAOVE = -1, mlAOVEOrig = 0;
+
+          partes.forEach((parte, i) => {
+            const mAove = parte.match(/^(\d+(?:[.,]\d+)?)\s*ml\s+(aove|aceite)/i);
+            if (mAove) {
+              idxAOVE = i;
+              mlAOVEOrig = parseFloat(mAove[1].replace(',', '.'));
+              return;
+            }
+            const mGramo = parte.match(/^(\d+(?:[.,]\d+)?)\s*g\s+(.*)$/i);
+            if (mGramo) {
+              const gVal = parseFloat(mGramo[1].replace(',', '.'));
+              const idCat = this.identificarAlimentoCatalogo(mGramo[2]);
+              if (idCat && CATALOGO_NUTRICIONAL[idCat]) {
+                const catObj = CATALOGO_NUTRICIONAL[idCat];
+                if (catObj.tipo === 'prot' && idxProt === -1) {
+                  idxProt = i;
+                  infoProtOrig = catObj;
+                  gramosProtOrig = gVal;
+                } else if (catObj.tipo === 'ch' && idxCH === -1) {
+                  idxCH = i;
+                  infoCHOrig = catObj;
+                  gramosCHOrig = gVal;
+                }
+              }
+            }
+          });
+
+          const haySwapProt = !!(swapConfig.prot && idxProt !== -1 && CATALOGO_NUTRICIONAL[swapConfig.prot]);
+          const haySwapCH = !!(swapConfig.ch && idxCH !== -1 && CATALOGO_NUTRICIONAL[swapConfig.ch]);
+
+          // Si no hay intercambios ni modo cena libre, devuelve los datos originales intactos
+          if (!haySwapProt && !haySwapCH && !(this.cenaSocialActiva && esPreCena)) {
+            return {
+              texto: textoOriginal,
+              macrosObj: {
+                p: Math.round(macrosMeta.p),
+                ch: Math.round(macrosMeta.ch),
+                g: Math.round(macrosMeta.g),
+                kcal: Math.round(macrosMeta.kcal),
+                ahorroKcal: 0,
+                ahorroCH: 0
+              },
+              macrosTexto: `${Math.round(macrosMeta.p)}g P | ${Math.round(macrosMeta.ch)}g CH | ${Math.round(macrosMeta.g)}g G | ${Math.round(macrosMeta.kcal)} kcal`,
+              notaAjuste: ''
+            };
+          }
+
+          // Calcular cuánto aportaban la Proteína, el Carbohidrato y el AOVE originales
+          const pDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.p : 0;
+          const chDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.ch : 0;
+          const gDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.g : 0;
+
+          const pDeCHOrig = infoCHOrig ? (gramosCHOrig / 100) * infoCHOrig.p : 0;
+          const chDeCHOrig = infoCHOrig ? (gramosCHOrig / 100) * infoCHOrig.ch : 0;
+          const gDeCHOrig = infoCHOrig ? (gramosCHOrig / 100) * infoCHOrig.g : 0;
+
+          // Presupuesto exacto de P, CH y G que deben cubrir los 3 pilares (Proteína + Hidrato + AOVE)
+          const targetP_Pilares = pDeProtOrig + pDeCHOrig;
+          const targetCH_Pilares = (chDeProtOrig + chDeCHOrig) * factorCH;
+          const targetG_Pilares = (gDeProtOrig + gDeCHOrig + mlAOVEOrig) * factorG;
+
+          const nuevaProtObj = haySwapProt ? CATALOGO_NUTRICIONAL[swapConfig.prot] : infoProtOrig;
+          const nuevoCHObj = haySwapCH ? CATALOGO_NUTRICIONAL[swapConfig.ch] : infoCHOrig;
+
+          let nuevosGramosProt = gramosProtOrig;
+          let nuevosGramosCH = gramosCHOrig * factorCH;
+
+          // RESOLUCIÓN DEL SISTEMA DE ECUACIONES 2x2 ENTRE PROTEÍNA E HIDRATO (Porque ambos tienen P y CH)
+          if (nuevaProtObj && nuevoCHObj) {
+            // Sistema:
+            // (gp/100)*Pp + (gc/100)*Pc = targetP_Pilares
+            // (gp/100)*CHp + (gc/100)*CHc = targetCH_Pilares
+            const Pp = nuevaProtObj.p / 100, Pc = nuevoCHObj.p / 100;
+            const CHp = nuevaProtObj.ch / 100, CHc = nuevoCHObj.ch / 100;
+            const det = (Pp * CHc) - (Pc * CHp);
+            if (Math.abs(det) > 0.0001) {
+              nuevosGramosProt = ((targetP_Pilares * CHc) - (Pc * targetCH_Pilares)) / det;
+              nuevosGramosCH = ((Pp * targetCH_Pilares) - (targetP_Pilares * CHp)) / det;
+            }
+          } else if (nuevaProtObj && !nuevoCHObj) {
+            nuevosGramosProt = (pDeProtOrig / (nuevaProtObj.p / 100));
+          } else if (!nuevaProtObj && nuevoCHObj) {
+            nuevosGramosCH = (chDeCHOrig * factorCH) / (nuevoCHObj.ch / 100);
+          }
+
+          // Redondeo limpio a múltiplos de 5g para báscula de cocina
+          nuevosGramosProt = Math.max(0, Math.round(nuevosGramosProt / 5) * 5);
+          nuevosGramosCH = Math.max(0, Math.round(nuevosGramosCH / 5) * 5);
+
+          // PASO 3: Calcular la grasa real generada por los nuevos gramos de proteína e hidrato y cuadrar con el AOVE
+          const gNuevaProt = nuevaProtObj ? (nuevosGramosProt / 100) * nuevaProtObj.g : 0;
+          const gNuevoCH = nuevoCHObj ? (nuevosGramosCH / 100) * nuevoCHObj.g : 0;
+          let nuevoMlAOVE = Math.round(targetG_Pilares - (gNuevaProt + gNuevoCH));
+
+          let notaAjuste = '';
+          if (nuevoMlAOVE < 0) {
+            nuevoMlAOVE = 0;
+            notaAjuste = 'Sin AOVE extra (cubierto por alimento)';
+          } else if (Math.abs(nuevoMlAOVE - mlAOVEOrig) >= 1) {
+            const diffAove = nuevoMlAOVE - Math.round(mlAOVEOrig * factorG);
+            if (diffAove > 0) notaAjuste = `+${diffAove} ml AOVE p/ cuadrar kcal`;
+            else if (diffAove < 0) notaAjuste = `${diffAove} ml AOVE p/ cuadrar kcal`;
+          }
+
+          // Reconstruir lista de ingredientes con los pesos exactos recalculados
+          if (idxProt !== -1 && nuevaProtObj) {
+            const nombreMostrarProt = haySwapProt ? swapConfig.prot : partes[idxProt].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
+            partes[idxProt] = `${nuevosGramosProt} g ${nombreMostrarProt}`;
+          }
+          if (idxCH !== -1 && nuevoCHObj) {
+            const nombreMostrarCH = haySwapCH ? swapConfig.ch : partes[idxCH].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
+            partes[idxCH] = `${nuevosGramosCH} g ${nombreMostrarCH}`;
+          }
+          if (idxAOVE !== -1) {
+            partes[idxAOVE] = nuevoMlAOVE > 0 ? `${nuevoMlAOVE} ml AOVE` : '';
+          } else if (nuevoMlAOVE > 0 && (haySwapProt || haySwapCH)) {
+            partes.push(`${nuevoMlAOVE} ml AOVE`);
+          }
+
+          // Calcular macros finales exactos de la comida tras el ajuste
+          const deltaP = ((nuevaProtObj ? (nuevosGramosProt/100)*nuevaProtObj.p : 0) + (nuevoCHObj ? (nuevosGramosCH/100)*nuevoCHObj.p : 0)) - (pDeProtOrig + pDeCHOrig);
+          const deltaCH = ((nuevaProtObj ? (nuevosGramosProt/100)*nuevaProtObj.ch : 0) + (nuevoCHObj ? (nuevosGramosCH/100)*nuevoCHObj.ch : 0)) - (chDeProtOrig + chDeCHOrig);
+          const deltaG = (gNuevaProt + gNuevoCH + nuevoMlAOVE) - (gDeProtOrig + gDeCHOrig + mlAOVEOrig);
+
+          const pFinal = Math.max(0, Math.round(macrosMeta.p + deltaP));
+          const chFinal = Math.max(0, Math.round(macrosMeta.ch + deltaCH));
+          const gFinal = Math.max(0, Math.round(macrosMeta.g + deltaG));
+          const kcalFinal = Math.round((pFinal * 4) + (chFinal * 4) + (gFinal * 9));
+
+          const ahorroKcal = Math.max(0, Math.round(macrosMeta.kcal - kcalFinal));
+          const ahorroCH = Math.max(0, Math.round(macrosMeta.ch - chFinal));
+
+          return {
+            texto: partes.filter(Boolean).join(' + '),
+            macrosObj: { p: pFinal, ch: chFinal, g: gFinal, kcal: kcalFinal, ahorroKcal, ahorroCH },
+            macrosTexto: `${pFinal}g P | ${chFinal}g CH | ${gFinal}g G | ${kcalFinal} kcal`,
+            notaAjuste
+          };
+        },
+
+        tituloPlatoAdaptado(comida, idx) {
+          const s = this.swapsActivos[this.diaSeleccionado + '_' + idx];
+          if (!s || (!s.prot && !s.ch)) return comida.plato;
+          const etiquetas = [];
+          if (s.prot) etiquetas.push(s.prot);
+          if (s.ch) etiquetas.push(s.ch);
+          return `${comida.plato} (→ ${etiquetas.join(' + ')})`;
         },
 
         totalesDia() {
           const comidas = this.comidasDelDia();
-          const acumular = (campo) => {
+          const acumular = (atletaKey) => {
             let p = 0, ch = 0, g = 0, kcal = 0, ahorroKcal = 0, ahorroCH = 0;
-            comidas.forEach(c => {
-              const m = this.parsearMacrosIndividuales(c[campo], c.ventana);
-              p += m.p; ch += m.ch; g += m.g; kcal += m.kcal;
-              ahorroKcal += m.ahorroKcal; ahorroCH += m.ahorroCH;
+            comidas.forEach((c, idx) => {
+              const calc = this.comidaCalculada(c, idx, atletaKey).macrosObj;
+              p += calc.p; ch += calc.ch; g += calc.g; kcal += calc.kcal;
+              ahorroKcal += (calc.ahorroKcal || 0);
+              ahorroCH += (calc.ahorroCH || 0);
             });
-            return {
-              p: Math.round(p), ch: Math.round(ch), g: Math.round(g),
-              kcal: Math.round(kcal), ahorroKcal: Math.round(ahorroKcal), ahorroCH: Math.round(ahorroCH)
-            };
+            return { p: Math.round(p), ch: Math.round(ch), g: Math.round(g), kcal: Math.round(kcal), ahorroKcal: Math.round(ahorroKcal), ahorroCH: Math.round(ahorroCH) };
           };
-          return { fede: acumular('macrosFede'), arantxa: acumular('macrosArantxa') };
+          return { fede: acumular('fede'), arantxa: acumular('arantxa') };
         },
 
         consumidoDia(atletaKey) {
           const comidas = this.comidasDelDia();
-          const campo = atletaKey === 'fede' ? 'macrosFede' : 'macrosArantxa';
           let p = 0, ch = 0, g = 0, kcal = 0;
           comidas.forEach((c, idx) => {
             if (this.esComidaCompletada(idx)) {
-              const m = this.parsearMacrosIndividuales(c[campo], c.ventana);
-              p += m.p; ch += m.ch; g += m.g; kcal += m.kcal;
+              const calc = this.comidaCalculada(c, idx, atletaKey).macrosObj;
+              p += calc.p; ch += calc.ch; g += calc.g; kcal += calc.kcal;
             }
           });
           return { p: Math.round(p), ch: Math.round(ch), g: Math.round(g), kcal: Math.round(kcal) };
@@ -1156,19 +1248,15 @@
           return Math.min(100, Math.round((hecho / total) * 100));
         },
 
-        // Desglosa "110 g arroz basmati + 230 g pechuga pollo" en items estructurados para lectura rápida
         desglosarListaIngredientes(str) {
           if (!str) return [];
           return str.split('+').map(p => p.trim()).filter(Boolean).map(parte => {
             const match = parte.match(/^(\d+(?:[.,]\d+)?\s*(?:g|ml|kg|l|latas?|tortitas?|ud)?)\s+(.*)$/i);
-            if (match) {
-              return { cantidad: match[1].trim(), nombre: match[2].trim() };
-            }
+            if (match) return { cantidad: match[1].trim(), nombre: match[2].trim() };
             return { cantidad: 'Al gusto', nombre: parte };
           });
         },
 
-        // Sincronización de Fechas y Medidas
         sincronizarFechaSemana() {
           const tabla = (this.form.atleta === 'Fede') ? this.progresionFede : this.progresionArantxa;
           let fechaAsignada = FECHAS_SEMANAS_DEFAULT[this.form.semana] || '';
@@ -1196,22 +1284,13 @@
           if (!encontradoEnSheet || (!this.form.peso && this.form.semana === 'Semana 1')) {
             if (this.form.semana === 'Semana 1' && DATOS_SEMANA1_RESPALDO[this.form.atleta]) {
               const resp = DATOS_SEMANA1_RESPALDO[this.form.atleta];
-              this.form.peso = resp.peso;
-              this.form.pecho = resp.pecho;
-              this.form.cintura = resp.cintura;
-              this.form.cadera = resp.cadera;
-              this.form.brazo = resp.brazo;
-              this.form.muslo = resp.muslo;
+              this.form.peso = resp.peso; this.form.pecho = resp.pecho; this.form.cintura = resp.cintura;
+              this.form.cadera = resp.cadera; this.form.brazo = resp.brazo; this.form.muslo = resp.muslo;
             } else if (!encontradoEnSheet) {
-              this.form.peso = '';
-              this.form.pecho = '';
-              this.form.cintura = '';
-              this.form.cadera = '';
-              this.form.brazo = '';
-              this.form.muslo = '';
+              this.form.peso = ''; this.form.pecho = ''; this.form.cintura = '';
+              this.form.cadera = ''; this.form.brazo = ''; this.form.muslo = '';
             }
           }
-
           this.form.fecha = fechaAsignada;
         },
 
@@ -1276,99 +1355,30 @@
 
         tieneSwapActivo(idx) {
           const s = this.swapsActivos[this.diaSeleccionado + '_' + idx];
-          return s && (s.prot || s.ch);
+          return !!(s && (s.prot || s.ch));
         },
 
-        reemplazarYCompensar(textoOriginal, swapConfig, esPreCena) {
-          if (!textoOriginal) return textoOriginal;
-          let partes = textoOriginal.split('+').map(p => p.trim());
-          let deltaGrasaTotal = 0;
-
-          const regexProt = /(pollo|pavo|salm[oó]n|merluza|ternera|solomillo|at[uú]n|lomo|hamburguesa|jam[oó]n|huevo)/i;
-          const regexCH = /(arroz|patata|boniato|pasta|pan|avena|tortita)/i;
-
-          if (swapConfig) {
-            partes = partes.map(parte => {
-              const match = parte.match(/^(\d+(?:[.,]\d+)?)\s*g\s+(.*)$/i);
-              if (!match) return parte;
-              const gOrig = parseFloat(match[1].replace(',', '.'));
-              const nOrig = match[2];
-
-              if (swapConfig.prot && regexProt.test(nOrig)) {
-                let mOrig = { p: 22, g: 2 };
-                for (const k in MACROS_ALIMENTOS) {
-                  if (this.normalizar(nOrig).includes(this.normalizar(k.split(' ')[0]))) mOrig = MACROS_ALIMENTOS[k];
-                }
-                const mNuevo = MACROS_ALIMENTOS[swapConfig.prot] || { p: 22, g: 2 };
-                const nuevosGramos = Math.round(((gOrig * mOrig.p) / mNuevo.p) / 5) * 5;
-                deltaGrasaTotal += ((nuevosGramos / 100) * mNuevo.g) - ((gOrig / 100) * mOrig.g);
-                return `${nuevosGramos} g ${swapConfig.prot}`;
-              }
-
-              if (swapConfig.ch && regexCH.test(nOrig)) {
-                let mOrig = { ch: 75 };
-                if (/patata|boniato/i.test(nOrig)) mOrig = { ch: 19 };
-                else if (/pan/i.test(nOrig)) mOrig = { ch: 48 };
-                else if (/avena/i.test(nOrig)) mOrig = { ch: 60 };
-                const mNuevo = MACROS_ALIMENTOS[swapConfig.ch] || { ch: 75 };
-                const nuevosGramos = Math.round(((gOrig * mOrig.ch) / mNuevo.ch) / 5) * 5;
-                return `${nuevosGramos} g ${swapConfig.ch}`;
-              }
-              return parte;
-            });
-          }
-
-          let indiceAOVE = -1;
-          partes = partes.map((parte, index) => {
-            const matchCH = parte.match(/^(\d+(?:[.,]\d+)?)\s*g\s+(.*)$/i);
-            const matchAOVE = parte.match(/^(\d+(?:[.,]\d+)?)\s*ml\s+(aove|aceite)/i);
-
-            if (this.cenaSocialActiva && esPreCena && matchCH && regexCH.test(matchCH[2])) {
-              const gOrig = parseFloat(matchCH[1].replace(',', '.'));
-              const gFinal = Math.round((gOrig * 0.65) / 5) * 5;
-              return `${gFinal} g ${matchCH[2]}`;
-            }
-
-            if (matchAOVE) {
-              indiceAOVE = index;
-              let aoveFinal = parseFloat(matchAOVE[1].replace(',', '.'));
-              if (this.cenaSocialActiva && esPreCena) aoveFinal = aoveFinal * 0.65;
-              aoveFinal = aoveFinal - deltaGrasaTotal;
-              if (aoveFinal <= 0) return '';
-              return `${Math.round(aoveFinal)} ml AOVE`;
-            }
-            return parte;
-          });
-
-          if (deltaGrasaTotal < -2 && indiceAOVE === -1) {
-            partes.push(`${Math.round(Math.abs(deltaGrasaTotal))} ml AOVE (compensación)`);
-          }
-
-          return partes.filter(p => p !== '').join(' + ');
-        },
-
-        textoComidaFede(comida, idx) {
-          const swap = this.swapsActivos[this.diaSeleccionado + '_' + idx];
-          return this.reemplazarYCompensar(comida.fede, swap, this.isPreCena(comida.ventana));
-        },
-
-        textoComidaAra(comida, idx) {
-          const swap = this.swapsActivos[this.diaSeleccionado + '_' + idx];
-          return this.reemplazarYCompensar(comida.arantxa, swap, this.isPreCena(comida.ventana));
+        obtenerValorSwap(idx, tipo) {
+          const s = this.swapsActivos[this.diaSeleccionado + '_' + idx];
+          return (s && s[tipo]) ? s[tipo] : '';
         },
 
         abrirSwap(idx) { this.swapAbiertoIdx = (this.swapAbiertoIdx === idx) ? null : idx; },
+
         resetSwap(idx) {
           delete this.swapsActivos[this.diaSeleccionado + '_' + idx];
           this.swapsActivos = { ...this.swapsActivos };
           localStorage.setItem('hybrid_swaps_activos', JSON.stringify(this.swapsActivos));
+          this.sincronizarEstadoRemoto('swapsActivos', this.swapsActivos);
         },
+
         aplicarSwap(idx, tipo, val) {
           const key = this.diaSeleccionado + '_' + idx;
           if (!this.swapsActivos[key]) this.swapsActivos[key] = {};
           this.swapsActivos[key][tipo] = val;
           this.swapsActivos = { ...this.swapsActivos };
           localStorage.setItem('hybrid_swaps_activos', JSON.stringify(this.swapsActivos));
+          this.sincronizarEstadoRemoto('swapsActivos', this.swapsActivos);
         },
 
         sumarIngredientes(strFede, strArantxa) {
@@ -1433,24 +1443,36 @@
             return 'Fruta y Verdura Fresca';
           };
 
-          this.dietaCompleta.forEach(comida => {
-            [comida.fede, comida.arantxa].forEach(texto => {
-              if (!texto) return;
-              texto.split('+').forEach(parte => {
-                let limpio = parte.trim();
-                if (!limpio || esSuplementoORunning(limpio)) return;
-                const match = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?)?\s+(.*)$/i);
-                if (match) {
-                  const cant = parseFloat(match[1].replace(',', '.'));
-                  const unidadNorm = (match[2] || 'ud').toLowerCase().replace(/s$/, '');
-                  let nombre = match[3].trim().replace(/\(\d+.*?\)/g, '').trim();
-                  if (esSuplementoORunning(nombre)) return;
-                  if (this.filtroCompra && !this.normalizar(nombre).includes(this.normalizar(this.filtroCompra))) return;
+          this.diasSemana.forEach(diaNombre => {
+            const buscado = this.normalizar(diaNombre);
+            const comidasDia = this.dietaCompleta.filter(c => this.normalizar(c.dia).includes(buscado));
+            comidasDia.forEach((comida, idx) => {
+              // Usa las cantidades ya adaptadas si el usuario hizo algún intercambio en la semana
+              const swap = this.swapsActivos[diaNombre + '_' + idx];
+              const backupDia = this.diaSeleccionado;
+              this.diaSeleccionado = diaNombre;
+              const txtFede = swap ? this.comidaCalculada(comida, idx, 'fede').texto : comida.fede;
+              const txtAra = swap ? this.comidaCalculada(comida, idx, 'arantxa').texto : comida.arantxa;
+              this.diaSeleccionado = backupDia;
 
-                  const clave = unidadNorm + '_' + this.normalizar(nombre);
-                  if (acumulado.has(clave)) acumulado.get(clave).cantidad += cant;
-                  else acumulado.set(clave, { clave, nombre, unidad: unidadNorm, cantidad: cant, categoria: clasificarCategoria(nombre) });
-                }
+              [txtFede, txtAra].forEach(texto => {
+                if (!texto) return;
+                texto.split('+').forEach(parte => {
+                  let limpio = parte.trim();
+                  if (!limpio || esSuplementoORunning(limpio)) return;
+                  const match = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?)?\s+(.*)$/i);
+                  if (match) {
+                    const cant = parseFloat(match[1].replace(',', '.'));
+                    const unidadNorm = (match[2] || 'ud').toLowerCase().replace(/s$/, '');
+                    let nombre = match[3].trim().replace(/\(\d+.*?\)/g, '').trim();
+                    if (esSuplementoORunning(nombre)) return;
+                    if (this.filtroCompra && !this.normalizar(nombre).includes(this.normalizar(this.filtroCompra))) return;
+
+                    const clave = unidadNorm + '_' + this.normalizar(nombre);
+                    if (acumulado.has(clave)) acumulado.get(clave).cantidad += cant;
+                    else acumulado.set(clave, { clave, nombre, unidad: unidadNorm, cantidad: cant, categoria: clasificarCategoria(nombre) });
+                  }
+                });
               });
             });
           });
@@ -1499,7 +1521,6 @@
             const result = await res.json();
             if (result.status === 'success') {
               this.mensajeExito = true;
-              this.anuncioAccesible = 'Medidas guardadas con éxito en Google Sheets';
               await this.cargarDatos();
               setTimeout(() => this.mensajeExito = false, 3500);
             }
