@@ -19,45 +19,50 @@
             mono: ['"JetBrains Mono"', 'monospace'],
           },
           colors: {
-            canvas: '#F6F5F0',
+            canvas: '#F9F5F2',
             surface: '#FFFFFF',
-            subtle: '#EDEBE4',
-            border: '#E2E0D8',
+            subtle: '#F1EAE6',
+            border: '#EADFD9',
             ink: {
-              DEFAULT: '#18181B',
-              secondary: '#52525B',
-              muted: '#71717A'
+              DEFAULT: '#3E272B',
+              secondary: '#7C6569',
+              muted: '#A38F92'
             },
             sage: {
-              DEFAULT: '#1E5645',
-              hover: '#164235',
-              light: '#EAF3F0',
-              border: '#C2DDD4'
+              DEFAULT: '#723846',
+              hover: '#5A2A36',
+              light: '#F5ECEE',
+              border: '#E4CFD4'
             },
             fede: {
-              bg: '#F0F7FF',
-              surface: '#E0F0FF',
-              border: '#B9DCFF',
-              text: '#0369A1',
-              dark: '#0C4A6E',
-              badge: '#0284C7'
+              bg: '#F4EBE8',
+              surface: '#FCF9F8',
+              border: '#E2D0CA',
+              text: '#6A2E3B',
+              dark: '#3E2026',
+              badge: '#723846'
             },
             ara: {
-              bg: '#ECFDF5',
-              surface: '#D1FAE5',
-              border: '#A7F3D0',
-              text: '#047857',
-              dark: '#064E3B',
-              badge: '#059669'
+              bg: '#EFECE8',
+              surface: '#FAF8F6',
+              border: '#DCD5CE',
+              text: '#5B6770',
+              dark: '#2F3940',
+              badge: '#7A8B95'
             },
             macro: {
-              prot: '#C2410C',
-              protBg: '#FFF7ED',
-              carb: '#B45309',
-              carbBg: '#FFFBEB',
-              fat: '#3730A3',
-              fatBg: '#EEF2FF'
+              carb: '#E0909E',
+              carbBg: '#F6E8EA',
+              fat: '#D3A664',
+              fatBg: '#F6EFE4',
+              prot: '#94A2AC',
+              protBg: '#EDF0F2'
             }
+          },
+          boxShadow: {
+            'soft': '0 10px 30px -8px rgba(62, 39, 43, 0.06)',
+            'card': '0 4px 20px -4px rgba(114, 56, 70, 0.05)',
+            'pill': '0 12px 32px -4px rgba(62, 39, 43, 0.14)'
           }
         }
       }
@@ -67,14 +72,23 @@
   
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#FFFFFF">
+  <meta name="theme-color" content="#F9F5F2">
 
   <style>
     [x-cloak] { display: none !important; }
     .tabular-nums { font-variant-numeric: tabular-nums; }
-    .safe-top { padding-top: max(0.75rem, env(safe-area-inset-top)); }
-    .safe-bottom { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
-    *:focus-visible { outline: 2px solid #1E5645 !important; outline-offset: 2px !important; }
+    .safe-top { padding-top: max(1rem, env(safe-area-inset-top)); }
+    .safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+    *:focus-visible { outline: 2px solid #723846 !important; outline-offset: 2px !important; }
+    .striped-bar {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(114, 56, 70, 0.18),
+        rgba(114, 56, 70, 0.18) 4px,
+        rgba(114, 56, 70, 0.06) 4px,
+        rgba(114, 56, 70, 0.06) 8px
+      );
+    }
   </style>
 </head>
 
@@ -87,94 +101,93 @@
     <!-- ==========================================
          SIDEBAR LATERAL (ESCRITORIO >= 1024px)
          ========================================== -->
-    <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-surface border-r border-border px-5 py-6 justify-between z-30">
+    <aside class="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 bg-surface/80 backdrop-blur-xl border-r border-border px-6 py-7 justify-between z-30">
       <div class="space-y-7">
-        <div class="flex items-center justify-between px-2">
+        <div class="flex items-center justify-between px-1">
           <div>
-            <span class="text-xs font-bold uppercase tracking-widest text-sage block">Hybrid Athlete</span>
-            <h1 class="text-xl font-extrabold tracking-tight text-ink">Nutrición & Trail</h1>
+            <span class="text-[11px] font-bold uppercase tracking-widest text-sage block">Hybrid Athlete</span>
+            <h1 class="text-2xl font-extrabold tracking-tight text-ink">Kinetix</h1>
           </div>
-          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" class="w-10 h-10 rounded-lg border border-border flex items-center justify-center text-ink-secondary hover:bg-subtle hover:text-ink transition" title="Sincronizar con Google Sheets">
-            <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" class="w-11 h-11 rounded-full bg-canvas border border-border flex items-center justify-center text-ink-secondary hover:bg-subtle hover:text-ink transition shadow-sm" title="Sincronizar con Google Sheets">
+            <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
         </div>
 
-        <div class="bg-canvas p-1.5 rounded-xl border border-border">
+        <!-- Selector de Atleta tipo Píldora Suave -->
+        <div class="bg-canvas p-1.5 rounded-full border border-border">
           <div class="grid grid-cols-3 gap-1" role="group" aria-label="Modo de visualización">
-            <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-fede-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-lg text-xs transition">
-              🔵 Fede
+            <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
+              Fede
             </button>
-            <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-lg text-xs transition">
-              🟢 Ara
+            <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
+              Ara
             </button>
-            <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-lg text-xs transition">
+            <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
               Ambos
             </button>
           </div>
         </div>
 
-        <nav class="space-y-1.5">
-          <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <nav class="space-y-2">
+          <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
             <span>Plan Diario y Entreno</span>
           </button>
 
-          <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm border transition">
-            <div class="flex items-center gap-3">
+          <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm transition">
+            <div class="flex items-center gap-3.5">
               <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
               <span>Despensa y Compra</span>
             </div>
-            <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-subtle text-ink-secondary" x-text="contarPendientesCompra()"></span>
+            <span class="text-xs font-mono px-2.5 py-0.5 rounded-full" :class="tab === 'compra' ? 'bg-white/20 text-white' : 'bg-subtle text-ink-secondary'" x-text="contarPendientesCompra()"></span>
           </button>
 
-          <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
             <span>Biometría y Progreso</span>
           </button>
 
-          <button type="button" @click="cambiarTab('ia')" :class="tab === 'ia' ? 'bg-sage-light text-sage font-bold border-sage-border' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-medium border-transparent'" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm border transition">
+          <button type="button" @click="cambiarTab('ia')" :class="tab === 'ia' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             <span>Importar Plan IA</span>
           </button>
         </nav>
       </div>
 
-      <div class="p-3.5 rounded-xl bg-canvas border border-border text-xs space-y-1">
-        <div class="flex items-center gap-2 font-semibold text-ink">
-          <span class="w-2 h-2 rounded-full" :class="errorConexion ? 'bg-amber-500' : 'bg-sage'"></span>
-          <span x-text="errorConexion ? 'Datos en Caché Local' : 'Sincronizado con Excel'"></span>
+      <div class="p-4 rounded-3xl bg-canvas border border-border text-xs space-y-1">
+        <div class="flex items-center gap-2 font-bold text-ink">
+          <span class="w-2.5 h-2.5 rounded-full" :class="errorConexion ? 'bg-[#D3A664]' : 'bg-sage'"></span>
+          <span x-text="errorConexion ? 'Datos en Caché Local' : 'Sincronizado con Sheets'"></span>
         </div>
         <p class="text-ink-secondary">100% Fiel a RESUMEN_SEMANAL</p>
       </div>
     </aside>
 
     <!-- ==========================================
-         CABECERA MÓVIL CON SAFE-AREA
+         CABECERA MÓVIL ESTILO CALORICAM
          ========================================== -->
-    <header class="lg:hidden bg-surface border-b border-border px-4 pb-3 safe-top">
-      <div class="max-w-3xl mx-auto space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-base font-extrabold tracking-tight text-ink">Nutrición & Entreno</h1>
-            <p class="text-xs text-ink-secondary" x-text="'Hoy es ' + nombreDiaHoy() + ' · Viendo ' + diaSeleccionado"></p>
-          </div>
-          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" class="px-3 py-2 rounded-xl border border-border bg-canvas flex items-center gap-1.5 text-xs font-bold text-ink active:bg-subtle transition min-h-[42px]">
-            <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            <span>Sync</span>
-          </button>
-        </div>
+    <header class="lg:hidden px-4 pb-2 safe-top">
+      <div class="max-w-xl mx-auto pt-2 pb-1 text-center relative">
+        <h1 class="text-2xl font-extrabold tracking-tight text-ink">Kinetix</h1>
+        <p class="text-xs text-ink-secondary mt-0.5">
+          <span x-text="errorConexion ? 'En caché local' : 'Sincronizado con'"></span>
+          <button type="button" @click="cargarDatos()" class="underline font-semibold text-ink hover:text-sage transition">Google Sheets</button>
+          <span> · </span>
+          <strong class="font-bold text-ink" x-text="diaSeleccionado"></strong>
+        </p>
 
-        <div class="bg-canvas p-1 rounded-xl border border-border grid grid-cols-3 gap-1" role="group">
-          <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-fede-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-current"></span>
-            <span>Solo Fede</span>
+        <!-- Selector de Atleta Compacto Redondeado -->
+        <div class="mt-3.5 inline-flex bg-surface p-1 rounded-full border border-border shadow-card" role="group">
+          <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+            <span>Fede</span>
           </button>
-          <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-current"></span>
-            <span>Solo Ara</span>
+          <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+            <span>Ara</span>
           </button>
-          <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="py-2.5 rounded-lg text-xs transition min-h-[42px] flex items-center justify-center gap-1.5">
-            <span>Vista Dual</span>
+          <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
+            <span>Dual</span>
           </button>
         </div>
       </div>
@@ -183,106 +196,166 @@
     <!-- ==========================================
          CONTENIDO PRINCIPAL
          ========================================== -->
-    <main id="main-content" class="flex-1 lg:pl-64 pb-28 lg:pb-12">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-8">
+    <main id="main-content" class="flex-1 lg:pl-72 pb-32 lg:pb-14">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 lg:pt-8">
 
         <!-- =========================================================
-             VISTA 1: PLAN DIARIO + MOTOR EXACTO ANCLADO AL EXCEL
+             VISTA 1: PLAN DIARIO + DASHBOARD ESTILO CALORICAM
              ========================================================= -->
         <section x-show="tab === 'dieta'" class="space-y-5">
 
-          <!-- Selector de Días de la Semana -->
-          <div class="bg-surface border border-border rounded-2xl p-3 shadow-sm">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 px-1">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-ink-secondary">Calendario Semanal</span>
-                <button x-show="diaSeleccionado !== nombreDiaHoy()" type="button" @click="irAHoy()" class="text-xs font-bold text-sage underline">
-                  Ir a Hoy (<span x-text="nombreDiaHoy()"></span>)
-                </button>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" @click="mostrarSumaComun = !mostrarSumaComun" :class="mostrarSumaComun ? 'bg-sage-light text-sage border-sage-border' : 'bg-canvas text-ink-secondary border-border'" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition min-h-[36px]">
-                  🍲 Olla Común
-                </button>
-                <button type="button" @click="cenaSocialActiva = !cenaSocialActiva" :class="cenaSocialActiva ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-canvas text-ink-secondary border-border'" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition min-h-[36px]">
-                  🍷 Cena Libre
-                </button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-7 gap-1 sm:gap-2" role="tablist">
-              <template x-for="d in diasSemana" :key="d">
-                <button
-                  type="button"
-                  role="tab"
-                  :aria-selected="(diaSeleccionado === d).toString()"
-                  @click="seleccionarDia(d)"
-                  :class="diaSeleccionado === d ? 'bg-sage text-white font-bold shadow-sm' : (d === nombreDiaHoy() ? 'bg-sage-light text-sage font-bold border border-sage-border' : 'bg-canvas text-ink-secondary hover:bg-subtle font-semibold')"
-                  class="py-2.5 sm:py-3 rounded-xl text-center transition flex flex-col items-center justify-center min-h-[50px] relative"
-                >
-                  <span class="text-xs sm:hidden" x-text="abreviarDia(d)"></span>
-                  <span class="hidden sm:inline text-xs" x-text="d"></span>
-                  <div class="flex items-center gap-1 mt-1">
-                    <span x-show="d === nombreDiaHoy()" :class="diaSeleccionado === d ? 'bg-white' : 'bg-sage'" class="w-1.5 h-1.5 rounded-full" title="Hoy"></span>
-                    <span x-show="tieneModificacionEntrenoDia(d)" :class="diaSeleccionado === d ? 'bg-amber-300' : 'bg-amber-500'" class="w-1.5 h-1.5 rounded-full" title="Entreno adaptado"></span>
-                  </div>
-                </button>
-              </template>
-            </div>
-          </div>
-
-          <!-- PANEL DE ENTRENAMIENTO DEL DÍA (CONECTADO A RESUMEN_SEMANAL) -->
-          <div class="bg-surface border border-border rounded-2xl p-4 shadow-sm space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-sage-light border border-sage-border flex items-center justify-center text-sage font-extrabold shrink-0 text-sm">
-                  ⚡
-                </div>
-                <div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="'Entrenamiento del ' + diaSeleccionado"></span>
-                    <span x-show="diaPermutadoCon(diaSeleccionado)" class="text-[11px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300" x-text="'⇄ Día intercambiado con ' + diaPermutadoCon(diaSeleccionado)"></span>
-                    <span x-show="tieneCargaAdaptada(diaSeleccionado)" class="text-[11px] font-bold bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-md border border-indigo-300">⚡ Sesión Modificada</span>
-                  </div>
-                  <p class="text-sm font-bold text-ink mt-0.5" x-text="descripcionEntrenoEfectivo(diaSeleccionado)"></p>
-                  <p class="text-xs text-ink-secondary font-mono mt-0.5" x-text="resumenKcalPorCarga()"></p>
-                </div>
+          <!-- BARRA SUPERIOR DE CONTROLES (Píldora Today + Botones Circulares de Acción) -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div class="flex items-center gap-2">
+              <!-- Píldora estilo "Today v" -->
+              <div class="relative inline-flex items-center bg-surface border border-border rounded-full px-4 py-2.5 shadow-card">
+                <svg class="w-4 h-4 text-ink mr-2 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <select :value="diaSeleccionado" @change="seleccionarDia($event.target.value)" class="appearance-none bg-transparent pr-5 text-sm font-bold text-ink focus:outline-none cursor-pointer">
+                  <template x-for="d in diasSemana" :key="d">
+                    <option :value="d" x-text="d === nombreDiaHoy() ? 'Hoy · ' + d : d"></option>
+                  </template>
+                </select>
+                <svg class="w-3.5 h-3.5 text-ink-secondary pointer-events-none -ml-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
               </div>
 
-              <button
-                type="button"
-                @click="panelEntrenoAbierto = !panelEntrenoAbierto"
-                :class="(tieneModificacionEntrenoDia(diaSeleccionado) || panelEntrenoAbierto) ? 'bg-ink text-white border-ink' : 'bg-canvas text-ink border-border hover:bg-subtle'"
-                class="px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 min-h-[40px]"
-              >
-                <span>⚙️ Cambiar Sesiones / Mover Día</span>
+              <button x-show="diaSeleccionado !== nombreDiaHoy()" type="button" @click="irAHoy()" class="px-3.5 py-2 rounded-full bg-sage-light text-sage border border-sage-border text-xs font-bold transition hover:bg-sage hover:text-white">
+                Ir a Hoy
               </button>
             </div>
 
-            <!-- Panel Desplegable de Modificación de Sesiones -->
-            <div x-show="panelEntrenoAbierto" x-cloak class="bg-canvas border border-border rounded-xl p-4 space-y-4 mt-2">
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
-                <div>
-                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Ajuste de Sesiones (Basado en tu tabla RESUMEN_SEMANAL)</h3>
-                  <p class="text-xs text-ink-secondary">Si pasas de 2 sesiones (ej. Miércoles 3.295 kcal) a 1 sesión (Solo CrossFit 2.755 kcal o Solo Carrera 2.707 kcal), las calorías y gramos de carbohidratos bajan exactamente al nivel oficial de tu Excel.</p>
+            <!-- Botones de Acción Circulares y Píldoras Suaves -->
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                @click="mostrarSumaComun = !mostrarSumaComun"
+                :class="mostrarSumaComun ? 'bg-sage text-white border-sage shadow-sm' : 'bg-surface text-ink-secondary border-border hover:bg-subtle'"
+                class="px-3.5 py-2 rounded-full border text-xs font-bold transition flex items-center gap-1.5 shadow-card"
+                title="Sumar ingredientes en crudo de Fede y Arantxa"
+              >
+                <span>🍲</span>
+                <span class="hidden sm:inline">Olla Común</span>
+              </button>
+
+              <button
+                type="button"
+                @click="cenaSocialActiva = !cenaSocialActiva"
+                :class="cenaSocialActiva ? 'bg-[#D3A664] text-white border-[#D3A664] shadow-sm' : 'bg-surface text-ink-secondary border-border hover:bg-subtle'"
+                class="px-3.5 py-2 rounded-full border text-xs font-bold transition flex items-center gap-1.5 shadow-card"
+                title="Recortar 35% de CH y grasas pre-cena"
+              >
+                <span>🍷</span>
+                <span class="hidden sm:inline">Cena Libre</span>
+              </button>
+
+              <!-- Botón Lápiz Circular (Editar Sesiones / Permutar Día) -->
+              <button
+                type="button"
+                @click="panelEntrenoAbierto = !panelEntrenoAbierto"
+                :class="(tieneModificacionEntrenoDia(diaSeleccionado) || panelEntrenoAbierto) ? 'bg-sage text-white border-sage' : 'bg-surface text-ink border-border hover:bg-subtle'"
+                class="w-10 h-10 rounded-full border flex items-center justify-center transition shadow-card"
+                title="Cambiar sesiones de entrenamiento o mover día"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              </button>
+
+              <!-- Botón Refrescar Circular -->
+              <button
+                type="button"
+                @click="cargarDatos()"
+                :disabled="cargandoDieta"
+                class="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-ink hover:bg-subtle transition shadow-card"
+                title="Sincronizar datos"
+              >
+                <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- GRÁFICA DE BARRAS VERTICALES DE LA SEMANA (Inspirada en la pantalla derecha de la captura) -->
+          <div class="bg-surface border border-border rounded-[2rem] p-5 shadow-soft">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-full bg-canvas border border-border flex items-center justify-center text-sage">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
-                <button x-show="tieneModificacionEntrenoDia(diaSeleccionado)" type="button" @click="restaurarEntrenoDia(diaSeleccionado)" class="px-3 py-1.5 rounded-lg bg-white border border-border text-xs font-bold text-rose-700 hover:bg-rose-50 shrink-0">
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-ink-secondary" x-text="'Carga Semanal · ' + diaSeleccionado"></span>
+                    <span x-show="diaPermutadoCon(diaSeleccionado)" class="text-[11px] font-bold bg-[#F6EFE4] text-[#9A6B26] px-2.5 py-0.5 rounded-full border border-[#E6D4B8]" x-text="'⇄ Intercambiado con ' + diaPermutadoCon(diaSeleccionado)"></span>
+                    <span x-show="tieneCargaAdaptada(diaSeleccionado)" class="text-[11px] font-bold bg-sage-light text-sage px-2.5 py-0.5 rounded-full border border-sage-border">⚡ Sesión Adaptada</span>
+                  </div>
+                  <p class="text-sm font-extrabold text-ink mt-0.5" x-text="descripcionEntrenoEfectivo(diaSeleccionado)"></p>
+                </div>
+              </div>
+              <button type="button" @click="panelEntrenoAbierto = !panelEntrenoAbierto" class="text-xs font-bold text-sage hover:underline flex items-center gap-1">
+                <span x-text="panelEntrenoAbierto ? 'Cerrar ajustes' : 'Adaptar entreno'"></span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+
+            <!-- Barras verticales tipo píldora (Lunes a Domingo) con línea de referencia rayada -->
+            <div class="relative pt-3 pb-1">
+              <!-- Línea horizontal de referencia rayada (Target medio) -->
+              <div class="absolute inset-x-0 top-7 h-2 rounded-full striped-bar pointer-events-none opacity-75"></div>
+
+              <div class="grid grid-cols-7 gap-2 sm:gap-4 relative z-10" role="tablist">
+                <template x-for="(d, indexDia) in diasSemana" :key="d">
+                  <button
+                    type="button"
+                    role="tab"
+                    :aria-selected="(diaSeleccionado === d).toString()"
+                    @click="seleccionarDia(d)"
+                    class="group flex flex-col items-center focus:outline-none"
+                  >
+                    <span class="text-[10px] font-mono font-bold mb-1.5 transition" :class="diaSeleccionado === d ? 'text-sage' : 'text-ink-muted opacity-0 group-hover:opacity-100'" x-text="vistaAtleta === 'Arantxa' ? objetivoEfectivoDia(d, 'arantxa').kcal : objetivoEfectivoDia(d, 'fede').kcal"></span>
+                    
+                    <div class="w-4 sm:w-5 h-24 rounded-full bg-canvas border border-border/70 flex items-end p-0.5 overflow-hidden">
+                      <div
+                        class="w-full rounded-full transition-all duration-300"
+                        :class="diaSeleccionado === d ? 'bg-sage shadow-sm' : (d === nombreDiaHoy() ? 'bg-[#C99AA5]' : 'bg-[#E9DAD5] group-hover:bg-[#DBC3BC]')"
+                        :style="'height: ' + (vistaAtleta === 'Arantxa' ? Math.round((objetivoEfectivoDia(d, 'arantxa').kcal / 2500) * 100) : Math.round((objetivoEfectivoDia(d, 'fede').kcal / 3500) * 100)) + '%'"
+                      ></div>
+                    </div>
+
+                    <div class="mt-2 flex flex-col items-center">
+                      <span
+                        class="text-xs transition px-2 py-0.5 rounded-full"
+                        :class="diaSeleccionado === d ? ' font-extrabold text-ink bg-subtle' : (d === nombreDiaHoy() ? 'font-bold text-sage' : 'font-semibold text-ink-secondary')"
+                        x-text="abreviarDia(d)"
+                      ></span>
+                      <div class="flex items-center gap-1 mt-1 h-1.5">
+                        <span x-show="d === nombreDiaHoy()" class="w-1.5 h-1.5 rounded-full bg-sage" title="Hoy"></span>
+                        <span x-show="tieneModificacionEntrenoDia(d)" class="w-1.5 h-1.5 rounded-full bg-[#D3A664]" title="Entreno adaptado"></span>
+                      </div>
+                    </div>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <!-- Panel Desplegable de Modificación de Sesiones -->
+            <div x-show="panelEntrenoAbierto" x-cloak class="bg-canvas border border-border rounded-3xl p-4 sm:p-5 space-y-4 mt-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+                <div>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Ajuste de Sesiones (Anclado a RESUMEN_SEMANAL)</h3>
+                  <p class="text-xs text-ink-secondary mt-0.5">Al cambiar el tipo de sesión, las calorías y gramos de carbohidratos en crudo se adaptan automáticamente sin tocar la proteína.</p>
+                </div>
+                <button x-show="tieneModificacionEntrenoDia(diaSeleccionado)" type="button" @click="restaurarEntrenoDia(diaSeleccionado)" class="px-3.5 py-1.5 rounded-full bg-surface border border-border text-xs font-bold text-sage hover:bg-sage-light shrink-0">
                   Restaurar plan original del <span x-text="diaSeleccionado"></span>
                 </button>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- OPCIÓN A: Cambiar Tipo de Sesión de Hoy -->
-                <div class="bg-surface border border-border rounded-xl p-3.5 space-y-3">
+                <div class="bg-surface border border-border rounded-2xl p-4 space-y-3">
                   <div>
                     <span class="text-xs font-extrabold text-sage uppercase block">Opción A · Cambiar Sesiones de Hoy</span>
-                    <p class="text-[11px] text-ink-secondary mt-0.5">Adapta las calorías y los gramos en crudo de los carbohidratos de hoy al número y tipo de sesiones que vayas a hacer realmente.</p>
+                    <p class="text-[11px] text-ink-secondary mt-0.5">Escala los hidratos en crudo al número real de sesiones de hoy.</p>
                   </div>
 
-                  <div class="space-y-2.5">
+                  <div class="space-y-3">
                     <div>
-                      <label class="block text-xs font-bold text-fede-dark mb-1">Sesiones hoy para FEDE:</label>
-                      <select :value="obtenerCargaAtleta(diaSeleccionado, 'fede')" @change="fijarCargaAtleta(diaSeleccionado, 'fede', $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2 text-xs font-semibold text-ink">
+                      <label class="block text-xs font-bold text-ink mb-1">Sesiones hoy para FEDE:</label>
+                      <select :value="obtenerCargaAtleta(diaSeleccionado, 'fede')" @change="fijarCargaAtleta(diaSeleccionado, 'fede', $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
                         <option value="auto" x-text="'Seguir Excel original (' + objetivoBaseDia(diaSeleccionado, 'fede').entreno + ' → ' + objetivoBaseDia(diaSeleccionado, 'fede').kcal + ' kcal)'"></option>
                         <option value="descanso">0 Sesiones · Descanso Total (2.345 kcal | 200g CH)</option>
                         <option value="unica_run_suave">1 Sesión · Carrera Fácil 8 km (2.707 kcal | 310g CH)</option>
@@ -296,8 +369,8 @@
                     </div>
 
                     <div>
-                      <label class="block text-xs font-bold text-ara-dark mb-1">Sesiones hoy para ARANTXA:</label>
-                      <select :value="obtenerCargaAtleta(diaSeleccionado, 'arantxa')" @change="fijarCargaAtleta(diaSeleccionado, 'arantxa', $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2 text-xs font-semibold text-ink">
+                      <label class="block text-xs font-bold text-ink mb-1">Sesiones hoy para ARANTXA:</label>
+                      <select :value="obtenerCargaAtleta(diaSeleccionado, 'arantxa')" @change="fijarCargaAtleta(diaSeleccionado, 'arantxa', $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
                         <option value="auto" x-text="'Seguir Excel original (' + objetivoBaseDia(diaSeleccionado, 'arantxa').entreno + ' → ' + objetivoBaseDia(diaSeleccionado, 'arantxa').kcal + ' kcal)'"></option>
                         <option value="descanso">0 Sesiones · Descanso Total (1.630 kcal | 145g CH)</option>
                         <option value="unica_run_suave">1 Sesión · Carrera Fácil 8 km (1.860 kcal | 215g CH)</option>
@@ -312,22 +385,20 @@
                   </div>
                 </div>
 
-                <!-- OPCIÓN B: Permutar Día Completo -->
-                <div class="bg-surface border border-border rounded-xl p-3.5 flex flex-col justify-between space-y-3">
+                <div class="bg-surface border border-border rounded-2xl p-4 flex flex-col justify-between space-y-3">
                   <div>
-                    <span class="text-xs font-extrabold text-indigo-800 uppercase block">Opción B · Intercambiar Día Entero con Otro</span>
-                    <p class="text-[11px] text-ink-secondary mt-0.5">Intercambia el menú completo y las calorías del <strong x-text="diaSeleccionado"></strong> con otro día de la semana (ej. cambiar Miércoles 3.295 kcal ↔ Jueves 2.707 kcal).</p>
+                    <span class="text-xs font-extrabold text-ink uppercase block">Opción B · Intercambiar Día Entero con Otro</span>
+                    <p class="text-[11px] text-ink-secondary mt-0.5">Permuta el menú completo y las calorías del <strong x-text="diaSeleccionado"></strong> con otro día sin alterar la compra semanal.</p>
                   </div>
 
                   <div class="space-y-2">
                     <label class="block text-xs font-bold text-ink">Intercambiar todo el <span x-text="diaSeleccionado"></span> con:</label>
-                    <select :value="diaPermutadoCon(diaSeleccionado) || ''" @change="permutarDias(diaSeleccionado, $event.target.value)" class="w-full bg-canvas border border-border rounded-lg px-3 py-2.5 text-xs font-semibold text-ink">
+                    <select :value="diaPermutadoCon(diaSeleccionado) || ''" @change="permutarDias(diaSeleccionado, $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
                       <option value="">-- Mantener en su día original --</option>
                       <template x-for="dAlt in diasSemana.filter(x => x !== diaSeleccionado)" :key="dAlt">
                         <option :value="dAlt" x-text="'⇄ Intercambiar con ' + dAlt + ' (' + RESUMEN_OFICIAL_FEDE[normalizar(dAlt)].entreno + ' · ' + RESUMEN_OFICIAL_FEDE[normalizar(dAlt)].kcal + ' kcal)'"></option>
                       </template>
                     </select>
-                    <p class="text-[11px] text-ink-muted">Al intercambiar dos días completos, tu lista de la compra semanal permanece intacta.</p>
                   </div>
                 </div>
               </div>
@@ -335,206 +406,318 @@
           </div>
 
           <!-- Banner Cena Libre -->
-          <div x-show="cenaSocialActiva" x-cloak class="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-950">
+          <div x-show="cenaSocialActiva" x-cloak class="bg-[#F6EFE4] border border-[#E5D3B5] rounded-[1.75rem] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-ink shadow-card">
             <div>
-              <span class="font-bold uppercase tracking-wider text-amber-800 block mb-0.5">Modo Cena Libre Activo (-35% CH y Grasas pre-cena)</span>
-              <span>Proteína intacta al 100%. Se han recortado los hidratos y grasas de las comidas previas a la cena para crear tu colchón calórico.</span>
+              <span class="font-extrabold uppercase tracking-wider text-[#9A6B26] block mb-0.5">🍷 Modo Cena Libre Activo (-35% CH y Grasas pre-cena)</span>
+              <span class="text-ink-secondary">Proteína intacta al 100%. Se han reducido hidratos y grasas de las tomas previas para crear tu margen calórico.</span>
             </div>
-            <div class="font-mono font-bold text-amber-900 shrink-0 bg-white px-3 py-2 rounded-lg border border-amber-200 tabular-nums">
+            <div class="font-mono font-bold text-ink shrink-0 bg-surface px-3.5 py-2 rounded-2xl border border-[#E5D3B5] tabular-nums">
               <span class="block" x-text="'Reserva Fede: -' + totalesDia().fede.ahorroKcal + ' kcal (-' + totalesDia().fede.ahorroCH + 'g CH)'"></span>
               <span class="block" x-text="'Reserva Ara: -' + totalesDia().arantxa.ahorroKcal + ' kcal (-' + totalesDia().arantxa.ahorroCH + 'g CH)'"></span>
             </div>
           </div>
 
-          <!-- PANEL DE TOTALES DIARIOS OFICIALES (FIEL AL EXCEL) -->
-          <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
+          <!-- =========================================================
+               TARJETAS RESUMEN DIARIO ESTILO CALORICAM (Daily Intake Gauge + Nutrition Bars)
+               ========================================================= -->
+          <div class="grid grid-cols-1 gap-5" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
             
-            <!-- Totales FEDE -->
-            <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-fede-bg border-2 border-fede-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
-              <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-fede-border pb-3">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md bg-fede-badge text-white text-xs font-extrabold uppercase tracking-wider">Fede</span>
-                    <span class="text-xs font-bold text-fede-dark" x-text="diaSeleccionado"></span>
-                    <span class="text-xs text-fede-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' tomas hechas'"></span>
+            <!-- DASHBOARD FEDE -->
+            <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="space-y-4">
+              
+              <!-- Tarjeta 1: Daily Intake (Arco Circular + % Gigante) -->
+              <div class="bg-[#EFE5E2] border border-fede-border rounded-[2rem] p-5 sm:p-6 shadow-soft">
+                <div class="flex items-center justify-between gap-4">
+                  <div class="space-y-2">
+                    <div class="flex items-center gap-2.5">
+                      <span class="w-9 h-9 rounded-full bg-surface flex items-center justify-center text-sage shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                      </span>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-bold text-ink">Ingesta diaria</span>
+                          <span class="px-2.5 py-0.5 rounded-full bg-sage text-white text-[10px] font-extrabold uppercase tracking-wider">Fede</span>
+                        </div>
+                        <span class="text-[11px] text-ink-secondary font-medium" x-text="contarComidasCompletadas() + ' de ' + comidasDelDia().length + ' tomas completadas'"></span>
+                      </div>
+                    </div>
+
+                    <div class="pt-1 tabular-nums">
+                      <span class="text-4xl sm:text-5xl font-extrabold tracking-tight text-ink" x-text="Math.min(100, Math.round((consumidoDia('fede').kcal / (totalesDia().fede.kcal || 1)) * 100)) + '%'"></span>
+                      <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-ink-secondary">
+                        <span x-text="'Faltan ' + Math.max(0, totalesDia().fede.kcal - consumidoDia('fede').kcal) + ' kcal'"></span>
+                        <span x-show="totalesDia().fede.deltaKcalVsBase !== 0" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-sage" x-text="(totalesDia().fede.deltaKcalVsBase > 0 ? '+' : '') + totalesDia().fede.deltaKcalVsBase + ' kcal vs base'"></span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
-                    <span class="text-2xl sm:text-3xl font-extrabold font-mono text-fede-dark" x-text="totalesDia().fede.kcal"></span>
-                    <span class="text-xs font-bold text-fede-text">kcal objetivo hoy</span>
-                    <span x-show="totalesDia().fede.deltaKcalVsBase !== 0" class="text-xs font-mono font-extrabold px-1.5 py-0.5 rounded bg-white border border-fede-border" :class="totalesDia().fede.deltaKcalVsBase < 0 ? 'text-emerald-700' : 'text-amber-700'" x-text="(totalesDia().fede.deltaKcalVsBase > 0 ? '+' : '') + totalesDia().fede.deltaKcalVsBase + ' kcal vs plan base'"></span>
+
+                  <!-- Gauge Circular Abierto Estilo CaloriCam -->
+                  <div class="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center">
+                    <svg class="w-full h-full" viewBox="0 0 120 120">
+                      <circle
+                        cx="60" cy="60" r="46"
+                        fill="none"
+                        stroke="#FBF8F6"
+                        stroke-width="12"
+                        stroke-linecap="round"
+                        stroke-dasharray="225 300"
+                        transform="rotate(132 60 60)"
+                      />
+                      <circle
+                        cx="60" cy="60" r="46"
+                        fill="none"
+                        stroke="#723846"
+                        stroke-width="12"
+                        stroke-linecap="round"
+                        :stroke-dasharray="(225 * Math.min(1, consumidoDia('fede').kcal / (totalesDia().fede.kcal || 1))) + ' 300'"
+                        transform="rotate(132 60 60)"
+                        class="transition-all duration-500"
+                      />
+                    </svg>
+                    <div class="absolute inset-4 rounded-full bg-surface/90 shadow-inner flex flex-col items-center justify-center text-center tabular-nums">
+                      <span class="text-lg sm:text-xl font-extrabold font-mono text-sage leading-none" x-text="consumidoDia('fede').kcal"></span>
+                      <span class="text-xs font-mono font-semibold text-ink-secondary mt-1" x-text="totalesDia().fede.kcal"></span>
+                    </div>
                   </div>
-                </div>
-                <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-fede-border">
-                  <span class="text-[11px] font-semibold text-fede-text block">Consumido / Restante</span>
-                  <span class="text-xs font-mono font-bold text-fede-dark">
-                    <span x-text="consumidoDia('fede').kcal + ' kcal'"></span>
-                    <span class="text-slate-400"> / </span>
-                    <span class="text-fede-badge" x-text="'Faltan ' + Math.max(0, totalesDia().fede.kcal - consumidoDia('fede').kcal)"></span>
-                  </span>
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2.5 tabular-nums">
-                <div class="bg-white border border-fede-border rounded-xl p-3 space-y-1.5">
-                  <div class="flex justify-between items-baseline">
-                    <span class="text-[11px] font-extrabold text-macro-prot uppercase">Proteína</span>
-                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'p') + '%'"></span>
+              <!-- Tarjeta 2: Nutrition (Barras Horizontales Rosa, Dorado y Gris Azulado) -->
+              <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-6 shadow-soft space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-9 h-9 rounded-full bg-canvas border border-border flex items-center justify-center text-ink">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                    </span>
+                    <span class="text-sm font-bold text-ink">Nutrición · Fede</span>
                   </div>
-                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().fede.p + 'g'"></div>
-                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').p + 'g'"></div>
-                  <div class="w-full h-1.5 bg-orange-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-macro-prot rounded-full transition-all" :style="'width: ' + porcentajeConsumido('fede', 'p') + '%'"></div>
-                  </div>
+                  <span class="text-xs font-mono font-semibold text-ink-secondary" x-text="totalesDia().fede.kcal + ' kcal meta'"></span>
                 </div>
 
-                <div class="bg-white border border-fede-border rounded-xl p-3 space-y-1.5">
-                  <div class="flex justify-between items-baseline">
-                    <span class="text-[11px] font-extrabold text-macro-carb uppercase">Carbos</span>
-                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'ch') + '%'"></span>
+                <div class="space-y-3.5 tabular-nums">
+                  <!-- Carbs (Rosa Empolvado #E0909E) -->
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-baseline text-xs">
+                      <span class="font-semibold text-ink-secondary">Carbohidratos</span>
+                      <span class="font-mono font-bold text-ink" x-text="consumidoDia('fede').ch + ' / ' + totalesDia().fede.ch + ' g'"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-bold text-ink w-9" x-text="porcentajeConsumido('fede', 'ch') + '%'"></span>
+                      <div class="flex-1 h-3 bg-macro-carbBg rounded-full overflow-hidden">
+                        <div class="h-full bg-macro-carb rounded-full transition-all duration-500" :style="'width: ' + porcentajeConsumido('fede', 'ch') + '%'"></div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().fede.ch + 'g'"></div>
-                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').ch + 'g'"></div>
-                  <div class="w-full h-1.5 bg-amber-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-macro-carb rounded-full transition-all" :style="'width: ' + porcentajeConsumido('fede', 'ch') + '%'"></div>
-                  </div>
-                </div>
 
-                <div class="bg-white border border-fede-border rounded-xl p-3 space-y-1.5">
-                  <div class="flex justify-between items-baseline">
-                    <span class="text-[11px] font-extrabold text-macro-fat uppercase">Grasas</span>
-                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('fede', 'g') + '%'"></span>
+                  <!-- Fat (Dorado Ocre #D3A664) -->
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-baseline text-xs">
+                      <span class="font-semibold text-ink-secondary">Grasas</span>
+                      <span class="font-mono font-bold text-ink" x-text="consumidoDia('fede').g + ' / ' + totalesDia().fede.g + ' g'"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-bold text-ink w-9" x-text="porcentajeConsumido('fede', 'g') + '%'"></span>
+                      <div class="flex-1 h-3 bg-macro-fatBg rounded-full overflow-hidden">
+                        <div class="h-full bg-macro-fat rounded-full transition-all duration-500" :style="'width: ' + porcentajeConsumido('fede', 'g') + '%'"></div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().fede.g + 'g'"></div>
-                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('fede').g + 'g'"></div>
-                  <div class="w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-macro-fat rounded-full transition-all" :style="'width: ' + porcentajeConsumido('fede', 'g') + '%'"></div>
+
+                  <!-- Protein (Gris Pizarra #94A2AC) -->
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-baseline text-xs">
+                      <span class="font-semibold text-ink-secondary">Proteína</span>
+                      <span class="font-mono font-bold text-ink" x-text="consumidoDia('fede').p + ' / ' + totalesDia().fede.p + ' g'"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-bold text-ink w-9" x-text="porcentajeConsumido('fede', 'p') + '%'"></span>
+                      <div class="flex-1 h-3 bg-macro-protBg rounded-full overflow-hidden">
+                        <div class="h-full bg-macro-prot rounded-full transition-all duration-500" :style="'width: ' + porcentajeConsumido('fede', 'p') + '%'"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Totales ARANTXA -->
-            <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-ara-bg border-2 border-ara-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
-              <div class="flex flex-wrap items-baseline justify-between gap-2 border-b border-ara-border pb-3">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-md bg-ara-badge text-white text-xs font-extrabold uppercase tracking-wider">Arantxa</span>
-                    <span class="text-xs font-bold text-ara-dark" x-text="diaSeleccionado"></span>
-                    <span class="text-xs text-ara-text font-semibold" x-text="'· ' + contarComidasCompletadas() + '/' + comidasDelDia().length + ' tomas hechas'"></span>
+            <!-- DASHBOARD ARANTXA -->
+            <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="space-y-4">
+              
+              <!-- Tarjeta 1: Daily Intake Arantxa -->
+              <div class="bg-[#EDEAE6] border border-ara-border rounded-[2rem] p-5 sm:p-6 shadow-soft">
+                <div class="flex items-center justify-between gap-4">
+                  <div class="space-y-2">
+                    <div class="flex items-center gap-2.5">
+                      <span class="w-9 h-9 rounded-full bg-surface flex items-center justify-center text-ara-dark shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                      </span>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-bold text-ink">Ingesta diaria</span>
+                          <span class="px-2.5 py-0.5 rounded-full bg-ara-badge text-white text-[10px] font-extrabold uppercase tracking-wider">Arantxa</span>
+                        </div>
+                        <span class="text-[11px] text-ink-secondary font-medium" x-text="contarComidasCompletadas() + ' de ' + comidasDelDia().length + ' tomas completadas'"></span>
+                      </div>
+                    </div>
+
+                    <div class="pt-1 tabular-nums">
+                      <span class="text-4xl sm:text-5xl font-extrabold tracking-tight text-ink" x-text="Math.min(100, Math.round((consumidoDia('arantxa').kcal / (totalesDia().arantxa.kcal || 1)) * 100)) + '%'"></span>
+                      <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-ink-secondary">
+                        <span x-text="'Faltan ' + Math.max(0, totalesDia().arantxa.kcal - consumidoDia('arantxa').kcal) + ' kcal'"></span>
+                        <span x-show="totalesDia().arantxa.deltaKcalVsBase !== 0" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-ara-dark" x-text="(totalesDia().arantxa.deltaKcalVsBase > 0 ? '+' : '') + totalesDia().arantxa.deltaKcalVsBase + ' kcal vs base'"></span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="mt-1.5 flex items-baseline gap-2 tabular-nums">
-                    <span class="text-2xl sm:text-3xl font-extrabold font-mono text-ara-dark" x-text="totalesDia().arantxa.kcal"></span>
-                    <span class="text-xs font-bold text-ara-text">kcal objetivo hoy</span>
-                    <span x-show="totalesDia().arantxa.deltaKcalVsBase !== 0" class="text-xs font-mono font-extrabold px-1.5 py-0.5 rounded bg-white border border-ara-border" :class="totalesDia().arantxa.deltaKcalVsBase < 0 ? 'text-emerald-700' : 'text-amber-700'" x-text="(totalesDia().arantxa.deltaKcalVsBase > 0 ? '+' : '') + totalesDia().arantxa.deltaKcalVsBase + ' kcal vs plan base'"></span>
+
+                  <!-- Gauge Circular Abierto Arantxa -->
+                  <div class="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center">
+                    <svg class="w-full h-full" viewBox="0 0 120 120">
+                      <circle
+                        cx="60" cy="60" r="46"
+                        fill="none"
+                        stroke="#FBF8F6"
+                        stroke-width="12"
+                        stroke-linecap="round"
+                        stroke-dasharray="225 300"
+                        transform="rotate(132 60 60)"
+                      />
+                      <circle
+                        cx="60" cy="60" r="46"
+                        fill="none"
+                        stroke="#723846"
+                        stroke-width="12"
+                        stroke-linecap="round"
+                        :stroke-dasharray="(225 * Math.min(1, consumidoDia('arantxa').kcal / (totalesDia().arantxa.kcal || 1))) + ' 300'"
+                        transform="rotate(132 60 60)"
+                        class="transition-all duration-500"
+                      />
+                    </svg>
+                    <div class="absolute inset-4 rounded-full bg-surface/90 shadow-inner flex flex-col items-center justify-center text-center tabular-nums">
+                      <span class="text-lg sm:text-xl font-extrabold font-mono text-sage leading-none" x-text="consumidoDia('arantxa').kcal"></span>
+                      <span class="text-xs font-mono font-semibold text-ink-secondary mt-1" x-text="totalesDia().arantxa.kcal"></span>
+                    </div>
                   </div>
-                </div>
-                <div class="text-right tabular-nums bg-white/80 px-3 py-1.5 rounded-xl border border-ara-border">
-                  <span class="text-[11px] font-semibold text-ara-text block">Consumido / Restante</span>
-                  <span class="text-xs font-mono font-bold text-ara-dark">
-                    <span x-text="consumidoDia('arantxa').kcal + ' kcal'"></span>
-                    <span class="text-slate-400"> / </span>
-                    <span class="text-ara-badge" x-text="'Faltan ' + Math.max(0, totalesDia().arantxa.kcal - consumidoDia('arantxa').kcal)"></span>
-                  </span>
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2.5 tabular-nums">
-                <div class="bg-white border border-ara-border rounded-xl p-3 space-y-1.5">
-                  <div class="flex justify-between items-baseline">
-                    <span class="text-[11px] font-extrabold text-macro-prot uppercase">Proteína</span>
-                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'p') + '%'"></span>
+              <!-- Tarjeta 2: Nutrition Arantxa -->
+              <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-6 shadow-soft space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-9 h-9 rounded-full bg-canvas border border-border flex items-center justify-center text-ink">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                    </span>
+                    <span class="text-sm font-bold text-ink">Nutrición · Arantxa</span>
                   </div>
-                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.p + 'g'"></div>
-                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').p + 'g'"></div>
-                  <div class="w-full h-1.5 bg-orange-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-macro-prot rounded-full transition-all" :style="'width: ' + porcentajeConsumido('arantxa', 'p') + '%'"></div>
-                  </div>
+                  <span class="text-xs font-mono font-semibold text-ink-secondary" x-text="totalesDia().arantxa.kcal + ' kcal meta'"></span>
                 </div>
 
-                <div class="bg-white border border-ara-border rounded-xl p-3 space-y-1.5">
-                  <div class="flex justify-between items-baseline">
-                    <span class="text-[11px] font-extrabold text-macro-carb uppercase">Carbos</span>
-                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'ch') + '%'"></span>
+                <div class="space-y-3.5 tabular-nums">
+                  <!-- Carbs -->
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-baseline text-xs">
+                      <span class="font-semibold text-ink-secondary">Carbohidratos</span>
+                      <span class="font-mono font-bold text-ink" x-text="consumidoDia('arantxa').ch + ' / ' + totalesDia().arantxa.ch + ' g'"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-bold text-ink w-9" x-text="porcentajeConsumido('arantxa', 'ch') + '%'"></span>
+                      <div class="flex-1 h-3 bg-macro-carbBg rounded-full overflow-hidden">
+                        <div class="h-full bg-macro-carb rounded-full transition-all duration-500" :style="'width: ' + porcentajeConsumido('arantxa', 'ch') + '%'"></div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.ch + 'g'"></div>
-                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').ch + 'g'"></div>
-                  <div class="w-full h-1.5 bg-amber-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-macro-carb rounded-full transition-all" :style="'width: ' + porcentajeConsumido('arantxa', 'ch') + '%'"></div>
-                  </div>
-                </div>
 
-                <div class="bg-white border border-ara-border rounded-xl p-3 space-y-1.5">
-                  <div class="flex justify-between items-baseline">
-                    <span class="text-[11px] font-extrabold text-macro-fat uppercase">Grasas</span>
-                    <span class="text-[11px] font-mono text-ink-secondary" x-text="porcentajeConsumido('arantxa', 'g') + '%'"></span>
+                  <!-- Fat -->
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-baseline text-xs">
+                      <span class="font-semibold text-ink-secondary">Grasas</span>
+                      <span class="font-mono font-bold text-ink" x-text="consumidoDia('arantxa').g + ' / ' + totalesDia().arantxa.g + ' g'"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-bold text-ink w-9" x-text="porcentajeConsumido('arantxa', 'g') + '%'"></span>
+                      <div class="flex-1 h-3 bg-macro-fatBg rounded-full overflow-hidden">
+                        <div class="h-full bg-macro-fat rounded-full transition-all duration-500" :style="'width: ' + porcentajeConsumido('arantxa', 'g') + '%'"></div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="text-base font-extrabold font-mono text-ink" x-text="totalesDia().arantxa.g + 'g'"></div>
-                  <div class="text-[11px] font-mono text-ink-secondary" x-text="'Hecho: ' + consumidoDia('arantxa').g + 'g'"></div>
-                  <div class="w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-macro-fat rounded-full transition-all" :style="'width: ' + porcentajeConsumido('arantxa', 'g') + '%'"></div>
+
+                  <!-- Protein -->
+                  <div class="space-y-1.5">
+                    <div class="flex justify-between items-baseline text-xs">
+                      <span class="font-semibold text-ink-secondary">Proteína</span>
+                      <span class="font-mono font-bold text-ink" x-text="consumidoDia('arantxa').p + ' / ' + totalesDia().arantxa.p + ' g'"></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-bold text-ink w-9" x-text="porcentajeConsumido('arantxa', 'p') + '%'"></span>
+                      <div class="flex-1 h-3 bg-macro-protBg rounded-full overflow-hidden">
+                        <div class="h-full bg-macro-prot rounded-full transition-all duration-500" :style="'width: ' + porcentajeConsumido('arantxa', 'p') + '%'"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- LISTA DE COMIDAS REALES DEL DÍA -->
-          <div class="space-y-4">
+          <!-- =========================================================
+               LISTA DE COMIDAS REALES DEL DÍA (Tarjetas Redondeadas Suaves)
+               ========================================================= -->
+          <div class="space-y-4 pt-1">
             <template x-for="(comida, idx) in comidasDelDia()" :key="diaSeleccionado + '_' + idx">
-              <article class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+              <article class="bg-surface border border-border rounded-[2rem] overflow-hidden shadow-soft transition">
                 
-                <div class="px-4 sm:px-5 py-3.5 bg-canvas/80 border-b border-border flex flex-wrap items-center justify-between gap-2">
-                  <div class="flex items-center gap-3">
+                <div class="px-5 sm:px-6 py-4 bg-canvas/50 border-b border-border flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-3.5">
                     <button
                       type="button"
                       @click="toggleComidaCompletada(idx)"
                       :aria-pressed="esComidaCompletada(idx).toString()"
-                      :class="esComidaCompletada(idx) ? 'bg-sage border-sage text-white shadow-sm' : 'bg-white border-stone-300 text-transparent hover:border-sage'"
-                      class="w-8 h-8 rounded-xl border-2 flex items-center justify-center transition shrink-0"
+                      :class="esComidaCompletada(idx) ? 'bg-sage border-sage text-white shadow-sm' : 'bg-surface border-border text-transparent hover:border-sage'"
+                      class="w-9 h-9 rounded-full border-2 flex items-center justify-center transition shrink-0"
                     >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </button>
 
                     <div>
                       <div class="flex flex-wrap items-center gap-1.5">
                         <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="comida.ventana"></span>
-                        <span x-show="esComidaCompletada(idx)" class="text-[11px] font-bold bg-sage-light text-sage px-2 py-0.5 rounded-md border border-sage-border">✓ Completada</span>
-                        <span x-show="tieneSwapActivo(idx)" class="text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md border border-indigo-200">⇄ Ingrediente Intercambiado (Isocalórico)</span>
+                        <span x-show="esComidaCompletada(idx)" class="text-[10px] font-bold bg-sage-light text-sage px-2.5 py-0.5 rounded-full border border-sage-border">✓ Hecha</span>
+                        <span x-show="tieneSwapActivo(idx)" class="text-[10px] font-bold bg-[#F6EFE4] text-[#9A6B26] px-2.5 py-0.5 rounded-full border border-[#E5D3B5]">⇄ Intercambio Isocalórico</span>
                       </div>
                       <h3 class="text-base font-extrabold text-ink mt-0.5" :class="esComidaCompletada(idx) ? 'line-through text-ink-muted' : ''" x-text="tituloPlatoAdaptado(comida, idx)"></h3>
                     </div>
                   </div>
 
                   <div class="flex items-center gap-2">
-                    <span class="text-xs font-mono font-semibold text-ink-secondary bg-white border border-border px-2.5 py-1.5 rounded-lg" x-text="calcularReparto(comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)"></span>
+                    <span class="text-xs font-mono font-semibold text-ink-secondary bg-surface border border-border px-3 py-1.5 rounded-full" x-text="calcularReparto(comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)"></span>
                     <button
                       type="button"
                       @click="abrirSwap(idx)"
-                      :class="tieneSwapActivo(idx) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-ink border-border hover:bg-subtle'"
-                      class="px-3 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 min-h-[40px]"
+                      :class="tieneSwapActivo(idx) ? 'bg-sage text-white border-sage' : 'bg-surface text-ink border-border hover:bg-subtle'"
+                      class="px-3.5 py-2 rounded-full border text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                     >
                       <span>⇄ Intercambiar</span>
                     </button>
                   </div>
                 </div>
 
-                <div class="p-4 sm:p-5 space-y-4">
-                  <!-- PANEL DE INTERCAMBIO DE ALIMENTOS (MANTIENE EXACTAS LAS KCAL DE LA TOMA) -->
-                  <div x-show="swapAbiertoIdx === idx" x-cloak class="bg-indigo-50/70 border-2 border-indigo-200 rounded-2xl p-4 space-y-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-200 pb-2.5">
+                <div class="p-5 sm:p-6 space-y-4">
+                  <!-- PANEL DE INTERCAMBIO ISOCALÓRICO -->
+                  <div x-show="swapAbiertoIdx === idx" x-cloak class="bg-canvas border border-border rounded-3xl p-4 sm:p-5 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
                       <div>
-                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-indigo-950">Intercambio Isocalórico (No altera las Kcal ni Macros de la comida)</h4>
-                        <p class="text-xs text-indigo-900 mt-0.5">Ajusta los gramos en crudo de la proteína, la guarnición y el AOVE para clavar exactamente las calorías y macros asignados a esta toma.</p>
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-sage">Intercambio Isocalórico (Mantiene exactas las Kcal y Macros)</h4>
+                        <p class="text-xs text-ink-secondary mt-0.5">Recalcula automáticamente los gramos en crudo de proteína, carbohidrato y AOVE.</p>
                       </div>
-                      <button type="button" @click="resetSwap(idx)" class="px-3 py-1.5 rounded-lg bg-white border border-indigo-300 text-xs font-bold text-indigo-900 hover:bg-indigo-100 shrink-0">
+                      <button type="button" @click="resetSwap(idx)" class="px-3.5 py-1.5 rounded-full bg-surface border border-border text-xs font-bold text-ink hover:bg-subtle shrink-0">
                         Restaurar original
                       </button>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label class="block text-xs font-bold text-indigo-950 mb-1">Cambiar Proteína por:</label>
-                        <select :value="obtenerValorSwap(idx, 'prot')" @change="aplicarSwap(idx, 'prot', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
+                        <label class="block text-xs font-bold text-ink mb-1">Cambiar Proteína por:</label>
+                        <select :value="obtenerValorSwap(idx, 'prot')" @change="aplicarSwap(idx, 'prot', $event.target.value)" class="w-full bg-surface border border-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-ink font-semibold">
                           <option value="">-- Mantener proteína original --</option>
                           <option value="pechuga pollo">Pechuga de pollo (23g P | 0g CH | 1.2g G)</option>
                           <option value="pechuga pavo">Pechuga de pavo (24g P | 0g CH | 1g G)</option>
@@ -552,8 +735,8 @@
                         </select>
                       </div>
                       <div>
-                        <label class="block text-xs font-bold text-indigo-950 mb-1">Cambiar Carbohidrato por:</label>
-                        <select :value="obtenerValorSwap(idx, 'ch')" @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-white border border-indigo-300 rounded-xl px-3 py-2.5 text-sm text-ink font-semibold">
+                        <label class="block text-xs font-bold text-ink mb-1">Cambiar Carbohidrato por:</label>
+                        <select :value="obtenerValorSwap(idx, 'ch')" @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-surface border border-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-ink font-semibold">
                           <option value="">-- Mantener carbohidrato original --</option>
                           <option value="arroz basmati">Arroz blanco / basmati en crudo (78g CH | 7.5g P)</option>
                           <option value="patata">Patata en crudo (18g CH | 2g P)</option>
@@ -573,67 +756,67 @@
                   </div>
 
                   <!-- OLLA COMÚN -->
-                  <div x-show="mostrarSumaComun" class="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5">
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5 mb-2">
+                  <div x-show="mostrarSumaComun" class="bg-canvas/80 border border-border rounded-2xl p-3.5">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-ink-secondary flex items-center gap-1.5 mb-2">
                       <span>🍲</span> Olla Común · Pesar junto en crudo (Fede + Arantxa)
                     </span>
                     <div class="flex flex-wrap gap-2">
                       <template x-for="(item, iItem) in sumarIngredientes(comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)" :key="iItem + '_' + item">
-                        <span class="bg-white border border-amber-300 text-ink text-xs font-mono font-bold px-3 py-1.5 rounded-lg shadow-sm" x-text="item"></span>
+                        <span class="bg-surface border border-border text-ink text-xs font-mono font-bold px-3 py-1.5 rounded-full shadow-sm" x-text="item"></span>
                       </template>
                     </div>
                   </div>
 
-                  <!-- TARJETAS PARALELAS DIFERENCIADAS POR COLOR: AZUL (FEDE) vs ESMERALDA (ARANTXA) -->
+                  <!-- TARJETAS PARALELAS DE RACIÓN EN CRUDO -->
                   <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
                     
                     <!-- Ración FEDE -->
-                    <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-fede-bg border-2 border-fede-border rounded-xl p-4 flex flex-col justify-between space-y-3">
+                    <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="bg-fede-bg/70 border border-fede-border rounded-3xl p-4 sm:p-5 flex flex-col justify-between space-y-3">
                       <div>
-                        <div class="flex items-center justify-between border-b border-fede-border pb-2 mb-2.5">
+                        <div class="flex items-center justify-between border-b border-fede-border/80 pb-2.5 mb-3">
                           <div class="flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded bg-fede-badge text-white text-[11px] font-extrabold uppercase">Fede</span>
-                            <span class="text-xs font-bold text-fede-dark">Pesos en crudo</span>
+                            <span class="px-2.5 py-0.5 rounded-full bg-sage text-white text-[10px] font-extrabold uppercase tracking-wider">Fede</span>
+                            <span class="text-xs font-bold text-ink-secondary">Pesos en crudo</span>
                           </div>
-                          <span class="text-xs font-mono font-extrabold text-fede-dark" x-text="comidaCalculada(comida, idx, 'fede').macrosObj.kcal + ' kcal'"></span>
+                          <span class="text-sm font-mono font-extrabold text-sage" x-text="comidaCalculada(comida, idx, 'fede').macrosObj.kcal + ' kcal'"></span>
                         </div>
-                        <ul class="space-y-1.5 text-sm text-ink font-medium">
+                        <ul class="space-y-2 text-sm text-ink font-medium">
                           <template x-for="(ing, iIng) in desglosarListaIngredientes(comidaCalculada(comida, idx, 'fede').texto)" :key="iIng + '_' + ing.nombre + '_' + ing.cantidad">
-                            <li class="flex items-baseline justify-between border-b border-fede-border/60 pb-1 last:border-0 last:pb-0">
-                              <span class="text-slate-800" x-text="ing.nombre"></span>
-                              <span class="font-mono font-bold text-fede-dark ml-2 shrink-0 bg-white px-2 py-0.5 rounded border border-fede-border" x-text="ing.cantidad"></span>
+                            <li class="flex items-baseline justify-between border-b border-fede-border/50 pb-1.5 last:border-0 last:pb-0">
+                              <span class="text-ink" x-text="ing.nombre"></span>
+                              <span class="font-mono text-xs font-bold text-sage ml-2 shrink-0 bg-surface px-2.5 py-0.5 rounded-full border border-fede-border" x-text="ing.cantidad"></span>
                             </li>
                           </template>
                         </ul>
                       </div>
-                      <div class="pt-2 border-t border-fede-border flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-fede-text">
+                      <div class="pt-2.5 border-t border-fede-border/80 flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-ink-secondary">
                         <span x-text="comidaCalculada(comida, idx, 'fede').macrosTexto"></span>
-                        <span x-show="comidaCalculada(comida, idx, 'fede').notaAjuste" class="text-[10px] bg-white px-2 py-0.5 rounded border border-fede-border text-indigo-700" x-text="comidaCalculada(comida, idx, 'fede').notaAjuste"></span>
+                        <span x-show="comidaCalculada(comida, idx, 'fede').notaAjuste" class="text-[10px] bg-surface px-2.5 py-0.5 rounded-full border border-fede-border text-sage" x-text="comidaCalculada(comida, idx, 'fede').notaAjuste"></span>
                       </div>
                     </div>
 
                     <!-- Ración ARANTXA -->
-                    <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-ara-bg border-2 border-ara-border rounded-xl p-4 flex flex-col justify-between space-y-3">
+                    <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="bg-ara-bg/80 border border-ara-border rounded-3xl p-4 sm:p-5 flex flex-col justify-between space-y-3">
                       <div>
-                        <div class="flex items-center justify-between border-b border-ara-border pb-2 mb-2.5">
+                        <div class="flex items-center justify-between border-b border-ara-border/80 pb-2.5 mb-3">
                           <div class="flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded bg-ara-badge text-white text-[11px] font-extrabold uppercase">Arantxa</span>
-                            <span class="text-xs font-bold text-ara-dark">Pesos en crudo</span>
+                            <span class="px-2.5 py-0.5 rounded-full bg-ara-badge text-white text-[10px] font-extrabold uppercase tracking-wider">Arantxa</span>
+                            <span class="text-xs font-bold text-ink-secondary">Pesos en crudo</span>
                           </div>
-                          <span class="text-xs font-mono font-extrabold text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').macrosObj.kcal + ' kcal'"></span>
+                          <span class="text-sm font-mono font-extrabold text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').macrosObj.kcal + ' kcal'"></span>
                         </div>
-                        <ul class="space-y-1.5 text-sm text-ink font-medium">
+                        <ul class="space-y-2 text-sm text-ink font-medium">
                           <template x-for="(ing, iIng) in desglosarListaIngredientes(comidaCalculada(comida, idx, 'arantxa').texto)" :key="iIng + '_' + ing.nombre + '_' + ing.cantidad">
-                            <li class="flex items-baseline justify-between border-b border-ara-border/60 pb-1 last:border-0 last:pb-0">
-                              <span class="text-slate-800" x-text="ing.nombre"></span>
-                              <span class="font-mono font-bold text-ara-dark ml-2 shrink-0 bg-white px-2 py-0.5 rounded border border-ara-border" x-text="ing.cantidad"></span>
+                            <li class="flex items-baseline justify-between border-b border-ara-border/50 pb-1.5 last:border-0 last:pb-0">
+                              <span class="text-ink" x-text="ing.nombre"></span>
+                              <span class="font-mono text-xs font-bold text-ara-dark ml-2 shrink-0 bg-surface px-2.5 py-0.5 rounded-full border border-ara-border" x-text="ing.cantidad"></span>
                             </li>
                           </template>
                         </ul>
                       </div>
-                      <div class="pt-2 border-t border-ara-border flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-ara-text">
+                      <div class="pt-2.5 border-t border-ara-border/80 flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-ink-secondary">
                         <span x-text="comidaCalculada(comida, idx, 'arantxa').macrosTexto"></span>
-                        <span x-show="comidaCalculada(comida, idx, 'arantxa').notaAjuste" class="text-[10px] bg-white px-2 py-0.5 rounded border border-ara-border text-indigo-700" x-text="comidaCalculada(comida, idx, 'arantxa').notaAjuste"></span>
+                        <span x-show="comidaCalculada(comida, idx, 'arantxa').notaAjuste" class="text-[10px] bg-surface px-2.5 py-0.5 rounded-full border border-ara-border text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').notaAjuste"></span>
                       </div>
                     </div>
 
@@ -647,38 +830,38 @@
         <!-- =========================================================
              VISTA 2: LISTA DE LA COMPRA SEMANAL
              ========================================================= -->
-        <section x-show="tab === 'compra'" x-cloak class="space-y-6">
-          <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
+        <section x-show="tab === 'compra'" x-cloak class="space-y-6 pt-2">
+          <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4 mb-5">
               <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-sage">Cero Desperdicio · 7 Días</span>
                 <h2 class="text-xl font-extrabold text-ink mt-0.5">Lista de la Compra Semanal</h2>
                 <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo de los 7 días incluyendo tus adaptaciones de entreno e intercambios. Sin suplementos ni geles.</p>
               </div>
-              <button type="button" @click="limpiarChecksCompra()" class="px-3.5 py-2.5 rounded-xl border border-border bg-canvas hover:bg-subtle text-xs font-semibold text-ink transition min-h-[42px]">
+              <button type="button" @click="limpiarChecksCompra()" class="px-4 py-2.5 rounded-full border border-border bg-canvas hover:bg-subtle text-xs font-bold text-ink transition">
                 Desmarcar todo
               </button>
             </div>
 
             <div class="mb-5">
-              <input type="search" x-model="filtroCompra" placeholder="Filtrar alimento (ej. pollo, arroz, patata)..." class="w-full bg-canvas border border-border rounded-xl px-4 py-3 text-sm text-ink">
+              <input type="search" x-model="filtroCompra" placeholder="Filtrar alimento (ej. pollo, arroz, patata)..." class="w-full bg-canvas border border-border rounded-full px-5 py-3 text-sm text-ink placeholder:text-ink-muted">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
               <template x-for="cat in listaCompraAgrupada()" :key="cat.categoria">
-                <div class="bg-canvas/60 border border-border rounded-xl p-4 space-y-3">
-                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink-secondary border-b border-border pb-2" x-text="cat.categoria"></h3>
+                <div class="bg-canvas/70 border border-border rounded-3xl p-5 space-y-3">
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-sage border-b border-border pb-2.5" x-text="cat.categoria"></h3>
                   <ul class="divide-y divide-border/70">
                     <template x-for="prod in cat.items" :key="prod.clave">
                       <li>
                         <button type="button" @click="toggleCheckCompra(prod.clave)" class="w-full py-2.5 flex items-center justify-between gap-3 text-left min-h-[44px]">
                           <div class="flex items-center gap-3">
-                            <span :class="itemsComprados[prod.clave] ? 'bg-sage border-sage text-white' : 'bg-white border-stone-300 text-transparent'" class="w-5 h-5 rounded-md border flex items-center justify-center transition shrink-0">
-                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span :class="itemsComprados[prod.clave] ? 'bg-sage border-sage text-white' : 'bg-surface border-border text-transparent'" class="w-5 h-5 rounded-full border flex items-center justify-center transition shrink-0">
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             </span>
                             <span :class="itemsComprados[prod.clave] ? 'line-through text-ink-muted' : 'text-ink font-semibold'" class="text-sm capitalize" x-text="prod.nombre"></span>
                           </div>
-                          <span :class="itemsComprados[prod.clave] ? 'text-ink-muted bg-subtle' : 'text-sage bg-sage-light border border-sage-border'" class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg tabular-nums shrink-0" x-text="prod.totalFormateado"></span>
+                          <span :class="itemsComprados[prod.clave] ? 'text-ink-muted bg-subtle' : 'text-sage bg-surface border border-border'" class="text-xs font-mono font-bold px-3 py-1 rounded-full tabular-nums shrink-0" x-text="prod.totalFormateado"></span>
                         </button>
                       </li>
                     </template>
@@ -692,16 +875,16 @@
         <!-- =========================================================
              VISTA 3: BIOMETRÍA Y PROGRESO
              ========================================================= -->
-        <section x-show="tab === 'checkin'" x-cloak class="space-y-6">
-          <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+        <section x-show="tab === 'checkin'" x-cloak class="space-y-6 pt-2">
+          <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-5">
             <div class="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
               <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-sage" x-text="form.atleta === 'Fede' ? 'Ruta hacia Ultratrail 50km (30 Ene 2027)' : 'Seguimiento de Recomposición Corporal'"></span>
                 <h2 class="text-xl font-extrabold text-ink mt-0.5" x-text="form.atleta === 'Fede' ? 'Objetivo: 87.5 kg (Preservando Masa Muscular)' : 'Objetivo: ~65.0 kg y Mejora de Fuerza'"></h2>
               </div>
-              <div class="bg-canvas border border-border px-4 py-2.5 rounded-xl text-right tabular-nums">
+              <div class="bg-canvas border border-border px-4 py-2.5 rounded-2xl text-right tabular-nums">
                 <span class="text-xs text-ink-secondary block" x-text="'Peso en ' + form.semana"></span>
-                <span class="text-xl font-extrabold font-mono text-ink" x-text="(form.peso || '--') + ' kg'"></span>
+                <span class="text-xl font-extrabold font-mono text-sage" x-text="(form.peso || '--') + ' kg'"></span>
               </div>
             </div>
 
@@ -711,45 +894,45 @@
                 <span class="text-sage font-bold" x-text="progresoMetaFede() + '% del objetivo completado'"></span>
                 <span>Meta: 87.5 kg</span>
               </div>
-              <div class="w-full h-3 bg-canvas rounded-full overflow-hidden border border-border">
+              <div class="w-full h-3.5 bg-canvas rounded-full overflow-hidden border border-border">
                 <div class="h-full bg-sage rounded-full transition-all duration-500" :style="'width: ' + progresoMetaFede() + '%'"></div>
               </div>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 tabular-nums">
-              <div class="bg-canvas border border-border p-3.5 rounded-xl">
+              <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Peso (vs Sem 1)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().peso <= 0 ? 'text-sage' : 'text-macro-prot'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().peso <= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
               </div>
-              <div class="bg-canvas border border-border p-3.5 rounded-xl">
+              <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Cintura (Grasa)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().cintura <= 0 ? 'text-sage' : 'text-macro-prot'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().cintura <= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
               </div>
-              <div class="bg-canvas border border-border p-3.5 rounded-xl">
+              <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Brazo (Músculo)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().brazo >= 0 ? 'text-sage' : 'text-macro-carb'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().brazo >= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
               </div>
-              <div class="bg-canvas border border-border p-3.5 rounded-xl">
+              <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Muslo (Músculo)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().muslo >= 0 ? 'text-sage' : 'text-macro-carb'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().muslo >= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
               </div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <form @submit.prevent="enviarCheckin" class="lg:col-span-7 bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
-              <h3 class="text-base font-bold text-ink border-b border-border pb-3">Registrar Control Semanal</h3>
+            <form @submit.prevent="enviarCheckin" class="lg:col-span-7 bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-4">
+              <h3 class="text-base font-extrabold text-ink border-b border-border pb-3">Registrar Control Semanal</h3>
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-bold text-ink mb-1">Atleta</label>
-                  <select x-model="form.atleta" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-xl px-3 py-3 text-sm font-semibold">
+                  <select x-model="form.atleta" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-3 text-sm font-semibold">
                     <option value="Fede">Fede</option>
                     <option value="Arantxa">Arantxa</option>
                   </select>
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-ink mb-1">Semana</label>
-                  <select x-model="form.semana" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-xl px-3 py-3 text-sm font-semibold">
+                  <select x-model="form.semana" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-3 text-sm font-semibold">
                     <template x-for="n in 14" :key="n">
                       <option :value="'Semana ' + n" x-text="'Semana ' + n"></option>
                     </template>
@@ -759,28 +942,28 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-bold text-ink mb-1">Fecha Control</label>
-                  <input type="date" x-model="form.fecha" class="w-full bg-canvas border border-border rounded-xl px-3 py-3 text-sm font-mono font-semibold" required>
+                  <input type="date" x-model="form.fecha" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-3 text-sm font-mono font-semibold" required>
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-sage mb-1">Peso en ayunas (kg)</label>
-                  <input type="number" step="0.1" x-model="form.peso" class="w-full bg-white border-2 border-sage rounded-xl px-3 py-3 text-sm font-mono font-bold" required>
+                  <input type="number" step="0.1" x-model="form.peso" class="w-full bg-surface border-2 border-sage rounded-2xl px-3.5 py-3 text-sm font-mono font-bold" required>
                 </div>
               </div>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 border-t border-border pt-4">
-                <div><label class="block text-xs font-semibold text-ink-secondary mb-1">Pecho (cm)</label><input type="number" step="0.5" x-model="form.pecho" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
-                <div><label class="block text-xs font-bold text-ink mb-1">Cintura (cm)</label><input type="number" step="0.5" x-model="form.cintura" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
-                <div><label class="block text-xs font-semibold text-ink-secondary mb-1">Cadera (cm)</label><input type="number" step="0.5" x-model="form.cadera" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
-                <div><label class="block text-xs font-bold text-ink mb-1">Brazo (cm)</label><input type="number" step="0.5" x-model="form.brazo" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
-                <div class="col-span-2"><label class="block text-xs font-bold text-ink mb-1">Muslo (cm)</label><input type="number" step="0.5" x-model="form.muslo" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-sm font-mono"></div>
+                <div><label class="block text-xs font-semibold text-ink-secondary mb-1">Pecho (cm)</label><input type="number" step="0.5" x-model="form.pecho" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-2.5 text-sm font-mono"></div>
+                <div><label class="block text-xs font-bold text-ink mb-1">Cintura (cm)</label><input type="number" step="0.5" x-model="form.cintura" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-2.5 text-sm font-mono"></div>
+                <div><label class="block text-xs font-semibold text-ink-secondary mb-1">Cadera (cm)</label><input type="number" step="0.5" x-model="form.cadera" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-2.5 text-sm font-mono"></div>
+                <div><label class="block text-xs font-bold text-ink mb-1">Brazo (cm)</label><input type="number" step="0.5" x-model="form.brazo" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-2.5 text-sm font-mono"></div>
+                <div class="col-span-2"><label class="block text-xs font-bold text-ink mb-1">Muslo (cm)</label><input type="number" step="0.5" x-model="form.muslo" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-2.5 text-sm font-mono"></div>
               </div>
-              <button type="submit" :disabled="enviando" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition min-h-[48px]">
+              <button type="submit" :disabled="enviando" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-full text-sm shadow-sm transition min-h-[48px]">
                 <span x-text="enviando ? 'Guardando en Google Sheets...' : 'Guardar Medidas de ' + form.semana + ' (' + form.atleta + ')'"></span>
               </button>
               <p x-show="mensajeExito" x-cloak class="text-sage text-xs font-bold text-center">✓ Guardado correctamente en Google Sheets</p>
             </form>
 
-            <div class="lg:col-span-5 bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
-              <h3 class="text-base font-bold text-ink border-b border-border pb-3 mb-3">Histórico (<span x-text="form.atleta"></span>)</h3>
+            <div class="lg:col-span-5 bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft">
+              <h3 class="text-base font-extrabold text-ink border-b border-border pb-3 mb-3">Histórico (<span x-text="form.atleta"></span>)</h3>
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs tabular-nums">
                   <thead>
@@ -809,12 +992,12 @@
         <!-- =========================================================
              VISTA 4: IMPORTAR SEMANA DESDE GEMINI
              ========================================================= -->
-        <section x-show="tab === 'ia'" x-cloak class="space-y-6">
-          <div class="bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 max-w-3xl">
+        <section x-show="tab === 'ia'" x-cloak class="space-y-6 pt-2">
+          <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-5 max-w-3xl">
             <h2 class="text-xl font-extrabold text-ink">Publicar Nueva Dieta desde Gemini</h2>
             <p class="text-xs text-ink-secondary">Al importar una nueva semana se limpian automáticamente las permutaciones o adaptaciones puntuales de la semana anterior.</p>
-            <textarea x-model="jsonNuevaDieta" rows="9" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno",...}]' class="w-full bg-canvas border border-border rounded-xl p-4 text-xs font-mono text-ink"></textarea>
-            <button type="button" @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]">
+            <textarea x-model="jsonNuevaDieta" rows="9" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno",...}]' class="w-full bg-canvas border border-border rounded-3xl p-4 text-xs font-mono text-ink"></textarea>
+            <button type="button" @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-full text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]">
               <span x-text="enviando ? 'Escribiendo los 7 días en Google Sheets...' : 'Publicar Nueva Semana en Google Sheets'"></span>
             </button>
             <p x-show="mensajeDietaActualizada" x-cloak class="text-sage text-xs font-bold text-center">✓ ¡Plan semanal actualizado!</p>
@@ -825,26 +1008,48 @@
     </main>
 
     <!-- ==========================================
-         BARRA INFERIOR MÓVIL
+         BARRA INFERIOR FLOTANTE ESTILO CALORICAM (Píldora con botón central Burdeos)
          ========================================== -->
-    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border px-2 safe-bottom">
-      <div class="grid grid-cols-4 gap-1 max-w-md mx-auto py-1">
-        <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          <span class="text-[11px]">Hoy</span>
+    <nav class="lg:hidden fixed bottom-4 inset-x-4 z-30 safe-bottom pointer-events-none">
+      <div class="max-w-md mx-auto bg-surface/95 backdrop-blur-xl border border-border rounded-full px-3 py-2 shadow-pill flex items-center justify-around pointer-events-auto">
+        
+        <!-- Tab 1: Dashboard / Hoy -->
+        <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'text-sage' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition" title="Plan Diario">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
         </button>
-        <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-          <span class="text-[11px]">Compra</span>
+
+        <!-- Tab 2: Biometría / Gráficas -->
+        <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'text-sage' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition" title="Biometría y Progreso">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19h16M4 15l4-4 4 4 6-6"/></svg>
         </button>
-        <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-          <span class="text-[11px]">Biometría</span>
+
+        <!-- Botón Central Destacado Burdeos (Adapta sesiones en Dieta o va a Dieta) -->
+        <button
+          type="button"
+          @click="tab === 'dieta' ? (panelEntrenoAbierto = !panelEntrenoAbierto) : cambiarTab('dieta')"
+          class="w-14 h-14 -my-1 rounded-full bg-sage text-white shadow-md flex items-center justify-center hover:bg-sage-hover active:scale-95 transition"
+          title="Ajustar entrenamiento / Ir a Hoy"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </button>
-        <button type="button" @click="cambiarTab('ia')" :class="tab === 'ia' ? 'text-sage font-bold' : 'text-ink-secondary font-medium'" class="flex flex-col items-center justify-center py-1.5 rounded-xl min-h-[48px]">
-          <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-          <span class="text-[11px]">Importar</span>
+
+        <!-- Tab 3: Lista de la Compra -->
+        <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'text-sage' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition relative" title="Lista de la Compra">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span x-show="contarPendientesCompra() > 0" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E0909E]"></span>
         </button>
+
+        <!-- Tab 4: Avatar / Cambiar Vista Atleta o Importar IA -->
+        <button
+          type="button"
+          @click="cambiarTab('ia')"
+          :class="tab === 'ia' ? 'ring-2 ring-sage bg-sage text-white' : 'bg-subtle text-ink border border-border'"
+          class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold transition"
+          title="Importar Plan IA"
+        >
+          <span x-text="vistaAtleta === 'Fede' ? 'FE' : (vistaAtleta === 'Arantxa' ? 'AR' : 'IA')"></span>
+        </button>
+
       </div>
     </nav>
 
