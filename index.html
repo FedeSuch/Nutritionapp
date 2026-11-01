@@ -25,8 +25,8 @@
             border: '#EADFD9',
             ink: {
               DEFAULT: '#3E272B',
-              secondary: '#7C6569',
-              muted: '#A38F92'
+              secondary: '#6B5257',
+              muted: '#826A6F'
             },
             sage: {
               DEFAULT: '#723846',
@@ -46,9 +46,9 @@
               bg: '#EFECE8',
               surface: '#FAF8F6',
               border: '#DCD5CE',
-              text: '#5B6770',
+              text: '#4F5A62',
               dark: '#2F3940',
-              badge: '#7A8B95'
+              badge: '#687983'
             },
             macro: {
               carb: '#E0909E',
@@ -83,10 +83,10 @@
     .striped-bar {
       background-image: repeating-linear-gradient(
         -45deg,
-        rgba(114, 56, 70, 0.18),
-        rgba(114, 56, 70, 0.18) 4px,
-        rgba(114, 56, 70, 0.06) 4px,
-        rgba(114, 56, 70, 0.06) 8px
+        rgba(114, 56, 70, 0.22),
+        rgba(114, 56, 70, 0.22) 4px,
+        rgba(114, 56, 70, 0.07) 4px,
+        rgba(114, 56, 70, 0.07) 8px
       );
     }
   </style>
@@ -94,47 +94,48 @@
 
 <body class="bg-canvas text-ink font-sans antialiased min-h-full selection:bg-sage-light selection:text-sage" x-data="appData()">
 
-  <div class="sr-only" aria-live="polite" x-text="anuncioAccesible"></div>
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-sage focus:text-white focus:px-4 focus:py-2 focus:rounded-full focus:text-xs focus:font-bold">Saltar al contenido principal</a>
+  <div class="sr-only" aria-live="polite" aria-atomic="true" x-text="anuncioAccesible"></div>
 
   <div class="min-h-screen flex flex-col lg:flex-row">
 
     <!-- ==========================================
          SIDEBAR LATERAL (ESCRITORIO >= 1024px)
          ========================================== -->
-    <aside class="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 bg-surface/80 backdrop-blur-xl border-r border-border px-6 py-7 justify-between z-30">
+    <aside class="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0 bg-surface/85 backdrop-blur-xl border-r border-border px-6 py-7 justify-between z-30" aria-label="Menú lateral">
       <div class="space-y-7">
         <div class="flex items-center justify-between px-1">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-widest text-sage block">Hybrid Athlete</span>
+            <span class="text-xs font-bold uppercase tracking-widest text-sage block">Hybrid Athlete</span>
             <h1 class="text-2xl font-extrabold tracking-tight text-ink">Kinetix</h1>
           </div>
-          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" class="w-11 h-11 rounded-full bg-canvas border border-border flex items-center justify-center text-ink-secondary hover:bg-subtle hover:text-ink transition shadow-sm" title="Sincronizar con Google Sheets">
+          <button type="button" @click="cargarDatos()" :disabled="cargandoDieta" aria-label="Sincronizar con Google Sheets" class="w-11 h-11 rounded-full bg-canvas border border-border flex items-center justify-center text-ink-secondary hover:bg-subtle hover:text-ink transition shadow-sm" title="Sincronizar con Google Sheets">
             <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
         </div>
 
         <!-- Selector de Atleta tipo Píldora Suave -->
         <div class="bg-canvas p-1.5 rounded-full border border-border">
-          <div class="grid grid-cols-3 gap-1" role="group" aria-label="Modo de visualización">
-            <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
+          <div class="grid grid-cols-3 gap-1" role="group" aria-label="Modo de visualización por atleta">
+            <button type="button" @click="cambiarVistaAtleta('Fede')" :aria-pressed="(vistaAtleta === 'Fede').toString()" :class="vistaAtleta === 'Fede' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
               Fede
             </button>
-            <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
+            <button type="button" @click="cambiarVistaAtleta('Arantxa')" :aria-pressed="(vistaAtleta === 'Arantxa').toString()" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
               Ara
             </button>
-            <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
+            <button type="button" @click="cambiarVistaAtleta('Dual')" :aria-pressed="(vistaAtleta === 'Dual').toString()" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary hover:text-ink font-semibold'" class="py-2 rounded-full text-xs transition">
               Ambos
             </button>
           </div>
         </div>
 
-        <nav class="space-y-2">
-          <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
+        <nav class="space-y-2" aria-label="Secciones principales">
+          <button type="button" @click="cambiarTab('dieta')" :aria-current="tab === 'dieta' ? 'page' : false" :class="tab === 'dieta' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
             <span>Plan Diario y Entreno</span>
           </button>
 
-          <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm transition">
+          <button type="button" @click="cambiarTab('compra')" :aria-current="tab === 'compra' ? 'page' : false" :class="tab === 'compra' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm transition">
             <div class="flex items-center gap-3.5">
               <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
               <span>Despensa y Compra</span>
@@ -142,12 +143,12 @@
             <span class="text-xs font-mono px-2.5 py-0.5 rounded-full" :class="tab === 'compra' ? 'bg-white/20 text-white' : 'bg-subtle text-ink-secondary'" x-text="contarPendientesCompra()"></span>
           </button>
 
-          <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
+          <button type="button" @click="cambiarTab('checkin')" :aria-current="tab === 'checkin' ? 'page' : false" :class="tab === 'checkin' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
             <span>Biometría y Progreso</span>
           </button>
 
-          <button type="button" @click="cambiarTab('ia')" :class="tab === 'ia' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
+          <button type="button" @click="cambiarTab('ia')" :aria-current="tab === 'ia' ? 'page' : false" :class="tab === 'ia' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             <span>Importar Plan IA</span>
           </button>
@@ -177,16 +178,16 @@
         </p>
 
         <!-- Selector de Atleta Compacto Redondeado -->
-        <div class="mt-3.5 inline-flex bg-surface p-1 rounded-full border border-border shadow-card" role="group">
-          <button type="button" @click="cambiarVistaAtleta('Fede')" :class="vistaAtleta === 'Fede' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
+        <div class="mt-3.5 inline-flex bg-surface p-1 rounded-full border border-border shadow-card" role="group" aria-label="Selector de atleta">
+          <button type="button" @click="cambiarVistaAtleta('Fede')" :aria-pressed="(vistaAtleta === 'Fede').toString()" :class="vistaAtleta === 'Fede' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
             <span>Fede</span>
           </button>
-          <button type="button" @click="cambiarVistaAtleta('Arantxa')" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
+          <button type="button" @click="cambiarVistaAtleta('Arantxa')" :aria-pressed="(vistaAtleta === 'Arantxa').toString()" :class="vistaAtleta === 'Arantxa' ? 'bg-ara-badge text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
             <span>Ara</span>
           </button>
-          <button type="button" @click="cambiarVistaAtleta('Dual')" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
+          <button type="button" @click="cambiarVistaAtleta('Dual')" :aria-pressed="(vistaAtleta === 'Dual').toString()" :class="vistaAtleta === 'Dual' ? 'bg-ink text-white font-bold shadow-sm' : 'text-ink-secondary font-semibold'" class="px-4 py-1.5 rounded-full text-xs transition flex items-center gap-1.5">
             <span>Dual</span>
           </button>
         </div>
@@ -209,13 +210,14 @@
             <div class="flex items-center gap-2">
               <!-- Píldora estilo "Today v" -->
               <div class="relative inline-flex items-center bg-surface border border-border rounded-full px-4 py-2.5 shadow-card">
-                <svg class="w-4 h-4 text-ink mr-2 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                <select :value="diaSeleccionado" @change="seleccionarDia($event.target.value)" class="appearance-none bg-transparent pr-5 text-sm font-bold text-ink focus:outline-none cursor-pointer">
+                <svg class="w-4 h-4 text-ink mr-2 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <label for="select-dia-movil" class="sr-only">Seleccionar día de la semana</label>
+                <select id="select-dia-movil" :value="diaSeleccionado" @change="seleccionarDia($event.target.value)" class="appearance-none bg-transparent pr-5 text-sm font-bold text-ink focus:outline-none cursor-pointer">
                   <template x-for="d in diasSemana" :key="d">
                     <option :value="d" x-text="d === nombreDiaHoy() ? 'Hoy · ' + d : d"></option>
                   </template>
                 </select>
-                <svg class="w-3.5 h-3.5 text-ink-secondary pointer-events-none -ml-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                <svg class="w-3.5 h-3.5 text-ink-secondary pointer-events-none -ml-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
               </div>
 
               <button x-show="diaSeleccionado !== nombreDiaHoy()" type="button" @click="irAHoy()" class="px-3.5 py-2 rounded-full bg-sage-light text-sage border border-sage-border text-xs font-bold transition hover:bg-sage hover:text-white">
@@ -228,22 +230,24 @@
               <button
                 type="button"
                 @click="mostrarSumaComun = !mostrarSumaComun"
+                :aria-pressed="mostrarSumaComun.toString()"
                 :class="mostrarSumaComun ? 'bg-sage text-white border-sage shadow-sm' : 'bg-surface text-ink-secondary border-border hover:bg-subtle'"
                 class="px-3.5 py-2 rounded-full border text-xs font-bold transition flex items-center gap-1.5 shadow-card"
                 title="Sumar ingredientes en crudo de Fede y Arantxa"
               >
-                <span>🍲</span>
+                <span aria-hidden="true">🍲</span>
                 <span class="hidden sm:inline">Olla Común</span>
               </button>
 
               <button
                 type="button"
-                @click="cenaSocialActiva = !cenaSocialActiva"
+                @click="toggleCenaSocial()"
+                :aria-pressed="cenaSocialActiva.toString()"
                 :class="cenaSocialActiva ? 'bg-[#D3A664] text-white border-[#D3A664] shadow-sm' : 'bg-surface text-ink-secondary border-border hover:bg-subtle'"
                 class="px-3.5 py-2 rounded-full border text-xs font-bold transition flex items-center gap-1.5 shadow-card"
-                title="Recortar 35% de CH y grasas pre-cena"
+                title="Recortar 35% de CH y grasas pre-cena (persistente por día)"
               >
-                <span>🍷</span>
+                <span aria-hidden="true">🍷</span>
                 <span class="hidden sm:inline">Cena Libre</span>
               </button>
 
@@ -251,6 +255,8 @@
               <button
                 type="button"
                 @click="panelEntrenoAbierto = !panelEntrenoAbierto"
+                :aria-expanded="panelEntrenoAbierto.toString()"
+                aria-label="Adaptar sesiones de entrenamiento o intercambiar día"
                 :class="(tieneModificacionEntrenoDia(diaSeleccionado) || panelEntrenoAbierto) ? 'bg-sage text-white border-sage' : 'bg-surface text-ink border-border hover:bg-subtle'"
                 class="w-10 h-10 rounded-full border flex items-center justify-center transition shadow-card"
                 title="Cambiar sesiones de entrenamiento o mover día"
@@ -263,25 +269,26 @@
                 type="button"
                 @click="cargarDatos()"
                 :disabled="cargandoDieta"
+                aria-label="Sincronizar con Google Sheets"
                 class="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-ink hover:bg-subtle transition shadow-card"
                 title="Sincronizar datos"
               >
-                <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                <svg :class="cargandoDieta ? 'animate-spin text-sage' : ''" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
               </button>
             </div>
           </div>
 
-          <!-- GRÁFICA DE BARRAS VERTICALES DE LA SEMANA (Inspirada en la pantalla derecha de la captura) -->
+          <!-- GRÁFICA DE BARRAS VERTICALES DE LA SEMANA (Inspirada en la pantalla derecha de CaloriCam) -->
           <div class="bg-surface border border-border rounded-[2rem] p-5 shadow-soft">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-full bg-canvas border border-border flex items-center justify-center text-sage">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs font-extrabold uppercase tracking-wider text-ink-secondary" x-text="'Carga Semanal · ' + diaSeleccionado"></span>
-                    <span x-show="diaPermutadoCon(diaSeleccionado)" class="text-[11px] font-bold bg-[#F6EFE4] text-[#9A6B26] px-2.5 py-0.5 rounded-full border border-[#E6D4B8]" x-text="'⇄ Intercambiado con ' + diaPermutadoCon(diaSeleccionado)"></span>
+                    <span x-show="diaPermutadoCon(diaSeleccionado)" class="text-[11px] font-bold bg-[#F6EFE4] text-[#8A5A19] px-2.5 py-0.5 rounded-full border border-[#E6D4B8]" x-text="'⇄ Intercambiado con ' + diaPermutadoCon(diaSeleccionado)"></span>
                     <span x-show="tieneCargaAdaptada(diaSeleccionado)" class="text-[11px] font-bold bg-sage-light text-sage px-2.5 py-0.5 rounded-full border border-sage-border">⚡ Sesión Adaptada</span>
                   </div>
                   <p class="text-sm font-extrabold text-ink mt-0.5" x-text="descripcionEntrenoEfectivo(diaSeleccionado)"></p>
@@ -289,25 +296,26 @@
               </div>
               <button type="button" @click="panelEntrenoAbierto = !panelEntrenoAbierto" class="text-xs font-bold text-sage hover:underline flex items-center gap-1">
                 <span x-text="panelEntrenoAbierto ? 'Cerrar ajustes' : 'Adaptar entreno'"></span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
               </button>
             </div>
 
             <!-- Barras verticales tipo píldora (Lunes a Domingo) con línea de referencia rayada -->
             <div class="relative pt-3 pb-1">
               <!-- Línea horizontal de referencia rayada (Target medio) -->
-              <div class="absolute inset-x-0 top-7 h-2 rounded-full striped-bar pointer-events-none opacity-75"></div>
+              <div class="absolute inset-x-0 top-7 h-2 rounded-full striped-bar pointer-events-none opacity-80"></div>
 
-              <div class="grid grid-cols-7 gap-2 sm:gap-4 relative z-10" role="tablist">
-                <template x-for="(d, indexDia) in diasSemana" :key="d">
+              <div class="grid grid-cols-7 gap-2 sm:gap-4 relative z-10" role="tablist" aria-label="Días de la semana">
+                <template x-for="d in diasSemana" :key="d">
                   <button
                     type="button"
                     role="tab"
                     :aria-selected="(diaSeleccionado === d).toString()"
+                    :aria-label="d + ': ' + (vistaAtleta === 'Arantxa' ? objetivoEfectivoDia(d, 'arantxa').kcal : objetivoEfectivoDia(d, 'fede').kcal) + ' kcal'"
                     @click="seleccionarDia(d)"
                     class="group flex flex-col items-center focus:outline-none"
                   >
-                    <span class="text-[10px] font-mono font-bold mb-1.5 transition" :class="diaSeleccionado === d ? 'text-sage' : 'text-ink-muted opacity-0 group-hover:opacity-100'" x-text="vistaAtleta === 'Arantxa' ? objetivoEfectivoDia(d, 'arantxa').kcal : objetivoEfectivoDia(d, 'fede').kcal"></span>
+                    <span class="text-[11px] font-mono font-bold mb-1.5 transition" :class="diaSeleccionado === d ? 'text-sage' : 'text-ink-muted opacity-0 group-hover:opacity-100'" x-text="vistaAtleta === 'Arantxa' ? objetivoEfectivoDia(d, 'arantxa').kcal : objetivoEfectivoDia(d, 'fede').kcal"></span>
                     
                     <div class="w-4 sm:w-5 h-24 rounded-full bg-canvas border border-border/70 flex items-end p-0.5 overflow-hidden">
                       <div
@@ -320,12 +328,13 @@
                     <div class="mt-2 flex flex-col items-center">
                       <span
                         class="text-xs transition px-2 py-0.5 rounded-full"
-                        :class="diaSeleccionado === d ? ' font-extrabold text-ink bg-subtle' : (d === nombreDiaHoy() ? 'font-bold text-sage' : 'font-semibold text-ink-secondary')"
+                        :class="diaSeleccionado === d ? 'font-extrabold text-ink bg-subtle' : (d === nombreDiaHoy() ? 'font-bold text-sage' : 'font-semibold text-ink-secondary')"
                         x-text="abreviarDia(d)"
                       ></span>
                       <div class="flex items-center gap-1 mt-1 h-1.5">
                         <span x-show="d === nombreDiaHoy()" class="w-1.5 h-1.5 rounded-full bg-sage" title="Hoy"></span>
                         <span x-show="tieneModificacionEntrenoDia(d)" class="w-1.5 h-1.5 rounded-full bg-[#D3A664]" title="Entreno adaptado"></span>
+                        <span x-show="cenasSocialesPorDia[d]" class="w-1.5 h-1.5 rounded-full bg-[#E0909E]" title="Cena Libre activa"></span>
                       </div>
                     </div>
                   </button>
@@ -337,7 +346,7 @@
             <div x-show="panelEntrenoAbierto" x-cloak class="bg-canvas border border-border rounded-3xl p-4 sm:p-5 space-y-4 mt-4">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
                 <div>
-                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Ajuste de Sesiones (Anclado a RESUMEN_SEMANAL)</h3>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Ajuste de Sesiones (Anclado a RESUMEN_SEMANAL · Esc para cerrar)</h3>
                   <p class="text-xs text-ink-secondary mt-0.5">Al cambiar el tipo de sesión, las calorías y gramos de carbohidratos en crudo se adaptan automáticamente sin tocar la proteína.</p>
                 </div>
                 <button x-show="tieneModificacionEntrenoDia(diaSeleccionado)" type="button" @click="restaurarEntrenoDia(diaSeleccionado)" class="px-3.5 py-1.5 rounded-full bg-surface border border-border text-xs font-bold text-sage hover:bg-sage-light shrink-0">
@@ -349,7 +358,7 @@
                 <div class="bg-surface border border-border rounded-2xl p-4 space-y-3">
                   <div>
                     <span class="text-xs font-extrabold text-sage uppercase block">Opción A · Cambiar Sesiones de Hoy</span>
-                    <p class="text-[11px] text-ink-secondary mt-0.5">Escala los hidratos en crudo al número real de sesiones de hoy.</p>
+                    <p class="text-xs text-ink-secondary mt-0.5">Escala los hidratos en crudo al número real de sesiones de hoy.</p>
                   </div>
 
                   <div class="space-y-3">
@@ -388,7 +397,7 @@
                 <div class="bg-surface border border-border rounded-2xl p-4 flex flex-col justify-between space-y-3">
                   <div>
                     <span class="text-xs font-extrabold text-ink uppercase block">Opción B · Intercambiar Día Entero con Otro</span>
-                    <p class="text-[11px] text-ink-secondary mt-0.5">Permuta el menú completo y las calorías del <strong x-text="diaSeleccionado"></strong> con otro día sin alterar la compra semanal.</p>
+                    <p class="text-xs text-ink-secondary mt-0.5">Permuta el menú completo y las calorías del <strong x-text="diaSeleccionado"></strong> con otro día sin alterar la compra semanal.</p>
                   </div>
 
                   <div class="space-y-2">
@@ -408,8 +417,8 @@
           <!-- Banner Cena Libre -->
           <div x-show="cenaSocialActiva" x-cloak class="bg-[#F6EFE4] border border-[#E5D3B5] rounded-[1.75rem] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-ink shadow-card">
             <div>
-              <span class="font-extrabold uppercase tracking-wider text-[#9A6B26] block mb-0.5">🍷 Modo Cena Libre Activo (-35% CH y Grasas pre-cena)</span>
-              <span class="text-ink-secondary">Proteína intacta al 100%. Se han reducido hidratos y grasas de las tomas previas para crear tu margen calórico.</span>
+              <span class="font-extrabold uppercase tracking-wider text-[#8A5A19] block mb-0.5">🍷 Modo Cena Libre Activo en <span x-text="diaSeleccionado"></span> (-35% CH y Grasas pre-cena)</span>
+              <span class="text-ink-secondary">Proteína intacta al 100%. Se han reducido hidratos y grasas de las tomas previas para crear tu margen calórico (guardado automáticamente).</span>
             </div>
             <div class="font-mono font-bold text-ink shrink-0 bg-surface px-3.5 py-2 rounded-2xl border border-[#E5D3B5] tabular-nums">
               <span class="block" x-text="'Reserva Fede: -' + totalesDia().fede.ahorroKcal + ' kcal (-' + totalesDia().fede.ahorroCH + 'g CH)'"></span>
@@ -418,27 +427,27 @@
           </div>
 
           <!-- =========================================================
-               TARJETAS RESUMEN DIARIO ESTILO CALORICAM (Daily Intake Gauge + Nutrition Bars)
+               TARJETAS RESUMEN DIARIO ESTILO CALORICAM (Daily Intake Gauge + Target Range + Nutrition Bars / Pie Charts)
                ========================================================= -->
           <div class="grid grid-cols-1 gap-5" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
             
             <!-- DASHBOARD FEDE -->
             <div x-show="vistaAtleta === 'Fede' || vistaAtleta === 'Dual'" class="space-y-4">
               
-              <!-- Tarjeta 1: Daily Intake (Arco Circular + % Gigante) -->
-              <div class="bg-[#EFE5E2] border border-fede-border rounded-[2rem] p-5 sm:p-6 shadow-soft">
+              <!-- Tarjeta 1: Daily Intake (Arco Circular + % Gigante + Barra de Rango Rayado) -->
+              <div class="bg-[#EFE5E2] border border-fede-border rounded-[2rem] p-5 sm:p-6 shadow-soft space-y-4">
                 <div class="flex items-center justify-between gap-4">
                   <div class="space-y-2">
                     <div class="flex items-center gap-2.5">
                       <span class="w-9 h-9 rounded-full bg-surface flex items-center justify-center text-sage shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                       </span>
                       <div>
                         <div class="flex items-center gap-2">
                           <span class="text-sm font-bold text-ink">Ingesta diaria</span>
-                          <span class="px-2.5 py-0.5 rounded-full bg-sage text-white text-[10px] font-extrabold uppercase tracking-wider">Fede</span>
+                          <span class="px-2.5 py-0.5 rounded-full bg-sage text-white text-[11px] font-extrabold uppercase tracking-wider">Fede</span>
                         </div>
-                        <span class="text-[11px] text-ink-secondary font-medium" x-text="contarComidasCompletadas() + ' de ' + comidasDelDia().length + ' tomas completadas'"></span>
+                        <span class="text-xs text-ink-secondary font-medium" x-text="contarComidasCompletadas('fede') + ' de ' + comidasDelDia().length + ' tomas hechas'"></span>
                       </div>
                     </div>
 
@@ -453,7 +462,7 @@
 
                   <!-- Gauge Circular Abierto Estilo CaloriCam -->
                   <div class="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center">
-                    <svg class="w-full h-full" viewBox="0 0 120 120">
+                    <svg class="w-full h-full" viewBox="0 0 120 120" aria-hidden="true">
                       <circle
                         cx="60" cy="60" r="46"
                         fill="none"
@@ -480,22 +489,51 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Barra de Rango Objetivo Rayado (Estilo CaloriCam pantalla derecha) -->
+                <div class="pt-2 border-t border-fede-border/70 space-y-1.5 tabular-nums">
+                  <div class="relative h-3.5 w-full rounded-full bg-surface/80 overflow-hidden p-0.5">
+                    <!-- Zona de Rango Objetivo Rayado (85% a 100%) -->
+                    <div class="absolute inset-y-0 right-1 w-8 rounded-r-full striped-bar pointer-events-none"></div>
+                    <div
+                      class="h-full rounded-full bg-sage transition-all duration-500 relative z-10"
+                      :style="'width: ' + Math.min(100, Math.round((consumidoDia('fede').kcal / (totalesDia().fede.kcal || 1)) * 100)) + '%'"
+                    ></div>
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] font-semibold text-ink-secondary">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full striped-bar border border-sage/30 inline-block"></span>
+                      <span>Rango objetivo óptimo</span>
+                    </span>
+                    <span class="font-mono font-bold text-ink" x-text="rangoObjetivoKcal('fede') + ' kcal'"></span>
+                  </div>
+                </div>
               </div>
 
-              <!-- Tarjeta 2: Nutrition (Barras Horizontales Rosa, Dorado y Gris Azulado) -->
+              <!-- Tarjeta 2: Nutrition (Barras Horizontales + Gráficos de Tarta Recommended vs Actual) -->
               <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-6 shadow-soft space-y-4">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2.5">
                     <span class="w-9 h-9 rounded-full bg-canvas border border-border flex items-center justify-center text-ink">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
                     </span>
-                    <span class="text-sm font-bold text-ink">Nutrición · Fede</span>
+                    <div>
+                      <span class="text-sm font-bold text-ink block">Nutrición · Fede</span>
+                      <span class="text-[11px] text-ink-secondary font-mono" x-text="totalesDia().fede.kcal + ' kcal objetivo'"></span>
+                    </div>
                   </div>
-                  <span class="text-xs font-mono font-semibold text-ink-secondary" x-text="totalesDia().fede.kcal + ' kcal meta'"></span>
+                  <button
+                    type="button"
+                    @click="toggleVistaGraficoMacros()"
+                    class="px-3 py-1.5 rounded-full bg-canvas border border-border text-xs font-bold text-ink hover:bg-subtle transition flex items-center gap-1"
+                  >
+                    <span x-text="mostrarGraficoMacros ? 'Ver Barras' : 'Ver Gráfica %'"></span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  </button>
                 </div>
 
-                <div class="space-y-3.5 tabular-nums">
-                  <!-- Carbs (Rosa Empolvado #E0909E) -->
+                <!-- MODO BARRAS HORIZONTALES -->
+                <div x-show="!mostrarGraficoMacros" class="space-y-3.5 tabular-nums">
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-baseline text-xs">
                       <span class="font-semibold text-ink-secondary">Carbohidratos</span>
@@ -509,7 +547,6 @@
                     </div>
                   </div>
 
-                  <!-- Fat (Dorado Ocre #D3A664) -->
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-baseline text-xs">
                       <span class="font-semibold text-ink-secondary">Grasas</span>
@@ -523,7 +560,6 @@
                     </div>
                   </div>
 
-                  <!-- Protein (Gris Pizarra #94A2AC) -->
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-baseline text-xs">
                       <span class="font-semibold text-ink-secondary">Proteína</span>
@@ -537,6 +573,52 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- MODO GRÁFICOS DE TARTA (Recommended vs Actual Estilo CaloriCam) -->
+                <div x-show="mostrarGraficoMacros" x-cloak class="pt-1 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center tabular-nums">
+                  <div class="sm:col-span-8 flex items-center justify-around gap-3">
+                    <!-- Pie 1: Planificado (Recommended) -->
+                    <div class="flex flex-col items-center">
+                      <div class="w-24 h-24 rounded-full shadow-inner border-2 border-surface relative flex items-center justify-center" :style="'background: ' + distribucionMacrosPie('fede', 'meta').gradient">
+                        <div class="w-11 h-11 rounded-full bg-surface/90 flex items-center justify-center text-[11px] font-mono font-extrabold text-ink" x-text="distribucionMacrosPie('fede', 'meta').ch + '% CH'"></div>
+                      </div>
+                      <span class="text-xs font-bold text-ink-secondary mt-2">Planificado</span>
+                    </div>
+
+                    <!-- Pie 2: Consumido (Actual) -->
+                    <div class="flex flex-col items-center">
+                      <div class="w-24 h-24 rounded-full shadow-inner border-2 border-surface relative flex items-center justify-center" :style="'background: ' + distribucionMacrosPie('fede', 'actual').gradient">
+                        <div class="w-11 h-11 rounded-full bg-surface/90 flex items-center justify-center text-[11px] font-mono font-extrabold text-ink" x-text="distribucionMacrosPie('fede', 'actual').vacio ? '0%' : (distribucionMacrosPie('fede', 'actual').ch + '% CH')"></div>
+                      </div>
+                      <span class="text-xs font-bold text-ink mt-2">Actual hoy</span>
+                    </div>
+                  </div>
+
+                  <!-- Leyenda Lateral como en CaloriCam -->
+                  <div class="sm:col-span-4 space-y-2 text-xs border-t sm:border-t-0 sm:border-l border-border pt-3 sm:pt-0 sm:pl-3">
+                    <div>
+                      <div class="flex items-center gap-1.5 font-bold text-ink">
+                        <span class="w-2.5 h-2.5 rounded-full bg-macro-carb"></span>
+                        <span>Carbos</span>
+                      </div>
+                      <span class="font-mono text-ink-secondary pl-4 block" x-text="totalesDia().fede.ch + 'g (' + distribucionMacrosPie('fede', 'meta').ch + '%)'"></span>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5 font-bold text-ink">
+                        <span class="w-2.5 h-2.5 rounded-full bg-macro-fat"></span>
+                        <span>Grasas</span>
+                      </div>
+                      <span class="font-mono text-ink-secondary pl-4 block" x-text="totalesDia().fede.g + 'g (' + distribucionMacrosPie('fede', 'meta').g + '%)'"></span>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5 font-bold text-ink">
+                        <span class="w-2.5 h-2.5 rounded-full bg-macro-prot"></span>
+                        <span>Proteína</span>
+                      </div>
+                      <span class="font-mono text-ink-secondary pl-4 block" x-text="totalesDia().fede.p + 'g (' + distribucionMacrosPie('fede', 'meta').p + '%)'"></span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -544,19 +626,19 @@
             <div x-show="vistaAtleta === 'Arantxa' || vistaAtleta === 'Dual'" class="space-y-4">
               
               <!-- Tarjeta 1: Daily Intake Arantxa -->
-              <div class="bg-[#EDEAE6] border border-ara-border rounded-[2rem] p-5 sm:p-6 shadow-soft">
+              <div class="bg-[#EDEAE6] border border-ara-border rounded-[2rem] p-5 sm:p-6 shadow-soft space-y-4">
                 <div class="flex items-center justify-between gap-4">
                   <div class="space-y-2">
                     <div class="flex items-center gap-2.5">
                       <span class="w-9 h-9 rounded-full bg-surface flex items-center justify-center text-ara-dark shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                       </span>
                       <div>
                         <div class="flex items-center gap-2">
                           <span class="text-sm font-bold text-ink">Ingesta diaria</span>
-                          <span class="px-2.5 py-0.5 rounded-full bg-ara-badge text-white text-[10px] font-extrabold uppercase tracking-wider">Arantxa</span>
+                          <span class="px-2.5 py-0.5 rounded-full bg-ara-badge text-white text-[11px] font-extrabold uppercase tracking-wider">Arantxa</span>
                         </div>
-                        <span class="text-[11px] text-ink-secondary font-medium" x-text="contarComidasCompletadas() + ' de ' + comidasDelDia().length + ' tomas completadas'"></span>
+                        <span class="text-xs text-ink-secondary font-medium" x-text="contarComidasCompletadas('arantxa') + ' de ' + comidasDelDia().length + ' tomas hechas'"></span>
                       </div>
                     </div>
 
@@ -571,7 +653,7 @@
 
                   <!-- Gauge Circular Abierto Arantxa -->
                   <div class="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center">
-                    <svg class="w-full h-full" viewBox="0 0 120 120">
+                    <svg class="w-full h-full" viewBox="0 0 120 120" aria-hidden="true">
                       <circle
                         cx="60" cy="60" r="46"
                         fill="none"
@@ -598,6 +680,24 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Barra de Rango Objetivo Rayado Arantxa -->
+                <div class="pt-2 border-t border-ara-border/70 space-y-1.5 tabular-nums">
+                  <div class="relative h-3.5 w-full rounded-full bg-surface/80 overflow-hidden p-0.5">
+                    <div class="absolute inset-y-0 right-1 w-8 rounded-r-full striped-bar pointer-events-none"></div>
+                    <div
+                      class="h-full rounded-full bg-sage transition-all duration-500 relative z-10"
+                      :style="'width: ' + Math.min(100, Math.round((consumidoDia('arantxa').kcal / (totalesDia().arantxa.kcal || 1)) * 100)) + '%'"
+                    ></div>
+                  </div>
+                  <div class="flex items-center justify-between text-[11px] font-semibold text-ink-secondary">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full striped-bar border border-sage/30 inline-block"></span>
+                      <span>Rango objetivo óptimo</span>
+                    </span>
+                    <span class="font-mono font-bold text-ink" x-text="rangoObjetivoKcal('arantxa') + ' kcal'"></span>
+                  </div>
+                </div>
               </div>
 
               <!-- Tarjeta 2: Nutrition Arantxa -->
@@ -605,15 +705,25 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2.5">
                     <span class="w-9 h-9 rounded-full bg-canvas border border-border flex items-center justify-center text-ink">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
                     </span>
-                    <span class="text-sm font-bold text-ink">Nutrición · Arantxa</span>
+                    <div>
+                      <span class="text-sm font-bold text-ink block">Nutrición · Arantxa</span>
+                      <span class="text-[11px] text-ink-secondary font-mono" x-text="totalesDia().arantxa.kcal + ' kcal objetivo'"></span>
+                    </div>
                   </div>
-                  <span class="text-xs font-mono font-semibold text-ink-secondary" x-text="totalesDia().arantxa.kcal + ' kcal meta'"></span>
+                  <button
+                    type="button"
+                    @click="toggleVistaGraficoMacros()"
+                    class="px-3 py-1.5 rounded-full bg-canvas border border-border text-xs font-bold text-ink hover:bg-subtle transition flex items-center gap-1"
+                  >
+                    <span x-text="mostrarGraficoMacros ? 'Ver Barras' : 'Ver Gráfica %'"></span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  </button>
                 </div>
 
-                <div class="space-y-3.5 tabular-nums">
-                  <!-- Carbs -->
+                <!-- MODO BARRAS HORIZONTALES -->
+                <div x-show="!mostrarGraficoMacros" class="space-y-3.5 tabular-nums">
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-baseline text-xs">
                       <span class="font-semibold text-ink-secondary">Carbohidratos</span>
@@ -627,7 +737,6 @@
                     </div>
                   </div>
 
-                  <!-- Fat -->
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-baseline text-xs">
                       <span class="font-semibold text-ink-secondary">Grasas</span>
@@ -641,7 +750,6 @@
                     </div>
                   </div>
 
-                  <!-- Protein -->
                   <div class="space-y-1.5">
                     <div class="flex justify-between items-baseline text-xs">
                       <span class="font-semibold text-ink-secondary">Proteína</span>
@@ -655,34 +763,100 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- MODO GRÁFICOS DE TARTA ARANTXA -->
+                <div x-show="mostrarGraficoMacros" x-cloak class="pt-1 grid grid-cols-1 sm:grid-cols-12 gap-4 items-center tabular-nums">
+                  <div class="sm:col-span-8 flex items-center justify-around gap-3">
+                    <div class="flex flex-col items-center">
+                      <div class="w-24 h-24 rounded-full shadow-inner border-2 border-surface relative flex items-center justify-center" :style="'background: ' + distribucionMacrosPie('arantxa', 'meta').gradient">
+                        <div class="w-11 h-11 rounded-full bg-surface/90 flex items-center justify-center text-[11px] font-mono font-extrabold text-ink" x-text="distribucionMacrosPie('arantxa', 'meta').ch + '% CH'"></div>
+                      </div>
+                      <span class="text-xs font-bold text-ink-secondary mt-2">Planificado</span>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                      <div class="w-24 h-24 rounded-full shadow-inner border-2 border-surface relative flex items-center justify-center" :style="'background: ' + distribucionMacrosPie('arantxa', 'actual').gradient">
+                        <div class="w-11 h-11 rounded-full bg-surface/90 flex items-center justify-center text-[11px] font-mono font-extrabold text-ink" x-text="distribucionMacrosPie('arantxa', 'actual').vacio ? '0%' : (distribucionMacrosPie('arantxa', 'actual').ch + '% CH')"></div>
+                      </div>
+                      <span class="text-xs font-bold text-ink mt-2">Actual hoy</span>
+                    </div>
+                  </div>
+
+                  <div class="sm:col-span-4 space-y-2 text-xs border-t sm:border-t-0 sm:border-l border-border pt-3 sm:pt-0 sm:pl-3">
+                    <div>
+                      <div class="flex items-center gap-1.5 font-bold text-ink">
+                        <span class="w-2.5 h-2.5 rounded-full bg-macro-carb"></span>
+                        <span>Carbos</span>
+                      </div>
+                      <span class="font-mono text-ink-secondary pl-4 block" x-text="totalesDia().arantxa.ch + 'g (' + distribucionMacrosPie('arantxa', 'meta').ch + '%)'"></span>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5 font-bold text-ink">
+                        <span class="w-2.5 h-2.5 rounded-full bg-macro-fat"></span>
+                        <span>Grasas</span>
+                      </div>
+                      <span class="font-mono text-ink-secondary pl-4 block" x-text="totalesDia().arantxa.g + 'g (' + distribucionMacrosPie('arantxa', 'meta').g + '%)'"></span>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5 font-bold text-ink">
+                        <span class="w-2.5 h-2.5 rounded-full bg-macro-prot"></span>
+                        <span>Proteína</span>
+                      </div>
+                      <span class="font-mono text-ink-secondary pl-4 block" x-text="totalesDia().arantxa.p + 'g (' + distribucionMacrosPie('arantxa', 'meta').p + '%)'"></span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- =========================================================
-               LISTA DE COMIDAS REALES DEL DÍA (Tarjetas Redondeadas Suaves)
+               CABECERA DE LISTA DE COMIDAS + TOGGLE PLEGAR COMPLETADAS
                ========================================================= -->
-          <div class="space-y-4 pt-1">
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 px-1">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-extrabold uppercase tracking-wider text-ink-secondary" x-text="'Menú del ' + diaSeleccionado"></h2>
+              <span class="text-xs font-mono font-bold bg-surface border border-border px-2.5 py-0.5 rounded-full text-ink" x-text="comidasDelDia().length + ' tomas'"></span>
+            </div>
+            <button
+              x-show="contarComidasCompletadas() > 0"
+              type="button"
+              @click="plegarCompletadas = !plegarCompletadas"
+              class="text-xs font-bold text-sage hover:underline flex items-center gap-1"
+            >
+              <span x-text="plegarCompletadas ? 'Mostrar detalle de tomas hechas' : 'Plegar tomas ya hechas'"></span>
+            </button>
+          </div>
+
+          <!-- =========================================================
+               LISTA DE COMIDAS REALES DEL DÍA (Con Resaltado de Próxima Toma y Checks Individuales)
+               ========================================================= -->
+          <div class="space-y-4">
             <template x-for="(comida, idx) in comidasDelDia()" :key="diaSeleccionado + '_' + idx">
-              <article class="bg-surface border border-border rounded-[2rem] overflow-hidden shadow-soft transition">
-                
+              <article
+                :class="esProximaComida(idx) ? 'border-2 border-sage ring-4 ring-sage/5' : 'border border-border'"
+                class="bg-surface rounded-[2rem] overflow-hidden shadow-soft transition"
+              >
                 <div class="px-5 sm:px-6 py-4 bg-canvas/50 border-b border-border flex flex-wrap items-center justify-between gap-3">
                   <div class="flex items-center gap-3.5">
                     <button
                       type="button"
                       @click="toggleComidaCompletada(idx)"
                       :aria-pressed="esComidaCompletada(idx).toString()"
+                      :aria-label="'Marcar ' + comida.ventana + ' como completada'"
                       :class="esComidaCompletada(idx) ? 'bg-sage border-sage text-white shadow-sm' : 'bg-surface border-border text-transparent hover:border-sage'"
                       class="w-9 h-9 rounded-full border-2 flex items-center justify-center transition shrink-0"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </button>
 
                     <div>
                       <div class="flex flex-wrap items-center gap-1.5">
                         <span class="text-xs font-extrabold uppercase tracking-wider text-sage" x-text="comida.ventana"></span>
-                        <span x-show="esComidaCompletada(idx)" class="text-[10px] font-bold bg-sage-light text-sage px-2.5 py-0.5 rounded-full border border-sage-border">✓ Hecha</span>
-                        <span x-show="tieneSwapActivo(idx)" class="text-[10px] font-bold bg-[#F6EFE4] text-[#9A6B26] px-2.5 py-0.5 rounded-full border border-[#E5D3B5]">⇄ Intercambio Isocalórico</span>
+                        <span x-show="esProximaComida(idx)" class="text-[11px] font-extrabold bg-sage text-white px-2.5 py-0.5 rounded-full shadow-sm">● Siguiente toma</span>
+                        <span x-show="esComidaCompletada(idx)" class="text-[11px] font-bold bg-sage-light text-sage px-2.5 py-0.5 rounded-full border border-sage-border">✓ Completada</span>
+                        <span x-show="esTomaPreCrossFit(comida)" class="text-[11px] font-bold bg-subtle text-ink-secondary px-2.5 py-0.5 rounded-full border border-border" title="Priorizar vaciado gástrico rápido antes de las 17:30">⚡ Pre-CrossFit (Digestión rápida)</span>
+                        <span x-show="tieneSwapActivo(idx)" class="text-[11px] font-bold bg-[#F6EFE4] text-[#8A5A19] px-2.5 py-0.5 rounded-full border border-[#E5D3B5]">⇄ Intercambio Isocalórico</span>
                       </div>
                       <h3 class="text-base font-extrabold text-ink mt-0.5" :class="esComidaCompletada(idx) ? 'line-through text-ink-muted' : ''" x-text="tituloPlatoAdaptado(comida, idx)"></h3>
                     </div>
@@ -693,6 +867,7 @@
                     <button
                       type="button"
                       @click="abrirSwap(idx)"
+                      :aria-expanded="(swapAbiertoIdx === idx).toString()"
                       :class="tieneSwapActivo(idx) ? 'bg-sage text-white border-sage' : 'bg-surface text-ink border-border hover:bg-subtle'"
                       class="px-3.5 py-2 rounded-full border text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                     >
@@ -701,13 +876,21 @@
                   </div>
                 </div>
 
-                <div class="p-5 sm:p-6 space-y-4">
-                  <!-- PANEL DE INTERCAMBIO ISOCALÓRICO -->
+                <!-- Cuerpo de la Comida (Se pliega si está completada y el usuario activó plegarCompletadas) -->
+                <div x-show="!(plegarCompletadas && esComidaCompletada(idx)) || swapAbiertoIdx === idx" class="p-5 sm:p-6 space-y-4">
+                  
+                  <!-- Alerta de Regla Dietética (Regla 4 de rules.md) -->
+                  <div x-show="validarReglaDieteticaSwap(comida, idx)" x-cloak class="bg-[#F6E8EA] border border-[#E0909E] rounded-2xl p-3.5 text-xs font-bold text-sage flex items-center gap-2">
+                    <span aria-hidden="true">⚠️</span>
+                    <span x-text="validarReglaDieteticaSwap(comida, idx)"></span>
+                  </div>
+
+                  <!-- PANEL DE INTERCAMBIO ISOCALÓRICO (Respeta Regla 4 de rules.md) -->
                   <div x-show="swapAbiertoIdx === idx" x-cloak class="bg-canvas border border-border rounded-3xl p-4 sm:p-5 space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
                       <div>
-                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-sage">Intercambio Isocalórico (Mantiene exactas las Kcal y Macros)</h4>
-                        <p class="text-xs text-ink-secondary mt-0.5">Recalcula automáticamente los gramos en crudo de proteína, carbohidrato y AOVE.</p>
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-sage">Intercambio Isocalórico (Mantiene exactas las Kcal y Macros · Esc para cerrar)</h4>
+                        <p class="text-xs text-ink-secondary mt-0.5">Sistema de ecuaciones lineales: recalcula los gramos en crudo de proteína, carbohidrato y AOVE sin alterar las calorías de la toma.</p>
                       </div>
                       <button type="button" @click="resetSwap(idx)" class="px-3.5 py-1.5 rounded-full bg-surface border border-border text-xs font-bold text-ink hover:bg-subtle shrink-0">
                         Restaurar original
@@ -722,14 +905,14 @@
                           <option value="pechuga pollo">Pechuga de pollo (23g P | 0g CH | 1.2g G)</option>
                           <option value="pechuga pavo">Pechuga de pavo (24g P | 0g CH | 1g G)</option>
                           <option value="atún al natural">Atún al natural (24g P | 0g CH | 1g G)</option>
-                          <option value="merluza blanca">Merluza / Pescado blanco (18g P | 0g CH | 1.8g G)</option>
                           <option value="merluza empanada Mercadona">Merluza empanada Mercadona (16g P | 14g CH | 6g G)</option>
+                          <option value="merluza blanca">Merluza / Pescado blanco (18g P | 0g CH | 1.8g G)</option>
+                          <option value="claras de huevo">Claras de huevo - Rápida digestión (11g P | 0.7g CH | 0.2g G)</option>
                           <option value="solomillo ternera">Solomillo / Ternera magra (22g P | 0g CH | 4.5g G)</option>
                           <option value="lomo embuchado">Lomo embuchado (32g P | 0g CH | 8g G)</option>
                           <option value="jamón serrano">Jamón serrano (30g P | 0g CH | 12g G)</option>
-                          <option value="salmón fresco">Salmón fresco / marinado (20g P | 0g CH | 13g G)</option>
+                          <option value="salmón fresco" :disabled="esPlatoCalientePrincipal(comida)" x-text="esPlatoCalientePrincipal(comida) ? 'Salmón (Bloqueado en platos calientes · Regla 4)' : 'Salmón marinado / frío en poke o ensalada (20g P | 13g G)'"></option>
                           <option value="huevos enteros">Huevos enteros (13g P | 1g CH | 11g G)</option>
-                          <option value="claras de huevo">Claras de huevo (11g P | 0.7g CH | 0.2g G)</option>
                           <option value="lomo de cerdo magro">Lomo de cerdo magro (20g P | 0g CH | 3g G)</option>
                           <option value="queso fresco batido">Queso fresco batido (8g P | 3.5g CH | 0.1g G)</option>
                         </select>
@@ -738,15 +921,15 @@
                         <label class="block text-xs font-bold text-ink mb-1">Cambiar Carbohidrato por:</label>
                         <select :value="obtenerValorSwap(idx, 'ch')" @change="aplicarSwap(idx, 'ch', $event.target.value)" class="w-full bg-surface border border-border rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-ink font-semibold">
                           <option value="">-- Mantener carbohidrato original --</option>
-                          <option value="arroz basmati">Arroz blanco / basmati en crudo (78g CH | 7.5g P)</option>
-                          <option value="patata">Patata en crudo (18g CH | 2g P)</option>
+                          <option value="arroz basmati">Arroz blanco / basmati en crudo - Rápido (78g CH | 7.5g P)</option>
+                          <option value="patata">Patata en crudo - Rápido (18g CH | 2g P)</option>
                           <option value="boniato">Boniato en crudo (20g CH | 1.6g P)</option>
                           <option value="pasta blanca">Pasta blanca en crudo (74g CH | 12g P)</option>
                           <option value="pan masa madre">Pan de masa madre (48g CH | 9g P)</option>
                           <option value="copos de avena">Copos de avena (60g CH | 13.5g P | 7g G)</option>
                           <option value="tortitas de arroz">Tortitas de arroz (80g CH | 7.5g P)</option>
-                          <option value="garbanzos bote">Garbanzos de bote (16g CH | 7g P) - Evitar pre-CrossFit</option>
-                          <option value="lentejas bote">Lentejas de bote (15g CH | 8g P) - Evitar pre-CrossFit</option>
+                          <option value="garbanzos bote" :disabled="esTomaPreCrossFit(comida)" x-text="esTomaPreCrossFit(comida) ? 'Garbanzos (Bloqueado pre-CrossFit 17:30 · Regla 4)' : 'Garbanzos de bote (16g CH | 7g P)'"></option>
+                          <option value="lentejas bote" :disabled="esTomaPreCrossFit(comida)" x-text="esTomaPreCrossFit(comida) ? 'Lentejas (Bloqueado pre-CrossFit 17:30 · Regla 4)' : 'Lentejas de bote (15g CH | 8g P)'"></option>
                           <option value="quinoa">Quinoa en crudo (64g CH | 14g P | 6g G)</option>
                           <option value="cuscús">Cuscús en crudo (72g CH | 12g P | 1.5g G)</option>
                           <option value="fideos de arroz">Fideos de arroz (80g CH | 3.5g P)</option>
@@ -755,19 +938,46 @@
                     </div>
                   </div>
 
-                  <!-- OLLA COMÚN -->
-                  <div x-show="mostrarSumaComun" class="bg-canvas/80 border border-border rounded-2xl p-3.5">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-ink-secondary flex items-center gap-1.5 mb-2">
-                      <span>🍲</span> Olla Común · Pesar junto en crudo (Fede + Arantxa)
-                    </span>
+                  <!-- OLLA COMÚN + CALCULADORA DE REPARTO EN COCIDO -->
+                  <div x-show="mostrarSumaComun" class="bg-canvas/80 border border-border rounded-2xl p-3.5 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="text-xs font-extrabold uppercase tracking-wider text-ink-secondary flex items-center gap-1.5">
+                        <span aria-hidden="true">🍲</span> Olla Común · Pesar junto en crudo (Fede + Arantxa)
+                      </span>
+
+                      <!-- Mini Calculadora de Reparto una vez Cocinado -->
+                      <div class="flex items-center gap-2 text-xs">
+                        <label :for="'peso-cocido-' + idx" class="font-semibold text-ink-secondary">¿Ya cocinado? Peso total olla (g):</label>
+                        <input
+                          :id="'peso-cocido-' + idx"
+                          type="number"
+                          min="0"
+                          step="10"
+                          placeholder="Ej: 850"
+                          x-model="pesosCocidosOlla[diaSeleccionado + '_' + idx]"
+                          class="w-24 bg-surface border border-border rounded-full px-3 py-1 text-xs font-mono font-bold text-ink"
+                        >
+                      </div>
+                    </div>
+
                     <div class="flex flex-wrap gap-2">
                       <template x-for="(item, iItem) in sumarIngredientes(comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)" :key="iItem + '_' + item">
                         <span class="bg-surface border border-border text-ink text-xs font-mono font-bold px-3 py-1.5 rounded-full shadow-sm" x-text="item"></span>
                       </template>
                     </div>
+
+                    <!-- Resultado automático de gramos en cocido para cada plato -->
+                    <div x-show="repartoPesoCocido(idx, comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)" x-cloak class="bg-surface border border-sage-border rounded-xl px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                      <span class="font-sans font-bold text-sage">⚖️ Reparto exacto del plato ya cocinado:</span>
+                      <div class="flex items-center gap-3 font-extrabold">
+                        <span class="text-sage" x-text="'Fede: ' + (repartoPesoCocido(idx, comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)?.fede || 0) + ' g (' + (repartoPesoCocido(idx, comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)?.pctFede || 0) + '%)'"></span>
+                        <span class="text-ink-muted">·</span>
+                        <span class="text-ara-dark" x-text="'Ara: ' + (repartoPesoCocido(idx, comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)?.ara || 0) + ' g (' + (repartoPesoCocido(idx, comidaCalculada(comida, idx, 'fede').texto, comidaCalculada(comida, idx, 'arantxa').texto)?.pctAra || 0) + '%)'"></span>
+                      </div>
+                    </div>
                   </div>
 
-                  <!-- TARJETAS PARALELAS DE RACIÓN EN CRUDO -->
+                  <!-- TARJETAS PARALELAS DE RACIÓN EN CRUDO (Con Check Individual por Atleta) -->
                   <div class="grid grid-cols-1 gap-4" :class="vistaAtleta === 'Dual' ? 'md:grid-cols-2' : 'md:grid-cols-1'">
                     
                     <!-- Ración FEDE -->
@@ -775,7 +985,16 @@
                       <div>
                         <div class="flex items-center justify-between border-b border-fede-border/80 pb-2.5 mb-3">
                           <div class="flex items-center gap-2">
-                            <span class="px-2.5 py-0.5 rounded-full bg-sage text-white text-[10px] font-extrabold uppercase tracking-wider">Fede</span>
+                            <button
+                              type="button"
+                              @click="toggleComidaCompletadaAtleta(idx, 'fede')"
+                              :aria-pressed="esComidaCompletadaAtleta(idx, 'fede').toString()"
+                              class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition flex items-center gap-1"
+                              :class="esComidaCompletadaAtleta(idx, 'fede') ? 'bg-sage text-white' : 'bg-surface text-sage border border-fede-border hover:bg-sage hover:text-white'"
+                              title="Marcar/desmarcar toma solo para Fede"
+                            >
+                              <span x-text="esComidaCompletadaAtleta(idx, 'fede') ? '✓ Fede' : '○ Fede'"></span>
+                            </button>
                             <span class="text-xs font-bold text-ink-secondary">Pesos en crudo</span>
                           </div>
                           <span class="text-sm font-mono font-extrabold text-sage" x-text="comidaCalculada(comida, idx, 'fede').macrosObj.kcal + ' kcal'"></span>
@@ -791,7 +1010,7 @@
                       </div>
                       <div class="pt-2.5 border-t border-fede-border/80 flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-ink-secondary">
                         <span x-text="comidaCalculada(comida, idx, 'fede').macrosTexto"></span>
-                        <span x-show="comidaCalculada(comida, idx, 'fede').notaAjuste" class="text-[10px] bg-surface px-2.5 py-0.5 rounded-full border border-fede-border text-sage" x-text="comidaCalculada(comida, idx, 'fede').notaAjuste"></span>
+                        <span x-show="comidaCalculada(comida, idx, 'fede').notaAjuste" class="text-[11px] bg-surface px-2.5 py-0.5 rounded-full border border-fede-border text-sage" x-text="comidaCalculada(comida, idx, 'fede').notaAjuste"></span>
                       </div>
                     </div>
 
@@ -800,7 +1019,16 @@
                       <div>
                         <div class="flex items-center justify-between border-b border-ara-border/80 pb-2.5 mb-3">
                           <div class="flex items-center gap-2">
-                            <span class="px-2.5 py-0.5 rounded-full bg-ara-badge text-white text-[10px] font-extrabold uppercase tracking-wider">Arantxa</span>
+                            <button
+                              type="button"
+                              @click="toggleComidaCompletadaAtleta(idx, 'arantxa')"
+                              :aria-pressed="esComidaCompletadaAtleta(idx, 'arantxa').toString()"
+                              class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition flex items-center gap-1"
+                              :class="esComidaCompletadaAtleta(idx, 'arantxa') ? 'bg-ara-badge text-white' : 'bg-surface text-ara-dark border border-ara-border hover:bg-ara-badge hover:text-white'"
+                              title="Marcar/desmarcar toma solo para Arantxa"
+                            >
+                              <span x-text="esComidaCompletadaAtleta(idx, 'arantxa') ? '✓ Arantxa' : '○ Arantxa'"></span>
+                            </button>
                             <span class="text-xs font-bold text-ink-secondary">Pesos en crudo</span>
                           </div>
                           <span class="text-sm font-mono font-extrabold text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').macrosObj.kcal + ' kcal'"></span>
@@ -816,7 +1044,7 @@
                       </div>
                       <div class="pt-2.5 border-t border-ara-border/80 flex flex-wrap items-center justify-between gap-1 text-xs font-mono font-bold text-ink-secondary">
                         <span x-text="comidaCalculada(comida, idx, 'arantxa').macrosTexto"></span>
-                        <span x-show="comidaCalculada(comida, idx, 'arantxa').notaAjuste" class="text-[10px] bg-surface px-2.5 py-0.5 rounded-full border border-ara-border text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').notaAjuste"></span>
+                        <span x-show="comidaCalculada(comida, idx, 'arantxa').notaAjuste" class="text-[11px] bg-surface px-2.5 py-0.5 rounded-full border border-ara-border text-ara-dark" x-text="comidaCalculada(comida, idx, 'arantxa').notaAjuste"></span>
                       </div>
                     </div>
 
@@ -844,7 +1072,8 @@
             </div>
 
             <div class="mb-5">
-              <input type="search" x-model="filtroCompra" placeholder="Filtrar alimento (ej. pollo, arroz, patata)..." class="w-full bg-canvas border border-border rounded-full px-5 py-3 text-sm text-ink placeholder:text-ink-muted">
+              <label for="buscar-compra" class="sr-only">Filtrar alimento en la lista de la compra</label>
+              <input id="buscar-compra" type="search" x-model="filtroCompra" placeholder="Filtrar alimento (ej. pollo, arroz, patata)..." class="w-full bg-canvas border border-border rounded-full px-5 py-3 text-sm text-ink placeholder:text-ink-muted">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -854,10 +1083,10 @@
                   <ul class="divide-y divide-border/70">
                     <template x-for="prod in cat.items" :key="prod.clave">
                       <li>
-                        <button type="button" @click="toggleCheckCompra(prod.clave)" class="w-full py-2.5 flex items-center justify-between gap-3 text-left min-h-[44px]">
+                        <button type="button" @click="toggleCheckCompra(prod.clave)" :aria-pressed="(!!itemsComprados[prod.clave]).toString()" class="w-full py-2.5 flex items-center justify-between gap-3 text-left min-h-[44px]">
                           <div class="flex items-center gap-3">
                             <span :class="itemsComprados[prod.clave] ? 'bg-sage border-sage text-white' : 'bg-surface border-border text-transparent'" class="w-5 h-5 rounded-full border flex items-center justify-center transition shrink-0">
-                              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             </span>
                             <span :class="itemsComprados[prod.clave] ? 'line-through text-ink-muted' : 'text-ink font-semibold'" class="text-sm capitalize" x-text="prod.nombre"></span>
                           </div>
@@ -873,7 +1102,7 @@
         </section>
 
         <!-- =========================================================
-             VISTA 3: BIOMETRÍA Y PROGRESO
+             VISTA 3: BIOMETRÍA Y PROGRESO (Con Gráfica Visual de Evolución)
              ========================================================= -->
         <section x-show="tab === 'checkin'" x-cloak class="space-y-6 pt-2">
           <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-5">
@@ -899,22 +1128,52 @@
               </div>
             </div>
 
+            <!-- GRÁFICA VISUAL DE BARRAS DE EVOLUCIÓN DE PESO SEMANAL -->
+            <div class="bg-canvas/70 border border-border rounded-3xl p-4 space-y-3 tabular-nums">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-ink-secondary" x-text="'Curva de Peso Semanal · ' + form.atleta"></span>
+                <span class="text-xs font-mono font-bold text-sage" x-text="form.atleta === 'Fede' ? 'Meta: 87.5 kg' : 'Meta: ~65.0 kg'"></span>
+              </div>
+              <div class="relative pt-4 pb-1">
+                <div class="absolute inset-x-0 bottom-9 h-1.5 rounded-full striped-bar pointer-events-none"></div>
+                <div class="flex items-end gap-2 overflow-x-auto pb-1">
+                  <template x-for="item in historicoAtleta()" :key="'bar_' + item.semana">
+                    <button
+                      type="button"
+                      @click="form.semana = item.semana; sincronizarFechaSemana()"
+                      class="flex flex-col items-center shrink-0 min-w-[38px] group focus:outline-none"
+                    >
+                      <span class="text-[10px] font-mono font-bold mb-1" :class="form.semana === item.semana ? 'text-sage' : 'text-ink-secondary'" x-text="item.peso ? item.peso : '—'"></span>
+                      <div class="w-3.5 h-20 rounded-full bg-surface border border-border flex items-end p-0.5 overflow-hidden">
+                        <div
+                          class="w-full rounded-full transition-all duration-300"
+                          :class="form.semana === item.semana ? 'bg-sage' : (item.peso ? 'bg-[#C99AA5]' : 'bg-subtle')"
+                          :style="'height: ' + alturaBarraPeso(item.peso) + '%'"
+                        ></div>
+                      </div>
+                      <span class="text-[11px] font-bold mt-1.5" :class="form.semana === item.semana ? 'text-sage underline' : 'text-ink-secondary'" x-text="item.semana.replace('Semana ', 'S')"></span>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 tabular-nums">
               <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Peso (vs Sem 1)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().peso <= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().peso <= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
               </div>
               <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Cintura (Grasa)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().cintura <= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().cintura <= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
               </div>
               <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Brazo (Músculo)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().brazo >= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().brazo >= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
               </div>
               <div class="bg-canvas border border-border p-4 rounded-2xl">
                 <span class="text-xs font-semibold text-ink-secondary block">Muslo (Músculo)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().muslo >= 0 ? 'text-sage' : 'text-[#D3A664]'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
+                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().muslo >= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
               </div>
             </div>
           </div>
@@ -990,14 +1249,39 @@
         </section>
 
         <!-- =========================================================
-             VISTA 4: IMPORTAR SEMANA DESDE GEMINI
+             VISTA 4: IMPORTAR SEMANA DESDE GEMINI (Con Validador de Reglas)
              ========================================================= -->
         <section x-show="tab === 'ia'" x-cloak class="space-y-6 pt-2">
           <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-5 max-w-3xl">
-            <h2 class="text-xl font-extrabold text-ink">Publicar Nueva Dieta desde Gemini</h2>
-            <p class="text-xs text-ink-secondary">Al importar una nueva semana se limpian automáticamente las permutaciones o adaptaciones puntuales de la semana anterior.</p>
-            <textarea x-model="jsonNuevaDieta" rows="9" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno",...}]' class="w-full bg-canvas border border-border rounded-3xl p-4 text-xs font-mono text-ink"></textarea>
-            <button type="button" @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-full text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-sage">Validador Automático Kinetix</span>
+              <h2 class="text-xl font-extrabold text-ink mt-0.5">Publicar Nueva Dieta desde Gemini</h2>
+              <p class="text-xs text-ink-secondary mt-1">Verifica automáticamente la estructura del JSON y el cumplimiento de la Regla 4 (sin salmón caliente, merluza empanada Mercadona) antes de publicar en Google Sheets.</p>
+            </div>
+
+            <textarea x-model="jsonNuevaDieta" rows="9" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno","plato":"Tostadas con jamón","fede":"120 g pan masa madre + 80 g jamón serrano","macrosFede":"35g P | 58g CH | 12g G | 480 kcal","arantxa":"80 g pan masa madre + 60 g jamón serrano","macrosArantxa":"25g P | 38g CH | 9g G | 333 kcal"}]' class="w-full bg-canvas border border-border rounded-3xl p-4 text-xs font-mono text-ink"></textarea>
+
+            <!-- Previsualización del Validador en Tiempo Real -->
+            <template x-if="validarJsonDieta()">
+              <div :class="validarJsonDieta().valido ? 'bg-sage-light border-sage-border text-ink' : 'bg-[#F6E8EA] border-[#E0909E] text-sage'" class="border rounded-2xl p-4 text-xs space-y-2">
+                <div class="flex items-center justify-between font-extrabold">
+                  <span x-text="validarJsonDieta().valido ? '✓ JSON Válido (' + validarJsonDieta().totalTomas + ' tomas en ' + validarJsonDieta().totalDias + ' días)' : '✕ Error en el formato JSON'"></span>
+                </div>
+                <p x-show="!validarJsonDieta().valido" class="font-mono text-xs" x-text="validarJsonDieta().error"></p>
+                <template x-if="validarJsonDieta().valido && validarJsonDieta().alertasReglas.length > 0">
+                  <div class="pt-2 border-t border-sage-border space-y-1">
+                    <span class="font-extrabold text-[#8A5A19] block">⚠️ Avisos de Reglas Dietéticas (rules.md):</span>
+                    <ul class="list-disc pl-4 space-y-0.5 text-ink-secondary">
+                      <template x-for="(alerta, iAl) in validarJsonDieta().alertasReglas" :key="iAl">
+                        <li x-text="alerta"></li>
+                      </template>
+                    </ul>
+                  </div>
+                </template>
+              </div>
+            </template>
+
+            <button type="button" @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta || (validarJsonDieta() && !validarJsonDieta().valido)" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-full text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]">
               <span x-text="enviando ? 'Escribiendo los 7 días en Google Sheets...' : 'Publicar Nueva Semana en Google Sheets'"></span>
             </button>
             <p x-show="mensajeDietaActualizada" x-cloak class="text-sage text-xs font-bold text-center">✓ ¡Plan semanal actualizado!</p>
@@ -1008,41 +1292,44 @@
     </main>
 
     <!-- ==========================================
-         BARRA INFERIOR FLOTANTE ESTILO CALORICAM (Píldora con botón central Burdeos)
+         BARRA INFERIOR FLOTANTE ESTILO CALORICAM (Con Accesibilidad Completa)
          ========================================== -->
-    <nav class="lg:hidden fixed bottom-4 inset-x-4 z-30 safe-bottom pointer-events-none">
+    <nav class="lg:hidden fixed bottom-4 inset-x-4 z-30 safe-bottom pointer-events-none" aria-label="Navegación principal móvil">
       <div class="max-w-md mx-auto bg-surface/95 backdrop-blur-xl border border-border rounded-full px-3 py-2 shadow-pill flex items-center justify-around pointer-events-auto">
         
         <!-- Tab 1: Dashboard / Hoy -->
-        <button type="button" @click="cambiarTab('dieta')" :class="tab === 'dieta' ? 'text-sage' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition" title="Plan Diario">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        <button type="button" @click="cambiarTab('dieta')" :aria-current="tab === 'dieta' ? 'page' : false" aria-label="Plan Diario y Entreno" :class="tab === 'dieta' ? 'text-sage bg-sage-light' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition" title="Plan Diario">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
         </button>
 
         <!-- Tab 2: Biometría / Gráficas -->
-        <button type="button" @click="cambiarTab('checkin')" :class="tab === 'checkin' ? 'text-sage' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition" title="Biometría y Progreso">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19h16M4 15l4-4 4 4 6-6"/></svg>
+        <button type="button" @click="cambiarTab('checkin')" :aria-current="tab === 'checkin' ? 'page' : false" aria-label="Biometría y Progreso" :class="tab === 'checkin' ? 'text-sage bg-sage-light' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition" title="Biometría y Progreso">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19h16M4 15l4-4 4 4 6-6"/></svg>
         </button>
 
         <!-- Botón Central Destacado Burdeos (Adapta sesiones en Dieta o va a Dieta) -->
         <button
           type="button"
           @click="tab === 'dieta' ? (panelEntrenoAbierto = !panelEntrenoAbierto) : cambiarTab('dieta')"
+          aria-label="Adaptar sesiones de entrenamiento hoy"
           class="w-14 h-14 -my-1 rounded-full bg-sage text-white shadow-md flex items-center justify-center hover:bg-sage-hover active:scale-95 transition"
           title="Ajustar entrenamiento / Ir a Hoy"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         </button>
 
         <!-- Tab 3: Lista de la Compra -->
-        <button type="button" @click="cambiarTab('compra')" :class="tab === 'compra' ? 'text-sage' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition relative" title="Lista de la Compra">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+        <button type="button" @click="cambiarTab('compra')" :aria-current="tab === 'compra' ? 'page' : false" aria-label="Despensa y Lista de la Compra" :class="tab === 'compra' ? 'text-sage bg-sage-light' : 'text-ink-secondary hover:text-ink'" class="w-11 h-11 rounded-full flex items-center justify-center transition relative" title="Lista de la Compra">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
           <span x-show="contarPendientesCompra() > 0" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E0909E]"></span>
         </button>
 
-        <!-- Tab 4: Avatar / Cambiar Vista Atleta o Importar IA -->
+        <!-- Tab 4: Avatar / Importar Plan IA -->
         <button
           type="button"
           @click="cambiarTab('ia')"
+          :aria-current="tab === 'ia' ? 'page' : false"
+          aria-label="Importar Plan desde Gemini IA"
           :class="tab === 'ia' ? 'ring-2 ring-sage bg-sage text-white' : 'bg-subtle text-ink border border-border'"
           class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold transition"
           title="Importar Plan IA"

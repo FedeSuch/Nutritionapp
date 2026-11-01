@@ -101,7 +101,11 @@ function appData() {
     diaSeleccionado: 'Martes',
     panelEntrenoAbierto: false,
     cenaSocialActiva: false,
+    cenasSocialesPorDia: JSON.parse(localStorage.getItem('hybrid_cenas_sociales') || '{}'),
     mostrarSumaComun: true,
+    mostrarGraficoMacros: localStorage.getItem('hybrid_mostrar_pie_macros') === 'true',
+    plegarCompletadas: false,
+    pesosCocidosOlla: {},
     cargandoDieta: false,
     errorConexion: false,
     enviando: false,
@@ -134,18 +138,41 @@ function appData() {
 
     init() {
       this.irAHoy();
+      this.cenaSocialActiva = !!this.cenasSocialesPorDia[this.diaSeleccionado];
+
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           const ultimoDiaAbierto = sessionStorage.getItem('hybrid_dia_sesion');
           const hoyReal = this.nombreDiaHoy();
           if (ultimoDiaAbierto !== hoyReal) {
-            this.diaSeleccionado = hoyReal;
+            this.seleccionarDia(hoyReal);
             sessionStorage.setItem('hybrid_dia_sesion', hoyReal);
           }
         }
       });
+
+      // Accesibilidad: cerrar paneles desplegables con tecla Escape
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (this.swapAbiertoIdx !== null) {
+            this.swapAbiertoIdx = null;
+            this.anunciar('Panel de intercambio cerrado');
+          } else if (this.panelEntrenoAbierto) {
+            this.panelEntrenoAbierto = false;
+            this.anunciar('Panel de ajuste de sesiones cerrado');
+          }
+        }
+      });
+
       this.sincronizarFechaSemana();
       this.cargarDatos();
+    },
+
+    anunciar(mensaje) {
+      this.anuncioAccesible = '';
+      setTimeout(() => {
+        this.anuncioAccesible = mensaje;
+      }, 40);
     },
 
     nombreDiaHoy() {
@@ -155,24 +182,46 @@ function appData() {
 
     irAHoy() {
       const hoy = this.nombreDiaHoy();
-      this.diaSeleccionado = hoy;
+      this.seleccionarDia(hoy);
       sessionStorage.setItem('hybrid_dia_sesion', hoy);
     },
 
     cambiarTab(nuevaTab) {
       this.tab = nuevaTab;
+      const nombres = { dieta: 'Plan Diario y Entreno', compra: 'Despensa y Compra', checkin: 'Biometría y Progreso', ia: 'Importar Plan IA' };
+      this.anunciar(`Vista cambiada a ${nombres[nuevaTab] || nuevaTab}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
     cambiarVistaAtleta(modo) {
       this.vistaAtleta = modo;
       localStorage.setItem('hybrid_vista_atleta', modo);
+      this.anunciar(`Mostrando datos para ${modo === 'Dual' ? 'Fede y Arantxa' : modo}`);
     },
 
     seleccionarDia(d) {
       this.diaSeleccionado = d;
-      this.cenaSocialActiva = false;
+      this.cenaSocialActiva = !!this.cenasSocialesPorDia[d];
       this.swapAbiertoIdx = null;
+      this.anunciar(`Viendo el plan del ${d}`);
+    },
+
+    toggleCenaSocial() {
+      this.cenaSocialActiva = !this.cenaSocialActiva;
+      if (this.cenaSocialActiva) {
+        this.cenasSocialesPorDia[this.diaSeleccionado] = true;
+      } else {
+        delete this.cenasSocialesPorDia[this.diaSeleccionado];
+      }
+      this.cenasSocialesPorDia = { ...this.cenasSocialesPorDia };
+      localStorage.setItem('hybrid_cenas_sociales', JSON.stringify(this.cenasSocialesPorDia));
+      this.sincronizarEstadoRemoto('cenasSocialesPorDia', this.cenasSocialesPorDia);
+      this.anunciar(this.cenaSocialActiva ? `Modo Cena Libre activado para el ${this.diaSeleccionado}` : `Modo Cena Libre desactivado`);
+    },
+
+    toggleVistaGraficoMacros() {
+      this.mostrarGraficoMacros = !this.mostrarGraficoMacros;
+      localStorage.setItem('hybrid_mostrar_pie_macros', this.mostrarGraficoMacros.toString());
     },
 
     abreviarDia(d) {
@@ -236,14 +285,11 @@ function appData() {
 
     /**
      * Obtiene los Macros y Calorías Oficiales del Día desde RESUMEN_SEMANAL de tu Excel.
-     * Si el usuario importó una dieta nueva donde las comidas suman otro valor distinto,
-     * usa el valor de RESUMEN_SEMANAL como referencia principal para la semana actual.
      */
     objetivoBaseDia(diaNombre, atletaKey) {
       const diaFuente = this.diaFuenteEfectivo(diaNombre);
       const dNorm = this.normalizar(diaFuente);
 
-      // 1. Buscar primero en RESUMEN_SEMANAL cargado en vivo desde el Sheet (si existe)
       if (this.resumenSemanalSheet && this.resumenSemanalSheet.length > 5) {
         let seccionActual = 'fede';
         for (let i = 0; i < this.resumenSemanalSheet.length; i++) {
@@ -265,12 +311,10 @@ function appData() {
         }
       }
 
-      // 2. Respaldo exacto de tu tabla RESUMEN_SEMANAL del Excel
       const dic = atletaKey === 'fede' ? RESUMEN_OFICIAL_FEDE : RESUMEN_OFICIAL_ARANTXA;
       return dic[dNorm] || { entreno: "CrossFit 17:30", p: 200, ch: 320, g: 75, kcal: 2755 };
     },
 
-    // Obtiene los Macros y Calorías Efectivos del Día (según si está en modo original "auto" o si se cambió de sesión)
     objetivoEfectivoDia(diaNombre, atletaKey) {
       const base = this.objetivoBaseDia(diaNombre, atletaKey);
       const modoManual = this.obtenerCargaAtleta(diaNombre, atletaKey);
@@ -308,6 +352,7 @@ function appData() {
       this.permutacionesDias = { ...this.permutacionesDias };
       localStorage.setItem('hybrid_permutaciones_dias', JSON.stringify(this.permutacionesDias));
       this.sincronizarEstadoRemoto('permutacionesDias', this.permutacionesDias);
+      this.anunciar(diaB ? `Día ${diaA} intercambiado con ${diaB}` : `Día ${diaA} restaurado`);
     },
 
     obtenerCargaAtleta(diaNombre, atletaKey) {
@@ -320,6 +365,7 @@ function appData() {
       this.cargasEntreno = { ...this.cargasEntreno };
       localStorage.setItem('hybrid_cargas_entreno', JSON.stringify(this.cargasEntreno));
       this.sincronizarEstadoRemoto('cargasEntreno', this.cargasEntreno);
+      this.anunciar(`Sesión de entrenamiento actualizada para ${atletaKey}`);
     },
 
     tieneCargaAdaptada(diaNombre) {
@@ -339,6 +385,7 @@ function appData() {
         localStorage.setItem('hybrid_cargas_entreno', JSON.stringify(this.cargasEntreno));
         this.sincronizarEstadoRemoto('cargasEntreno', this.cargasEntreno);
       }
+      this.anunciar(`Plan original del ${diaNombre} restaurado`);
     },
 
     descripcionEntrenoEfectivo(diaNombre) {
@@ -426,10 +473,14 @@ function appData() {
           fusionar('swapsActivos', 'hybrid_swaps_activos', 'swapsActivos');
           fusionar('cargasEntreno', 'hybrid_cargas_entreno', 'cargasEntreno');
           fusionar('permutacionesDias', 'hybrid_permutaciones_dias', 'permutacionesDias');
+          fusionar('cenasSocialesPorDia', 'hybrid_cenas_sociales', 'cenasSocialesPorDia');
+          this.cenaSocialActiva = !!this.cenasSocialesPorDia[this.diaSeleccionado];
         }
         this.sincronizarFechaSemana();
+        this.anunciar('Sincronizado con Google Sheets');
       } catch (e) {
         this.errorConexion = true;
+        this.anunciar('Modo sin conexión: usando datos en caché local');
       }
       this.cargandoDieta = false;
     },
@@ -451,32 +502,165 @@ function appData() {
       return lunes.toISOString().split('T')[0];
     },
 
-    esComidaCompletada(idx) {
-      const kSem = this.claveSemanaActual() + '_' + this.diaSeleccionado + '_' + idx;
-      const kSimple = this.diaSeleccionado + '_' + idx;
-      return !!(this.comidasCompletadas[kSem] || this.comidasCompletadas[kSimple]);
+    /**
+     * CHECK DE COMIDAS INDEPENDIENTE POR ATLETA (Fede vs Arantxa) + Compatibilidad Dual
+     */
+    esComidaCompletadaAtleta(idx, atletaKey) {
+      const sem = this.claveSemanaActual();
+      const kAtletaSem = `${sem}_${this.diaSeleccionado}_${idx}_${atletaKey}`;
+      const kAtletaSimple = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
+      const kLegacySem = `${sem}_${this.diaSeleccionado}_${idx}`;
+      const kLegacySimple = `${this.diaSeleccionado}_${idx}`;
+
+      if (this.comidasCompletadas[kAtletaSem] !== undefined) return !!this.comidasCompletadas[kAtletaSem];
+      if (this.comidasCompletadas[kAtletaSimple] !== undefined) return !!this.comidasCompletadas[kAtletaSimple];
+      return !!(this.comidasCompletadas[kLegacySem] || this.comidasCompletadas[kLegacySimple]);
     },
 
-    toggleComidaCompletada(idx) {
-      const kSem = this.claveSemanaActual() + '_' + this.diaSeleccionado + '_' + idx;
-      const kSimple = this.diaSeleccionado + '_' + idx;
-      const nuevo = !this.esComidaCompletada(idx);
-      if (nuevo) {
-        this.comidasCompletadas[kSem] = true;
-        this.comidasCompletadas[kSimple] = true;
-      } else {
-        delete this.comidasCompletadas[kSem];
-        delete this.comidasCompletadas[kSimple];
+    esComidaCompletada(idx) {
+      if (this.vistaAtleta === 'Fede') return this.esComidaCompletadaAtleta(idx, 'fede');
+      if (this.vistaAtleta === 'Arantxa') return this.esComidaCompletadaAtleta(idx, 'arantxa');
+      return this.esComidaCompletadaAtleta(idx, 'fede') && this.esComidaCompletadaAtleta(idx, 'arantxa');
+    },
+
+    toggleComidaCompletadaAtleta(idx, atletaKey) {
+      const sem = this.claveSemanaActual();
+      const kAtletaSem = `${sem}_${this.diaSeleccionado}_${idx}_${atletaKey}`;
+      const kAtletaSimple = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
+      const kLegacySem = `${sem}_${this.diaSeleccionado}_${idx}`;
+      const kLegacySimple = `${this.diaSeleccionado}_${idx}`;
+
+      const nuevo = !this.esComidaCompletadaAtleta(idx, atletaKey);
+      const otroAtleta = atletaKey === 'fede' ? 'arantxa' : 'fede';
+      const estadoOtro = this.esComidaCompletadaAtleta(idx, otroAtleta);
+
+      // Limpiar clave legacy general y migrar ambos atletas explícitamente
+      delete this.comidasCompletadas[kLegacySem];
+      delete this.comidasCompletadas[kLegacySimple];
+
+      if (estadoOtro) {
+        this.comidasCompletadas[`${sem}_${this.diaSeleccionado}_${idx}_${otroAtleta}`] = true;
+        this.comidasCompletadas[`${this.diaSeleccionado}_${idx}_${otroAtleta}`] = true;
       }
+
+      if (nuevo) {
+        this.comidasCompletadas[kAtletaSem] = true;
+        this.comidasCompletadas[kAtletaSimple] = true;
+      } else {
+        delete this.comidasCompletadas[kAtletaSem];
+        delete this.comidasCompletadas[kAtletaSimple];
+      }
+
       this.comidasCompletadas = { ...this.comidasCompletadas };
       localStorage.setItem('hybrid_comidas_completadas', JSON.stringify(this.comidasCompletadas));
       this.sincronizarEstadoRemoto('comidasCompletadas', this.comidasCompletadas);
+      this.anunciar(`Toma ${nuevo ? 'completada' : 'desmarcada'} para ${atletaKey === 'fede' ? 'Fede' : 'Arantxa'}`);
     },
 
-    contarComidasCompletadas() {
+    toggleComidaCompletada(idx) {
+      if (this.vistaAtleta === 'Fede') {
+        this.toggleComidaCompletadaAtleta(idx, 'fede');
+        return;
+      }
+      if (this.vistaAtleta === 'Arantxa') {
+        this.toggleComidaCompletadaAtleta(idx, 'arantxa');
+        return;
+      }
+      const nuevo = !this.esComidaCompletada(idx);
+      const sem = this.claveSemanaActual();
+      ['fede', 'arantxa'].forEach(atletaKey => {
+        const kSem = `${sem}_${this.diaSeleccionado}_${idx}_${atletaKey}`;
+        const kSimple = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
+        if (nuevo) {
+          this.comidasCompletadas[kSem] = true;
+          this.comidasCompletadas[kSimple] = true;
+        } else {
+          delete this.comidasCompletadas[kSem];
+          delete this.comidasCompletadas[kSimple];
+        }
+      });
+      delete this.comidasCompletadas[`${sem}_${this.diaSeleccionado}_${idx}`];
+      delete this.comidasCompletadas[`${this.diaSeleccionado}_${idx}`];
+
+      this.comidasCompletadas = { ...this.comidasCompletadas };
+      localStorage.setItem('hybrid_comidas_completadas', JSON.stringify(this.comidasCompletadas));
+      this.sincronizarEstadoRemoto('comidasCompletadas', this.comidasCompletadas);
+      this.anunciar(`Toma ${nuevo ? 'completada' : 'desmarcada'} para ambos atletas`);
+    },
+
+    contarComidasCompletadas(atletaKey = null) {
       let count = 0;
-      this.comidasDelDia().forEach((_, idx) => { if (this.esComidaCompletada(idx)) count++; });
+      this.comidasDelDia().forEach((_, idx) => {
+        if (atletaKey) {
+          if (this.esComidaCompletadaAtleta(idx, atletaKey)) count++;
+        } else {
+          if (this.esComidaCompletada(idx)) count++;
+        }
+      });
       return count;
+    },
+
+    /**
+     * DETECCIÓN DE PRÓXIMA TOMA Y REGLAS DIETÉTICAS (Regla 4 de rules.md)
+     */
+    extraerMinutosVentana(ventanaStr) {
+      if (!ventanaStr) return null;
+      const m = ventanaStr.match(/(\d{1,2}):(\d{2})/);
+      if (!m) return null;
+      return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    },
+
+    esProximaComida(idx) {
+      if (this.esComidaCompletada(idx)) return false;
+      const comidas = this.comidasDelDia();
+      for (let i = 0; i < comidas.length; i++) {
+        if (!this.esComidaCompletada(i)) {
+          return i === idx;
+        }
+      }
+      return false;
+    },
+
+    esDiaConCrossFit(diaNombre) {
+      const desc = this.normalizar(this.descripcionEntrenoEfectivo(diaNombre));
+      return desc.includes('crossfit') || desc.includes('wod');
+    },
+
+    esTomaPreCrossFit(comida) {
+      if (!this.esDiaConCrossFit(this.diaSeleccionado)) return false;
+      const min = this.extraerMinutosVentana(comida.ventana);
+      const vNorm = this.normalizar(comida.ventana);
+      if (vNorm.includes('pre-wod') || vNorm.includes('pre wod') || vNorm.includes('merienda')) return true;
+      // Comida de mediodía o merienda antes del WOD de las 17:30 (entre 12:30 y 17:15)
+      if (min !== null && min >= 750 && min <= 1035) return true;
+      return false;
+    },
+
+    validarReglaDieteticaSwap(comida, idx) {
+      const s = this.swapsActivos[this.diaSeleccionado + '_' + idx];
+      if (!s) return null;
+      const avisos = [];
+      if (s.prot === 'salmón fresco' && this.esPlatoCalientePrincipal(comida)) {
+        avisos.push('Regla Kinetix: Prohibido el salmón cocinado en platos calientes (usa atún al natural o merluza empanada Mercadona).');
+      }
+      if ((s.ch === 'garbanzos bote' || s.ch === 'lentejas bote') && this.esTomaPreCrossFit(comida)) {
+        avisos.push('Regla Kinetix Pre-CrossFit (17:30): Evita legumbres antes del WOD. Prioriza vaciado gástrico rápido (arroz, patata, claras).');
+      }
+      if (s.prot === 'huevos enteros' && this.esTomaPreCrossFit(comida) && this.normalizar(comida.ventana).includes('pre')) {
+        avisos.push('Consejo Pre-WOD: Prioriza claras de huevo sobre huevos enteros para aligerar grasas antes de las 17:30.');
+      }
+      return avisos.length > 0 ? avisos.join(' ') : null;
+    },
+
+    esPlatoCalientePrincipal(comida) {
+      const v = this.normalizar(comida.ventana);
+      const p = this.normalizar(comida.plato);
+      if (v.includes('comida') || v.includes('cena') || v.includes('almuerzo')) {
+        if (!p.includes('ensalada') && !p.includes('poke') && !p.includes('tartar') && !p.includes('tosta')) {
+          return true;
+        }
+      }
+      return false;
     },
 
     identificarAlimentoCatalogo(nombreRaw) {
@@ -513,21 +697,18 @@ function appData() {
     /**
      * MOTOR DE CÁLCULO DE CADA COMIDA:
      * 1. Parte de los macros oficiales escritos en el Excel para esa comida (`comida.macrosFede` / `comida.macrosArantxa`),
-     *    normalizados para que la suma de las comidas del día dé EXACTAMENTE las Kcal de `RESUMEN_SEMANAL` (ej. 3.295 kcal el miércoles, 2.707 kcal el jueves).
-     * 2. Si el usuario cambia el entrenamiento del día (ej. de 2 sesiones 3.295 kcal a 1 sesión 2.755 kcal),
-     *    escala los carbohidratos y las calorías de cada toma para que sumen exactamente el nuevo objetivo (2.755 kcal).
-     * 3. Si el usuario intercambia un alimento (ej. Merluza -> Pollo), mantiene INTACTAS las calorías y macros de la toma
-     *    y recalcula únicamente los gramos en crudo.
+     *    normalizados para que la suma de las comidas del día dé EXACTAMENTE las Kcal de `RESUMEN_SEMANAL`.
+     * 2. Si el usuario cambia el entrenamiento del día, escala los carbohidratos y las calorías de cada toma.
+     * 3. Si el usuario intercambia un alimento, mantiene INTACTAS las calorías y macros de la toma
+     *    y recalcula únicamente los gramos en crudo mediante sistema de ecuaciones lineales.
      */
     comidaCalculadaParaDia(diaNombre, comida, idx, atletaKey) {
       const rawTexto = atletaKey === 'fede' ? comida.fede : comida.arantxa;
       const textoOriginal = this.limpiarSuplementosDeTexto(rawTexto);
       const campoMacros = atletaKey === 'fede' ? 'macrosFede' : 'macrosArantxa';
 
-      // Macros escritos en la fila de DIETA para esta comida
       const macrosEscritosFila = this.parsearMacrosDeColumnaExcel(comida[campoMacros]);
 
-      // Suma de los macros escritos en DIETA de todas las comidas reales de ese día
       const todasComidasDia = this.comidasDelDiaPara(diaNombre);
       let sumaP_Dieta = 0, sumaCH_Dieta = 0, sumaG_Dieta = 0, sumaKcal_Dieta = 0;
       todasComidasDia.forEach(c => {
@@ -535,35 +716,30 @@ function appData() {
         sumaP_Dieta += m.p; sumaCH_Dieta += m.ch; sumaG_Dieta += m.g; sumaKcal_Dieta += m.kcal;
       });
 
-      // Objetivo oficial del día según RESUMEN_SEMANAL (base) y según la sesión elegida (efectivo)
       const objDiaBase = this.objetivoBaseDia(diaNombre, atletaKey);
       const objDiaEfectivo = this.objetivoEfectivoDia(diaNombre, atletaKey);
 
-      // Peso relativo de esta comida dentro del día
       const numTomas = todasComidasDia.length || 4;
       const pesoP  = sumaP_Dieta > 0    ? (macrosEscritosFila.p / sumaP_Dieta)       : (1 / numTomas);
       const pesoCH = sumaCH_Dieta > 0   ? (macrosEscritosFila.ch / sumaCH_Dieta)     : (1 / numTomas);
       const pesoG  = sumaG_Dieta > 0    ? (macrosEscritosFila.g / sumaG_Dieta)       : (1 / numTomas);
       const pesoK  = sumaKcal_Dieta > 0 ? (macrosEscritosFila.kcal / sumaKcal_Dieta) : (1 / numTomas);
 
-      // Macros de esta comida anclados al total exacto del día en RESUMEN_SEMANAL
       const pBaseComida    = Math.round(objDiaBase.p * pesoP);
       const chBaseComida   = Math.round(objDiaBase.ch * pesoCH);
       const gBaseComida    = Math.round(objDiaBase.g * pesoG);
       const kcalBaseComida = Math.round(objDiaBase.kcal * pesoK);
 
-      // Macros de esta comida tras aplicar cambio de sesiones (si el usuario cambió de 2 sesiones a 1 sesión, etc.)
       let pMetaComida    = Math.round(objDiaEfectivo.p * pesoP);
       let chMetaComida   = Math.round(objDiaEfectivo.ch * pesoCH);
       let gMetaComida    = Math.round(objDiaEfectivo.g * pesoG);
       let kcalMetaComida = Math.round(objDiaEfectivo.kcal * pesoK);
 
-      // Factor de escala de carbohidratos por cambio de entrenamiento (ej. 320 / 450 = 0.711 en Miércoles de 2 sesiones a 1 sesión)
       const factorEntrenoCH = objDiaBase.ch > 0 ? (objDiaEfectivo.ch / objDiaBase.ch) : 1.0;
 
-      // Si el Modo Cena Libre está activo, recorta 35% de CH y G en las comidas previas a la cena
       const esPreCena = this.isPreCena(comida.ventana);
-      const factorCena = (this.cenaSocialActiva && esPreCena && diaNombre === this.diaSeleccionado) ? 0.65 : 1.0;
+      const cenaLibreEsteDia = (diaNombre === this.diaSeleccionado) ? this.cenaSocialActiva : !!this.cenasSocialesPorDia[diaNombre];
+      const factorCena = (cenaLibreEsteDia && esPreCena) ? 0.65 : 1.0;
 
       let ahorroCH = 0, ahorroKcal = 0;
       if (factorCena < 1.0) {
@@ -609,7 +785,6 @@ function appData() {
       const haySwapCH = !!(swapConfig.ch && idxCH !== -1 && CATALOGO_NUTRICIONAL[swapConfig.ch]);
       const hayCambioCarga = Math.abs(factorTotalGramosCH - 1.0) > 0.01 || Math.abs(factorCena - 1.0) > 0.01;
 
-      // Si se cambió el número de sesiones o se activó Cena Libre, escalar hidratos secundarios (miel, dátiles, tortitas, plátano)
       if (Math.abs(factorTotalGramosCH - 1.0) > 0.01) {
         partes = partes.map((parte, i) => {
           if (i === idxProt || i === idxCH || i === idxAOVE) return parte;
@@ -635,7 +810,6 @@ function appData() {
         });
       }
 
-      // Si hay cambio de sesiones o intercambio de ingredientes, recalcular gramos en crudo de los pilares
       if (haySwapProt || haySwapCH || hayCambioCarga) {
         const pDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.p : 0;
         const chDeProtOrig = infoProtOrig ? (gramosProtOrig / 100) * infoProtOrig.ch : 0;
@@ -776,7 +950,7 @@ function appData() {
       const comidas = this.comidasDelDia();
       let p = 0, ch = 0, g = 0, kcal = 0;
       comidas.forEach((c, idx) => {
-        if (this.esComidaCompletada(idx)) {
+        if (this.esComidaCompletadaAtleta(idx, atletaKey)) {
           const calc = this.comidaCalculada(c, idx, atletaKey).macrosObj;
           p += calc.p; ch += calc.ch; g += calc.g; kcal += calc.kcal;
         }
@@ -788,6 +962,37 @@ function appData() {
       const total = this.totalesDia()[atletaKey][macroKey] || 1;
       const hecho = this.consumidoDia(atletaKey)[macroKey] || 0;
       return Math.min(100, Math.round((hecho / total) * 100));
+    },
+
+    /**
+     * DISTRIBUCIÓN DE MACROS PARA GRÁFICOS DE TARTA (Recommended vs Actual de CaloriCam)
+     */
+    distribucionMacrosPie(atletaKey, modo = 'meta') {
+      const fuente = modo === 'actual' ? this.consumidoDia(atletaKey) : this.totalesDia()[atletaKey];
+      const kcalCH = (fuente.ch || 0) * 4;
+      const kcalG  = (fuente.g || 0) * 9;
+      const kcalP  = (fuente.p || 0) * 4;
+      const totalKcal = kcalCH + kcalG + kcalP;
+
+      if (totalKcal <= 0) {
+        return { ch: 0, g: 0, p: 0, vacio: true, gradient: 'conic-gradient(#EADFD9 0% 100%)' };
+      }
+
+      const pctCH = Math.round((kcalCH / totalKcal) * 100);
+      const pctG  = Math.round((kcalG / totalKcal) * 100);
+      const pctP  = Math.max(0, 100 - pctCH - pctG);
+
+      const corte1 = pctCH;
+      const corte2 = pctCH + pctG;
+      const gradient = `conic-gradient(#E0909E 0% ${corte1}%, #D3A664 ${corte1}% ${corte2}%, #94A2AC ${corte2}% 100%)`;
+
+      return { ch: pctCH, g: pctG, p: pctP, vacio: false, gradient };
+    },
+
+    rangoObjetivoKcal(atletaKey) {
+      const meta = this.totalesDia()[atletaKey].kcal;
+      const min = Math.round((meta * 0.94) / 10) * 10;
+      return `${min} - ${meta}`;
     },
 
     desglosarListaIngredientes(str) {
@@ -865,6 +1070,18 @@ function appData() {
       return lista;
     },
 
+    alturaBarraPeso(pesoStr) {
+      const p = parseFloat(pesoStr);
+      if (!p || isNaN(p)) return 12;
+      if (this.form.atleta === 'Fede') {
+        // Rango visual Fede: 85 kg (20%) a 95 kg (100%)
+        return Math.max(18, Math.min(100, Math.round(((p - 85) / (95 - 85)) * 80 + 20)));
+      } else {
+        // Rango visual Arantxa: 62 kg (20%) a 70 kg (100%)
+        return Math.max(18, Math.min(100, Math.round(((p - 62) / (70 - 62)) * 80 + 20)));
+      }
+    },
+
     progresoMetaFede() {
       const pesoActual = parseFloat(this.form.peso) || 93.5;
       const pct = ((93.5 - pesoActual) / (93.5 - 87.5)) * 100;
@@ -900,13 +1117,19 @@ function appData() {
       return (s && s[tipo]) ? s[tipo] : '';
     },
 
-    abrirSwap(idx) { this.swapAbiertoIdx = (this.swapAbiertoIdx === idx) ? null : idx; },
+    abrirSwap(idx) {
+      this.swapAbiertoIdx = (this.swapAbiertoIdx === idx) ? null : idx;
+      if (this.swapAbiertoIdx !== null) {
+        this.anunciar('Panel de intercambio isocalórico abierto');
+      }
+    },
 
     resetSwap(idx) {
       delete this.swapsActivos[this.diaSeleccionado + '_' + idx];
       this.swapsActivos = { ...this.swapsActivos };
       localStorage.setItem('hybrid_swaps_activos', JSON.stringify(this.swapsActivos));
       this.sincronizarEstadoRemoto('swapsActivos', this.swapsActivos);
+      this.anunciar('Ingredientes originales restaurados en la comida');
     },
 
     aplicarSwap(idx, tipo, val) {
@@ -916,6 +1139,7 @@ function appData() {
       this.swapsActivos = { ...this.swapsActivos };
       localStorage.setItem('hybrid_swaps_activos', JSON.stringify(this.swapsActivos));
       this.sincronizarEstadoRemoto('swapsActivos', this.swapsActivos);
+      this.anunciar(val ? `Intercambio isocalórico aplicado: ${val}` : 'Ingrediente original mantenido');
     },
 
     sumarIngredientes(strFede, strArantxa) {
@@ -956,7 +1180,7 @@ function appData() {
       return resultado;
     },
 
-    calcularReparto(strFede, strArantxa) {
+    porcentajeFedeEnToma(strFede, strArantxa) {
       const sumarGramos = (str) => {
         if (!str) return 0;
         let total = 0;
@@ -964,9 +1188,23 @@ function appData() {
         return total;
       };
       const gFede = sumarGramos(strFede), gAra = sumarGramos(strArantxa);
-      if (gFede + gAra === 0) return 'Individual';
-      const pctFede = Math.round((gFede / (gFede + gAra)) * 100);
+      if (gFede + gAra === 0) return 50;
+      return Math.round((gFede / (gFede + gAra)) * 100);
+    },
+
+    calcularReparto(strFede, strArantxa) {
+      const pctFede = this.porcentajeFedeEnToma(strFede, strArantxa);
       return `${pctFede}% Fede · ${100 - pctFede}% Ara`;
+    },
+
+    repartoPesoCocido(idx, strFede, strArantxa) {
+      const clave = this.diaSeleccionado + '_' + idx;
+      const pesoTotal = parseFloat(this.pesosCocidosOlla[clave]);
+      if (!pesoTotal || isNaN(pesoTotal) || pesoTotal <= 0) return null;
+      const pctFede = this.porcentajeFedeEnToma(strFede, strArantxa);
+      const gFede = Math.round(pesoTotal * (pctFede / 100));
+      const gAra = Math.round(pesoTotal - gFede);
+      return { fede: gFede, ara: gAra, pctFede, pctAra: 100 - pctFede };
     },
 
     listaCompraAgrupada() {
@@ -1040,6 +1278,50 @@ function appData() {
     limpiarChecksCompra() {
       this.itemsComprados = {};
       localStorage.removeItem('hybrid_compra_checks');
+      this.anunciar('Lista de la compra desmarcada');
+    },
+
+    /**
+     * VALIDADOR EN TIEMPO REAL DEL JSON DE GEMINI (Pestaña Importar IA)
+     */
+    validarJsonDieta() {
+      if (!this.jsonNuevaDieta || !this.jsonNuevaDieta.trim()) return null;
+      try {
+        const parsed = JSON.parse(this.jsonNuevaDieta);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          return { valido: false, error: 'El JSON debe ser un array de comidas no vacío: [{"dia":"Lunes", ...}]' };
+        }
+        const diasDetectados = new Set();
+        const alertasReglas = [];
+
+        parsed.forEach((item, index) => {
+          if (!item.dia || !item.ventana || !item.plato || !item.fede || !item.arantxa) {
+            throw new Error(`La fila #${index + 1} no tiene todos los campos obligatorios (dia, ventana, plato, fede, arantxa).`);
+          }
+          diasDetectados.add(this.normalizar(item.dia));
+
+          const textoCombinado = this.normalizar(`${item.plato} ${item.fede} ${item.arantxa}`);
+          const ventanaNorm = this.normalizar(item.ventana);
+
+          // Regla 4: Prohibido salmón cocinado
+          if (textoCombinado.includes('salmon') && (ventanaNorm.includes('comida') || ventanaNorm.includes('cena')) && !textoCombinado.includes('ensalada') && !textoCombinado.includes('poke') && !textoCombinado.includes('marinado')) {
+            alertasReglas.push(`Fila #${index + 1} (${item.dia} - ${item.ventana}): Detectado salmón en plato caliente.`);
+          }
+          // Regla 4: Merluza debe ser empanada del Mercadona
+          if (textoCombinado.includes('merluza') && !textoCombinado.includes('empanada') && !textoCombinado.includes('mercadona')) {
+            alertasReglas.push(`Fila #${index + 1} (${item.dia} - ${item.ventana}): La merluza debería ser "empanada del Mercadona".`);
+          }
+        });
+
+        return {
+          valido: true,
+          totalTomas: parsed.length,
+          totalDias: diasDetectados.size,
+          alertasReglas
+        };
+      } catch (e) {
+        return { valido: false, error: e.message };
+      }
     },
 
     async enviarCheckin() {
@@ -1052,6 +1334,7 @@ function appData() {
         const result = await res.json();
         if (result.status === 'success') {
           this.mensajeExito = true;
+          this.anunciar(`Medidas de ${this.form.semana} guardadas correctamente`);
           await this.cargarDatos();
           setTimeout(() => this.mensajeExito = false, 3500);
         }
@@ -1062,6 +1345,11 @@ function appData() {
     },
 
     async importarDietaGemini() {
+      const val = this.validarJsonDieta();
+      if (!val || !val.valido) {
+        alert("Revisa el formato del JSON antes de publicar: " + (val ? val.error : 'JSON vacío'));
+        return;
+      }
       this.enviando = true;
       try {
         const comidas = JSON.parse(this.jsonNuevaDieta);
@@ -1076,9 +1364,13 @@ function appData() {
           this.cargasEntreno = {};
           this.permutacionesDias = {};
           this.swapsActivos = {};
+          this.cenasSocialesPorDia = {};
+          this.cenaSocialActiva = false;
           localStorage.removeItem('hybrid_cargas_entreno');
           localStorage.removeItem('hybrid_permutaciones_dias');
           localStorage.removeItem('hybrid_swaps_activos');
+          localStorage.removeItem('hybrid_cenas_sociales');
+          this.anunciar('Plan nutricional semanal publicado en Google Sheets');
           await this.cargarDatos();
           setTimeout(() => {
             this.mensajeDietaActualizada = false;
