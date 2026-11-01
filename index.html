@@ -546,6 +546,9 @@
                           <option value="jamón serrano">Jamón serrano (30g P | 0g CH | 12g G)</option>
                           <option value="salmón fresco">Salmón fresco / marinado (20g P | 0g CH | 13g G)</option>
                           <option value="huevos enteros">Huevos enteros (13g P | 1g CH | 11g G)</option>
+                          <option value="claras de huevo">Claras de huevo (11g P | 0.7g CH | 0.2g G)</option>
+                          <option value="lomo de cerdo magro">Lomo de cerdo magro (20g P | 0g CH | 3g G)</option>
+                          <option value="queso fresco batido">Queso fresco batido (8g P | 3.5g CH | 0.1g G)</option>
                         </select>
                       </div>
                       <div>
@@ -559,6 +562,11 @@
                           <option value="pan masa madre">Pan de masa madre (48g CH | 9g P)</option>
                           <option value="copos de avena">Copos de avena (60g CH | 13.5g P | 7g G)</option>
                           <option value="tortitas de arroz">Tortitas de arroz (80g CH | 7.5g P)</option>
+                          <option value="garbanzos bote">Garbanzos de bote (16g CH | 7g P) - Evitar pre-CrossFit</option>
+                          <option value="lentejas bote">Lentejas de bote (15g CH | 8g P) - Evitar pre-CrossFit</option>
+                          <option value="quinoa">Quinoa en crudo (64g CH | 14g P | 6g G)</option>
+                          <option value="cuscús">Cuscús en crudo (72g CH | 12g P | 1.5g G)</option>
+                          <option value="fideos de arroz">Fideos de arroz (80g CH | 3.5g P)</option>
                         </select>
                       </div>
                     </div>
@@ -930,7 +938,15 @@
       "pasta blanca":               { tipo: 'ch',   p: 12.0, ch: 74.0, g: 1.5 },
       "pan masa madre":             { tipo: 'ch',   p: 9.0,  ch: 48.0, g: 1.2 },
       "copos de avena":             { tipo: 'ch',   p: 13.5, ch: 60.0, g: 7.0 },
-      "tortitas de arroz":          { tipo: 'ch',   p: 7.5,  ch: 80.0, g: 2.5 }
+      "tortitas de arroz":          { tipo: 'ch',   p: 7.5,  ch: 80.0, g: 2.5 },
+      "claras de huevo":            { tipo: 'prot', p: 11.0, ch: 0.7,  g: 0.2 },
+      "lomo de cerdo magro":        { tipo: 'prot', p: 20.0, ch: 0.0,  g: 3.0 },
+      "queso fresco batido":        { tipo: 'prot', p: 8.0,  ch: 3.5,  g: 0.1 },
+      "garbanzos bote":             { tipo: 'ch',   p: 7.0,  ch: 16.0, g: 2.0 },
+      "lentejas bote":              { tipo: 'ch',   p: 8.0,  ch: 15.0, g: 1.0 },
+      "quinoa":                     { tipo: 'ch',   p: 14.0, ch: 64.0, g: 6.0 },
+      "cuscús":                     { tipo: 'ch',   p: 12.0, ch: 72.0, g: 1.5 },
+      "fideos de arroz":            { tipo: 'ch',   p: 3.5,  ch: 80.0, g: 0.2 }
     };
 
     function appData() {
@@ -1327,18 +1343,26 @@
           if (n.includes('pavo')) return 'pechuga pavo';
           if (n.includes('atun')) return 'atún al natural';
           if (n.includes('ternera') || n.includes('solomillo')) return 'solomillo ternera';
-          if (n.includes('lomo')) return 'lomo embuchado';
+          if (n.includes('lomo') && !n.includes('cerdo')) return 'lomo embuchado';
           if (n.includes('jamon')) return 'jamón serrano';
           if (n.includes('salmon')) return 'salmón fresco';
           if (n.includes('hamburguesa')) return 'hamburguesa ave magra';
-          if (n.includes('huevo')) return 'huevos enteros';
-          if (n.includes('arroz')) return 'arroz basmati';
+          if (n.includes('huevo') && !n.includes('clara')) return 'huevos enteros';
+          if (n.includes('arroz') && !n.includes('tortita') && !n.includes('fideo')) return 'arroz basmati';
           if (n.includes('boniato')) return 'boniato';
           if (n.includes('patata')) return 'patata';
           if (n.includes('pasta')) return 'pasta blanca';
           if (n.includes('pan')) return 'pan masa madre';
           if (n.includes('avena')) return 'copos de avena';
           if (n.includes('tortita')) return 'tortitas de arroz';
+          if (n.includes('clara')) return 'claras de huevo';
+          if (n.includes('cerdo')) return 'lomo de cerdo magro';
+          if (n.includes('batido') || n.includes('cottage')) return 'queso fresco batido';
+          if (n.includes('garbanzo')) return 'garbanzos bote';
+          if (n.includes('lenteja')) return 'lentejas bote';
+          if (n.includes('quinoa')) return 'quinoa';
+          if (n.includes('cuscus')) return 'cuscús';
+          if (n.includes('fideo')) return 'fideos de arroz';
           return null;
         },
 
@@ -1806,9 +1830,9 @@
           const esSuplementoORunning = (txt) => /agua|gel|sales|sodio|isotonico|evocarb|creatina|whey|proteina|cafeina|probiotico|\bna\b/.test(this.normalizar(txt));
           const clasificarCategoria = (nombre) => {
             const n = this.normalizar(nombre);
-            if (/pollo|pavo|ternera|solomillo|merluza|salmon|atun|jamon|lomo|hamburguesa/.test(n)) return 'Carnicería, Pescadería y Charcutería';
-            if (/skyr|queso|yogur|leche|huevo|clara/.test(n)) return 'Lácteos y Huevos';
-            if (/arroz|pan|patata|boniato|avena|tortita|pasta|miel|aove|aceite/.test(n)) return 'Despensa, Panadería y Almidones';
+            if (/pollo|pavo|ternera|solomillo|merluza|salmon|atun|jamon|lomo|hamburguesa|cerdo/.test(n)) return 'Carnicería, Pescadería y Charcutería';
+            if (/skyr|queso|yogur|leche|huevo|clara|batido|cottage/.test(n)) return 'Lácteos y Huevos';
+            if (/arroz|pan|patata|boniato|avena|tortita|pasta|miel|aove|aceite|garbanzo|lenteja|quinoa|cuscus|fideo/.test(n)) return 'Despensa, Panadería y Almidones';
             return 'Fruta y Verdura Fresca';
           };
 
