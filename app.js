@@ -102,6 +102,8 @@ function appData() {
     panelEntrenoAbierto: false,
     cenaSocialActiva: false,
     cenasSocialesPorDia: JSON.parse(localStorage.getItem('hybrid_cenas_sociales') || '{}'),
+    ajustesMetabolicos: JSON.parse(localStorage.getItem('hybrid_ajustes_metabolicos') || '{"fede":0,"arantxa":0}'),
+    promptCopiado: false,
     mostrarSumaComun: true,
     mostrarGraficoMacros: localStorage.getItem('hybrid_mostrar_pie_macros') === 'true',
     plegarCompletadas: false,
@@ -325,6 +327,14 @@ function appData() {
         obj = { entreno: perf.nombre, p: perf.p, ch: perf.ch, g: perf.g, kcal: perf.kcal };
       }
 
+      // Reajuste metabólico por pesaje semanal (Regla 2: escala carbohidratos en crudo sin alterar la proteína)
+      const adj = (this.ajustesMetabolicos && this.ajustesMetabolicos[atletaKey]) ? this.ajustesMetabolicos[atletaKey] : 0;
+      if (adj !== 0) {
+        const deltaCH = Math.round(adj / 4);
+        obj.ch = Math.max(50, obj.ch + deltaCH);
+        obj.kcal = (obj.p * 4) + (obj.ch * 4) + (obj.g * 9);
+      }
+
       return obj;
     },
 
@@ -474,6 +484,7 @@ function appData() {
           fusionar('cargasEntreno', 'hybrid_cargas_entreno', 'cargasEntreno');
           fusionar('permutacionesDias', 'hybrid_permutaciones_dias', 'permutacionesDias');
           fusionar('cenasSocialesPorDia', 'hybrid_cenas_sociales', 'cenasSocialesPorDia');
+          fusionar('ajustesMetabolicos', 'hybrid_ajustes_metabolicos', 'ajustesMetabolicos');
           this.cenaSocialActiva = !!this.cenasSocialesPorDia[this.diaSeleccionado];
         }
         this.sincronizarFechaSemana();
@@ -1321,6 +1332,260 @@ function appData() {
         };
       } catch (e) {
         return { valido: false, error: e.message };
+      }
+    },
+
+    /**
+     * EVALUACIÓN METABÓLICA SEMANAL (Algoritmo independiente Fede vs Arantxa)
+     */
+    evaluarProgresoAtleta(atletaKey) {
+      const esFede = atletaKey === 'fede';
+      const nombreAtleta = esFede ? 'Fede' : 'Arantxa';
+      const tabla = esFede ? this.progresionFede : this.progresionArantxa;
+      const lista = [];
+
+      if (tabla && tabla.length > 1) {
+        for (let i = 1; i < tabla.length; i++) {
+          const r = tabla[i];
+          if (!r[0] || !this.normalizar(r[0]).startsWith('semana')) continue;
+          const sem = r[0].toString().trim();
+          const p = (r[2] !== undefined && r[2] !== '') ? parseFloat(r[2].toString().replace(',', '.')) : null;
+          const c = (r[4] !== undefined && r[4] !== '') ? parseFloat(r[4].toString().replace(',', '.')) : null;
+          const b = (r[6] !== undefined && r[6] !== '') ? parseFloat(r[6].toString().replace(',', '.')) : null;
+          if (p !== null && !isNaN(p)) {
+            lista.push({ semana: sem, peso: p, cintura: c, brazo: b });
+          }
+        }
+      }
+
+      // Si el formulario actual tiene datos nuevos de pesaje para este atleta, integrarlo para feedback en tiempo real
+      if (this.form.atleta === nombreAtleta && this.form.peso) {
+        const pForm = parseFloat(this.form.peso);
+        const cForm = this.form.cintura ? parseFloat(this.form.cintura) : null;
+        const bForm = this.form.brazo ? parseFloat(this.form.brazo) : null;
+        if (!isNaN(pForm)) {
+          const idxSem = lista.findIndex(x => x.semana === this.form.semana);
+          if (idxSem !== -1) {
+            lista[idxSem] = { semana: this.form.semana, peso: pForm, cintura: cForm, brazo: bForm };
+          } else {
+            lista.push({ semana: this.form.semana, peso: pForm, cintura: cForm, brazo: bForm });
+          }
+        }
+      }
+
+      if (lista.length === 0) {
+        const resp = DATOS_SEMANA1_RESPALDO[nombreAtleta];
+        lista.push({ semana: 'Semana 1', peso: parseFloat(resp.peso), cintura: parseFloat(resp.cintura), brazo: parseFloat(resp.brazo) });
+      }
+
+      if (lista.length < 2) {
+        return {
+          estado: 'inicial',
+          semanaActual: lista[0].semana,
+          semanaAnterior: null,
+          deltaPeso: 0,
+          deltaCintura: null,
+          deltaBrazo: null,
+          deltaKcalSugerido: 0,
+          deltaCHSugerido: 0,
+          titulo: 'Semana base inicial',
+          mensaje: `Registra el control de la Semana 2 para calcular automáticamente el ajuste calórico según la evolución de ${nombreAtleta}.`,
+          tipo: 'info'
+        };
+      }
+
+      const anterior = lista[lista.length - 2];
+      const actual = lista[lista.length - 1];
+
+      const deltaPeso = Math.round((actual.peso - anterior.peso) * 10) / 10;
+      const deltaCintura = (actual.cintura !== null && anterior.cintura !== null) ? Math.round((actual.cintura - anterior.cintura) * 10) / 10 : null;
+      const deltaBrazo = (actual.brazo !== null && anterior.brazo !== null) ? Math.round((actual.brazo - anterior.brazo) * 10) / 10 : null;
+
+      if (esFede) {
+        // FEDE: Ultratrail hacia 87.5 kg preservando masa muscular (Reglas 1 y 2)
+        if (deltaPeso >= 0 || (deltaPeso > -0.2 && (deltaCintura === null || deltaCintura >= 0))) {
+          return {
+            estado: 'estancado_o_subida',
+            semanaActual: actual.semana,
+            semanaAnterior: anterior.semana,
+            pesoActual: actual.peso,
+            deltaPeso,
+            deltaCintura,
+            deltaBrazo,
+            deltaKcalSugerido: -180,
+            deltaCHSugerido: -45,
+            titulo: 'Peso mantenido o alza · Recorte recomendado',
+            mensaje: `Fede ha registrado ${deltaPeso >= 0 ? '+' : ''}${deltaPeso} kg en ${actual.semana} vs ${anterior.semana}. Se recomienda un recorte de -180 kcal/día reduciendo 45g de carbohidratos en crudo sin alterar los 200g de proteína.`,
+            tipo: 'alerta'
+          };
+        } else if (deltaPeso < -0.75 || (deltaBrazo !== null && deltaBrazo <= -0.5)) {
+          return {
+            estado: 'perdida_rapida',
+            semanaActual: actual.semana,
+            semanaAnterior: anterior.semana,
+            pesoActual: actual.peso,
+            deltaPeso,
+            deltaCintura,
+            deltaBrazo,
+            deltaKcalSugerido: 100,
+            deltaCHSugerido: 25,
+            titulo: 'Bajada rápida · Proteger masa muscular',
+            mensaje: `Pérdida rápida de ${deltaPeso} kg en ${actual.semana}. Se sugiere subir +100 kcal/día (+25g CH) para blindar el músculo y asegurar energía para Trail y WODs.`,
+            tipo: 'aviso'
+          };
+        } else {
+          return {
+            estado: 'optimo',
+            semanaActual: actual.semana,
+            semanaAnterior: anterior.semana,
+            pesoActual: actual.peso,
+            deltaPeso,
+            deltaCintura,
+            deltaBrazo,
+            deltaKcalSugerido: 0,
+            deltaCHSugerido: 0,
+            titulo: 'Ritmo óptimo · Mantener calorías',
+            mensaje: `Progreso impecable: bajada de ${deltaPeso} kg hacia los 87.5 kg con medidas musculares protegidas. Mantener calorías y macros actuales.`,
+            tipo: 'exito'
+          };
+        }
+      } else {
+        // ARANTXA: Recomposición corporal en ~65 kg y ganancia de fuerza
+        if ((deltaCintura !== null && deltaCintura <= 0 && Math.abs(deltaPeso) <= 0.4) || (deltaPeso <= 0 && deltaPeso >= -0.5)) {
+          return {
+            estado: 'optimo',
+            semanaActual: actual.semana,
+            semanaAnterior: anterior.semana,
+            pesoActual: actual.peso,
+            deltaPeso,
+            deltaCintura,
+            deltaBrazo,
+            deltaKcalSugerido: 0,
+            deltaCHSugerido: 0,
+            titulo: 'Recomposición perfecta · Mantener calorías',
+            mensaje: `Cintura estable o en reducción (${deltaCintura !== null ? (deltaCintura > 0 ? '+' : '') + deltaCintura + ' cm' : 'estable'}) y peso en ~65 kg. Mantener exactamente las calorías de Arantxa intactas.`,
+            tipo: 'exito'
+          };
+        } else if (deltaPeso > 0.3 && deltaCintura !== null && deltaCintura > 0.3) {
+          return {
+            estado: 'exceso_calorico',
+            semanaActual: actual.semana,
+            semanaAnterior: anterior.semana,
+            pesoActual: actual.peso,
+            deltaPeso,
+            deltaCintura,
+            deltaBrazo,
+            deltaKcalSugerido: -100,
+            deltaCHSugerido: -25,
+            titulo: 'Ligero superávit · Ajuste suave',
+            mensaje: `Ligero incremento de peso (+${deltaPeso} kg) y cintura (+${deltaCintura} cm). Se recomienda un recorte suave de -100 kcal/día (-25g CH) manteniendo intacta la proteína en ~140g.`,
+            tipo: 'alerta'
+          };
+        } else if (deltaPeso < -0.6 || actual.peso < 64.5) {
+          return {
+            estado: 'perdida_excesiva',
+            semanaActual: actual.semana,
+            semanaAnterior: anterior.semana,
+            pesoActual: actual.peso,
+            deltaPeso,
+            deltaCintura,
+            deltaBrazo,
+            deltaKcalSugerido: 100,
+            deltaCHSugerido: 25,
+            titulo: 'Peso bajo rango · Refuerzo de energía',
+            mensaje: `Peso por debajo del rango de recomposición (${actual.peso} kg). Se recomienda subir +100 kcal/día (+25g CH) para asegurar fuerza en CrossFit.`,
+            tipo: 'aviso'
+          };
+        } else {
+          return {
+            estado: 'optimo',
+            semanaActual: actual.semana,
+            semanaAnterior: anterior.semana,
+            pesoActual: actual.peso,
+            deltaPeso,
+            deltaCintura,
+            deltaBrazo,
+            deltaKcalSugerido: 0,
+            deltaCHSugerido: 0,
+            titulo: 'Evolución estable · Mantener calorías',
+            mensaje: `Métricas dentro del objetivo para Arantxa. Mantener calorías y macros actuales.`,
+            tipo: 'exito'
+          };
+        }
+      }
+    },
+
+    aplicarAjusteMetabolico(atletaKey, deltaKcal) {
+      if (!this.ajustesMetabolicos) this.ajustesMetabolicos = { fede: 0, arantxa: 0 };
+      this.ajustesMetabolicos[atletaKey] = deltaKcal;
+      this.ajustesMetabolicos = { ...this.ajustesMetabolicos };
+      localStorage.setItem('hybrid_ajustes_metabolicos', JSON.stringify(this.ajustesMetabolicos));
+      this.sincronizarEstadoRemoto('ajustesMetabolicos', this.ajustesMetabolicos);
+      const signo = deltaKcal > 0 ? '+' : '';
+      this.anunciar(`Ajuste metabólico de ${signo}${deltaKcal} kcal aplicado a ${atletaKey === 'fede' ? 'Fede' : 'Arantxa'}`);
+    },
+
+    resetAjusteMetabolico(atletaKey) {
+      this.aplicarAjusteMetabolico(atletaKey, 0);
+    },
+
+    /**
+     * GENERADOR INTELIGENTE DE PROMPT PARA GEMINI
+     */
+    generarPromptGemini() {
+      const adjF = (this.ajustesMetabolicos && this.ajustesMetabolicos.fede) || 0;
+      const adjA = (this.ajustesMetabolicos && this.ajustesMetabolicos.arantxa) || 0;
+
+      let textoDias = '';
+      this.diasSemana.forEach(dia => {
+        const of = this.objetivoEfectivoDia(dia, 'fede');
+        const oa = this.objetivoEfectivoDia(dia, 'arantxa');
+        textoDias += `  - **${dia}** (Entreno: ${of.entreno}):\n`;
+        textoDias += `    * FEDE: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
+        textoDias += `    * ARANTXA: ${oa.kcal} kcal | ${oa.p}g P | ${oa.ch}g CH | ${oa.g}g G\n`;
+      });
+
+      return `Actúa como nutricionista deportivo de precisión para Kinetix, una App de alto rendimiento para dos atletas híbridos (Trail Running y CrossFit) que viven y cocinan juntos:
+- Fede: Objetivo bajar de 93.5 kg a 87.5 kg manteniendo músculo para Ultratrail 50 km. (Ajuste metabólico aplicado tras pesaje: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en CH).
+- Arantxa: Objetivo recomposición corporal en ~65.0 kg y mejora de fuerza. (Ajuste metabólico: ${adjA >= 0 ? '+' : ''}${adjA} kcal/día).
+
+=== REGLA DE ORO DE COCINA Y REPARTO (OLLA COMÚN) ===
+Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (desayuno, comida, merienda y cena) para poder cocinar juntos.
+La única diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus respectivos macros y calorías.
+
+=== OBJETIVOS DIARIOS EXACTOS DE ESTA SEMANA (LUNES A DOMINGO) ===
+${textoDias}
+=== REGLAS DIETÉTICAS OBLIGATORIAS (rules.md) ===
+1. PROHIBIDO el salmón cocinado en platos calientes (en comidas calientes usar únicamente atún al natural o merluza). El salmón solo se permite crudo, marinado o ahumado en frío (ej. poke bowl o ensalada fría).
+2. La merluza debe ser específicamente "merluza empanada del Mercadona".
+3. En tomas previas al entrenamiento de CrossFit (17:30), SOLO alimentos de vaciado gástrico rápido (arroz blanco, patata, claras de huevo, pan blanco), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
+4. Todos los alimentos que se cocinan (arroz, pasta, patata, pollo, ternera, merluza) deben especificarse obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
+
+=== FORMATO DE SALIDA ESTRICTO ===
+Responde ÚNICAMENTE con un bloque de código JSON válido, sin texto adicional ni explicaciones:
+
+[
+  {
+    "dia": "Lunes",
+    "ventana": "08:30 Desayuno",
+    "plato": "Tortilla de claras con tostadas y AOVE",
+    "fede": "120 g pan masa madre + 200 g claras de huevo + 10 ml AOVE",
+    "macrosFede": "32g P | 58g CH | 11g G | 460 kcal",
+    "arantxa": "80 g pan masa madre + 150 g claras de huevo + 8 ml AOVE",
+    "macrosArantxa": "24g P | 38g CH | 9g G | 330 kcal"
+  }
+]`;
+    },
+
+    async copiarPromptGemini() {
+      const texto = this.generarPromptGemini();
+      try {
+        await navigator.clipboard.writeText(texto);
+        this.promptCopiado = true;
+        this.anunciar('Prompt con objetivos de esta semana copiado al portapapeles');
+        setTimeout(() => { this.promptCopiado = false; }, 4000);
+      } catch (e) {
+        alert("Selecciona y copia el texto del prompt manualmente.");
       }
     },
 

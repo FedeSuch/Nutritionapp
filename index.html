@@ -1128,6 +1128,52 @@
               </div>
             </div>
 
+            <!-- PANEL DE DIAGNÓSTICO METABÓLICO POST-PESAJE (Independiente Fede vs Arantxa) -->
+            <div class="bg-surface border-2 rounded-3xl p-5 sm:p-6 shadow-soft space-y-4" :class="evaluarProgresoAtleta(form.atleta.toLowerCase()).tipo === 'alerta' ? 'border-[#E0909E] bg-[#FCF8F8]' : (evaluarProgresoAtleta(form.atleta.toLowerCase()).tipo === 'aviso' ? 'border-[#E5D3B5] bg-[#FDFBF7]' : 'border-sage-border bg-surface')">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider" :class="form.atleta === 'Fede' ? 'bg-sage text-white' : 'bg-ara-badge text-white'" x-text="form.atleta"></span>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-ink-secondary">Diagnóstico Metabólico Semanal</span>
+                    <span x-show="ajustesMetabolicos[form.atleta.toLowerCase()] !== 0" class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-surface border border-border text-sage" x-text="'Ajuste activo: ' + (ajustesMetabolicos[form.atleta.toLowerCase()] > 0 ? '+' : '') + ajustesMetabolicos[form.atleta.toLowerCase()] + ' kcal'"></span>
+                  </div>
+                  <h3 class="text-base font-extrabold text-ink" x-text="evaluarProgresoAtleta(form.atleta.toLowerCase()).titulo"></h3>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <template x-if="evaluarProgresoAtleta(form.atleta.toLowerCase()).deltaKcalSugerido !== 0">
+                    <button
+                      type="button"
+                      @click="aplicarAjusteMetabolico(form.atleta.toLowerCase(), evaluarProgresoAtleta(form.atleta.toLowerCase()).deltaKcalSugerido)"
+                      class="px-4 py-2 rounded-full bg-sage hover:bg-sage-hover text-white text-xs font-bold transition shadow-sm"
+                      x-text="'Aplicar sugerencia (' + (evaluarProgresoAtleta(form.atleta.toLowerCase()).deltaKcalSugerido > 0 ? '+' : '') + evaluarProgresoAtleta(form.atleta.toLowerCase()).deltaKcalSugerido + ' kcal)'"
+                    ></button>
+                  </template>
+                  <button
+                    x-show="ajustesMetabolicos[form.atleta.toLowerCase()] !== 0"
+                    type="button"
+                    @click="resetAjusteMetabolico(form.atleta.toLowerCase())"
+                    class="px-3.5 py-2 rounded-full bg-surface border border-border text-xs font-bold text-ink hover:bg-subtle transition"
+                  >
+                    Restablecer base (0 kcal)
+                  </button>
+                </div>
+              </div>
+
+              <p class="text-xs sm:text-sm text-ink-secondary leading-relaxed" x-text="evaluarProgresoAtleta(form.atleta.toLowerCase()).mensaje"></p>
+
+              <!-- Control Manual Rápido de Delta Calórico -->
+              <div class="pt-3 border-t border-border flex flex-wrap items-center justify-between gap-3 text-xs">
+                <span class="font-semibold text-ink-secondary">O elige un ajuste personalizado para <strong class="text-ink" x-text="form.atleta"></strong>:</span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button type="button" @click="aplicarAjusteMetabolico(form.atleta.toLowerCase(), -200)" :class="ajustesMetabolicos[form.atleta.toLowerCase()] === -200 ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border'" class="px-2.5 py-1 rounded-full font-mono font-bold transition">-200 kcal (-50g CH)</button>
+                  <button type="button" @click="aplicarAjusteMetabolico(form.atleta.toLowerCase(), -150)" :class="ajustesMetabolicos[form.atleta.toLowerCase()] === -150 ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border'" class="px-2.5 py-1 rounded-full font-mono font-bold transition">-150 kcal (-38g CH)</button>
+                  <button type="button" @click="aplicarAjusteMetabolico(form.atleta.toLowerCase(), 0)" :class="ajustesMetabolicos[form.atleta.toLowerCase()] === 0 ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border'" class="px-2.5 py-1 rounded-full font-mono font-bold transition">Mantener (0)</button>
+                  <button type="button" @click="aplicarAjusteMetabolico(form.atleta.toLowerCase(), 100)" :class="ajustesMetabolicos[form.atleta.toLowerCase()] === 100 ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border'" class="px-2.5 py-1 rounded-full font-mono font-bold transition">+100 kcal (+25g CH)</button>
+                </div>
+              </div>
+            </div>
+
             <!-- GRÁFICA VISUAL DE BARRAS DE EVOLUCIÓN DE PESO SEMANAL -->
             <div class="bg-canvas/70 border border-border rounded-3xl p-4 space-y-3 tabular-nums">
               <div class="flex items-center justify-between">
@@ -1249,13 +1295,51 @@
         </section>
 
         <!-- =========================================================
-             VISTA 4: IMPORTAR SEMANA DESDE GEMINI (Con Validador de Reglas)
+             VISTA 4: IMPORTAR SEMANA DESDE GEMINI (Con Generador de Prompt y Validador)
              ========================================================= -->
         <section x-show="tab === 'ia'" x-cloak class="space-y-6 pt-2">
+          
+          <!-- GENERADOR INTELIGENTE DE PROMPTS PARA GEMINI -->
+          <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-4 max-w-3xl">
+            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-sage">Paso 1 · Generador de Dieta Gemini</span>
+                <h2 class="text-xl font-extrabold text-ink mt-0.5">Prompt con Objetivos de Esta Semana</h2>
+                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Genera automáticamente el prompt exacto para Gemini: misma receta para ambos (Olla Común), cantidades en crudo adaptadas a los macros de cada uno tras el pesaje, y respeto de las reglas dietéticas.</p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-canvas border border-border text-ink" x-text="'Fede: ' + (ajustesMetabolicos.fede >= 0 ? '+' : '') + ajustesMetabolicos.fede + ' kcal | Ara: ' + (ajustesMetabolicos.arantxa >= 0 ? '+' : '') + ajustesMetabolicos.arantxa + ' kcal'"></span>
+              </div>
+            </div>
+
+            <div class="bg-canvas border border-border rounded-2xl p-4 space-y-2.5 text-xs">
+              <span class="font-extrabold text-ink block uppercase tracking-wider text-[11px]">Resumen de lo que exigirá a Gemini:</span>
+              <ul class="space-y-1.5 text-ink-secondary list-disc pl-4">
+                <li><strong class="text-ink">Misma preparación para los dos:</strong> Fede y Arantxa cocinan en una sola olla; Gemini solo ajusta los gramos en crudo.</li>
+                <li><strong class="text-ink">Macronutrientes clavados:</strong> 7 días con las calorías y carbohidratos exactos de cada entrenamiento y pesaje.</li>
+                <li><strong class="text-ink">Reglas de rules.md blindadas:</strong> Cero salmón cocinado, merluza empanada Mercadona y vaciado gástrico rápido pre-CrossFit 17:30.</li>
+              </ul>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                @click="copiarPromptGemini()"
+                class="w-full bg-sage hover:bg-sage-hover text-white font-extrabold py-4 rounded-full text-sm shadow-md transition flex items-center justify-center gap-2 min-h-[50px] active:scale-[0.99]"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span x-text="promptCopiado ? '✓ ¡Prompt Copiado al Portapapeles!' : '📋 Copiar Prompt Completo para Gemini'"></span>
+              </button>
+              <p x-show="promptCopiado" x-cloak class="text-center text-xs font-bold text-sage mt-2">✓ Pégalo en el chat de Gemini. Cuando te responda el JSON, pégalo en el recuadro de abajo.</p>
+            </div>
+          </div>
+
+          <!-- PUBLICADOR Y VALIDADOR DE DIETA -->
           <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-5 max-w-3xl">
             <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-sage">Validador Automático Kinetix</span>
-              <h2 class="text-xl font-extrabold text-ink mt-0.5">Publicar Nueva Dieta desde Gemini</h2>
+              <span class="text-xs font-bold uppercase tracking-wider text-sage">Paso 2 · Publicar en Google Sheets</span>
+              <h2 class="text-xl font-extrabold text-ink mt-0.5">Pega la Respuesta JSON de Gemini</h2>
               <p class="text-xs text-ink-secondary mt-1">Verifica automáticamente la estructura del JSON y el cumplimiento de la Regla 4 (sin salmón caliente, merluza empanada Mercadona) antes de publicar en Google Sheets.</p>
             </div>
 
