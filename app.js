@@ -137,7 +137,9 @@ function appData() {
     filtroCompra: '',
     jsonNuevaDieta: '',
     geminiApiKey: localStorage.getItem('hybrid_gemini_api_key') || '',
-    geminiModelo: localStorage.getItem('hybrid_gemini_modelo') || 'gemini-1.5-pro',
+    geminiModelo: localStorage.getItem('hybrid_gemini_modelo') || 'gemini-1.5-pro-latest',
+    modelosDetectados: [],
+    detectandoModelos: false,
     mostrarConfigIA: false,
     mostrarModoManualIA: false,
     generandoConGemini: false,
@@ -1755,6 +1757,142 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
     },
 
     /**
+     * AUTODETECTA LOS MODELOS EXACTOS DISPONIBLES EN LA CUENTA DEL USUARIO
+     */
+    async autodetectarModelosCuenta() {
+      if (!this.geminiApiKey || !this.geminiApiKey.trim()) {
+        alert("Introduce tu API Key primero para autodetectar los modelos de tu cuenta.");
+        return;
+      }
+      this.detectandoModelos = true;
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.geminiApiKey.trim()}`);
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error((errData.error && errData.error.message) || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        const modelos = (data.models || [])
+          .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+          .map(m => m.name.replace(/^models\//, ''));
+
+        if (modelos.length > 0) {
+          this.modelosDetectados = modelos;
+          // Seleccionar automáticamente el mejor modelo Pro disponible
+          const proPref = modelos.find(m => m === 'gemini-1.5-pro-latest')
+            || modelos.find(m => m === 'gemini-2.5-pro')
+            || modelos.find(m => m.includes('1.5-pro'))
+            || modelos.find(m => m === 'gemini-2.0-flash')
+            || modelos.find(m => m.includes('pro'))
+            || modelos[0];
+
+          this.geminiModelo = proPref;
+          localStorage.setItem('hybrid_gemini_modelo', proPref);
+          this.anunciar(`Modelos autodetectados. Modelo seleccionado: ${proPref}`);
+          alert(`¡Modelos detectados con éxito para tu cuenta!\n\nModelo configurado: ${proPref}\n\nModelos disponibles:\n- ${modelos.slice(0, 8).join('\n- ')}`);
+        } else {
+          alert("No se detectaron modelos con generación de contenido para esta API Key.");
+        }
+      } catch (e) {
+        alert("Error al consultar modelos disponibles: " + e.message);
+      } finally {
+        this.detectandoModelos = false;
+      }
+    },
+
+    /**
+     * CONEXIÓN RESILIENTE CON FALLBACK AUTOMÁTICO DE MODELOS
+     */
+    async llamarGeminiConFallback(promptUsuario, systemPrompt) {
+      let candidatos = [];
+
+      if (this.geminiModelo) {
+        candidatos.push(this.geminiModelo);
+      }
+
+      // Si el modelo pedido es Pro, añadir variantes de Pro
+      if (this.geminiModelo.includes('pro')) {
+        candidatos.push(
+          'gemini-1.5-pro-latest',
+          'gemini-2.5-pro',
+          'gemini-1.5-pro-002',
+          'gemini-1.5-pro-001',
+          'gemini-2.0-flash',
+          'gemini-1.5-flash-latest',
+          'gemini-1.5-flash'
+        );
+      } else {
+        candidatos.push(
+          'gemini-2.0-flash',
+          'gemini-1.5-flash',
+          'gemini-1.5-flash-latest',
+          'gemini-1.5-pro-latest',
+          'gemini-2.5-pro'
+        );
+      }
+
+      if (this.modelosDetectados && this.modelosDetectados.length > 0) {
+        candidatos = [...this.modelosDetectados, ...candidatos];
+      }
+
+      candidatos = [...new Set(candidatos)];
+      let ultimoError = null;
+
+      for (let i = 0; i < candidatos.length; i++) {
+        const mod = candidatos[i];
+        this.estadoGeneracionIA = `2/4 ${mod} está razonando la dieta (intento ${i + 1}/${candidatos.length})...`;
+
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${this.geminiApiKey.trim()}`;
+          const bodyPayload = {
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: "user", parts: [{ text: promptUsuario }] }],
+            generationConfig: {
+              temperature: 0.2,
+              response_mime_type: "application/json"
+            }
+          };
+
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bodyPayload)
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const msg = (errData.error && errData.error.message) ? errData.error.message : `HTTP ${res.status}`;
+            
+            if (res.status === 404 || msg.includes('not found') || msg.includes('not supported')) {
+              console.warn(`Modelo ${mod} no soportado para generateContent (${msg}). Probando siguiente...`);
+              ultimoError = new Error(msg);
+              continue;
+            } else {
+              throw new Error(`Error de Gemini API: ${msg}`);
+            }
+          }
+
+          const data = await res.json();
+          const candidates = data.candidates;
+          if (!candidates || candidates.length === 0 || !candidates[0].content) {
+            throw new Error(`Gemini (${mod}) no devolvió contenido válido.`);
+          }
+
+          this.geminiModelo = mod;
+          localStorage.setItem('hybrid_gemini_modelo', mod);
+          return { data, modeloUsado: mod };
+        } catch (err) {
+          if (err.message && err.message.startsWith('Error de Gemini API:')) {
+            throw err;
+          }
+          ultimoError = err;
+        }
+      }
+
+      throw ultimoError || new Error("No se pudo conectar con ningún modelo de Gemini disponible.");
+    },
+
+    /**
      * GENERACIÓN AUTOMÁTICA CON LA API DE GEMINI (PRO / FLASH)
      */
     async generarDietaConGeminiAPI() {
@@ -1765,53 +1903,16 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
       }
 
       this.generandoConGemini = true;
-      const nombreMod = this.geminiModelo === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : 'Gemini 2.0 Flash';
-      this.estadoGeneracionIA = `1/4 Conectando con ${nombreMod} e inyectando la skill nutricionista-deportivo...`;
+      this.estadoGeneracionIA = `1/4 Conectando con Gemini e inyectando la skill nutricionista-deportivo...`;
 
       try {
         const promptUsuario = this.generarPromptGemini();
         const systemPrompt = this.systemPromptNutricionista();
 
-        this.estadoGeneracionIA = `2/4 ${nombreMod} está razonando la dieta: cuadrando la olla común y modulando carbohidratos...`;
+        const { data, modeloUsado } = await this.llamarGeminiConFallback(promptUsuario, systemPrompt);
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModelo}:generateContent?key=${this.geminiApiKey.trim()}`;
-
-        const bodyPayload = {
-          system_instruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: promptUsuario }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            response_mime_type: "application/json"
-          }
-        };
-
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bodyPayload)
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          const msg = (errData.error && errData.error.message) ? errData.error.message : `HTTP ${res.status}`;
-          throw new Error(`Error de Gemini API: ${msg}`);
-        }
-
-        const data = await res.json();
-        const candidates = data.candidates;
-        if (!candidates || candidates.length === 0 || !candidates[0].content) {
-          throw new Error("Gemini no devolvió candidatos válidos.");
-        }
-
-        const textoJSON = candidates[0].content.parts[0].text;
-        this.estadoGeneracionIA = "3/4 Validando reglas dietéticas (rules.md) y estructura relacional...";
+        const textoJSON = data.candidates[0].content.parts[0].text;
+        this.estadoGeneracionIA = `3/4 Validando reglas dietéticas (rules.md) generadas por ${modeloUsado}...`;
 
         let comidas;
         try {
@@ -1829,7 +1930,7 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
         this.estadoGeneracionIA = "4/4 Creando nueva semana activa y guardando en Supabase...";
         await this.ejecutarPublicacionEnSupabase(comidas);
 
-        this.anunciar(`¡Semana generada exitosamente con ${nombreMod} y publicada en Supabase!`);
+        this.anunciar(`¡Semana generada exitosamente con ${modeloUsado} y publicada en Supabase!`);
       } catch (err) {
         console.error("Error al generar dieta con Gemini:", err);
         alert(err.message || "Error al comunicar con la API de Gemini.");
