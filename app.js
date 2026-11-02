@@ -1137,25 +1137,29 @@ function appData() {
 
       if (conPeso.length > 0) {
         const target = conPeso[conPeso.length - 1];
-        this.form.semana = target.semana;
-        this.form.semana_id = target.semana_id;
+        this.cambiarSemanaBiometria(target.semana_id);
       } else if (historial.length > 0) {
         const activa = historial.find(h => h.activa) || historial[historial.length - 1];
-        this.form.semana = activa.semana;
-        this.form.semana_id = activa.semana_id;
+        this.cambiarSemanaBiometria(activa.semana_id);
       }
-      this.sincronizarFechaSemana();
     },
 
-    sincronizarFechaSemana() {
+    cambiarAtletaBiometria(atletaNombre) {
+      this.form.atleta = atletaNombre;
+      if (this.form.semana_id) {
+        this.cambiarSemanaBiometria(this.form.semana_id);
+      } else {
+        this.seleccionarUltimaSemanaConPeso(atletaNombre);
+      }
+    },
+
+    cambiarSemanaBiometria(nuevaSemanaId) {
+      if (!nuevaSemanaId) return;
+      this.form.semana_id = parseInt(nuevaSemanaId, 10);
       const historial = this.historicoAtleta(this.form.atleta);
-      const fila = historial.find(h => 
-        (this.form.semana_id && h.semana_id === this.form.semana_id) ||
-        this.normalizar(h.semana) === this.normalizar(this.form.semana)
-      );
+      const fila = historial.find(h => h.semana_id === this.form.semana_id);
 
       if (fila) {
-        this.form.semana_id = fila.semana_id;
         this.form.semana = fila.semana;
         this.form.fecha = fila.fecha || '';
         this.form.peso = fila.peso || '';
@@ -1165,12 +1169,64 @@ function appData() {
         this.form.brazo = fila.brazo || '';
         this.form.muslo = fila.muslo || '';
       } else {
+        const sem = this.semanasDisponibles.find(s => s.id === this.form.semana_id);
+        this.form.semana = sem ? (sem.nombre || `Semana ${sem.id}`) : `Semana ${this.form.semana_id}`;
+        this.form.fecha = sem ? (sem.fecha_inicio || '').split('T')[0] : '';
         this.form.peso = '';
         this.form.pecho = '';
         this.form.cintura = '';
         this.form.cadera = '';
         this.form.brazo = '';
         this.form.muslo = '';
+      }
+    },
+
+    async anadirNuevaSemanaControl() {
+      if (!supabaseClient) {
+        alert("Cliente de Supabase no disponible.");
+        return;
+      }
+      this.enviando = true;
+      try {
+        const num = (this.semanasDisponibles.length || 0) + 1;
+        const nombreNueva = `Semana ${num}`;
+        const hoyStr = new Date().toISOString().split('T')[0];
+
+        // Crear nueva semana en BD marcada como activa
+        const { data: nueva, error } = await supabaseClient
+          .from('semanas')
+          .insert([{
+            nombre: nombreNueva,
+            fecha_inicio: hoyStr,
+            activa: true
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Desactivar las semanas anteriores
+        await supabaseClient
+          .from('semanas')
+          .update({ activa: false })
+          .neq('id', nueva.id);
+
+        await this.cargarDatos();
+
+        // Seleccionar la nueva semana en el formulario con campos limpios
+        this.cambiarSemanaBiometria(nueva.id);
+        this.anunciar(`Creada ${nombreNueva}. Puedes introducir el peso y medidas.`);
+        alert(`¡${nombreNueva} creada con éxito!\n\nAhora introduce el peso y medidas del pesaje y pulsa "Guardar Medidas".`);
+      } catch (e) {
+        alert("Error al crear nueva semana: " + e.message);
+      } finally {
+        this.enviando = false;
+      }
+    },
+
+    sincronizarFechaSemana() {
+      if (this.form.semana_id) {
+        this.cambiarSemanaBiometria(this.form.semana_id);
       }
     },
 
@@ -1727,8 +1783,8 @@ Campos obligatorios por objeto:
       // Medidas más recientes del pesaje del viernes
       const histFede = this.historicoAtleta('Fede').filter(x => parseFloat(x.peso) > 0);
       const histAra = this.historicoAtleta('Arantxa').filter(x => parseFloat(x.peso) > 0);
-      const ultFede = histFede[histFede.length - 1] || { peso: '93.5', cintura: '95' };
-      const ultAra = histAra[histAra.length - 1] || { peso: '67.0', cintura: '80' };
+      const ultFede = histFede[histFede.length - 1] || { peso: '93.5', cintura: '95', cadera: '100', brazo: '37', muslo: '58' };
+      const ultAra = histAra[histAra.length - 1] || { peso: '67.0', cintura: '80', cadera: '98', brazo: '28', muslo: '54' };
 
       let textoDias = '';
       this.diasSemana.forEach(dia => {
@@ -1738,27 +1794,42 @@ Campos obligatorios por objeto:
         const oa = this.objetivoEfectivoDia(dia, 'arantxa');
 
         textoDias += `  - **${dia}**:\n`;
-        textoDias += `    * Entreno FEDE: "${planDia.fede}" → Objetivo: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
-        textoDias += `    * Entreno ARANTXA: "${planDia.arantxa}" → Objetivo: ${oa.kcal} kcal | ${oa.p}g P | ${oa.ch}g CH | ${oa.g}g G\n`;
+        textoDias += `    * Sesión FEDE: "${planDia.fede}" → Objetivo: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
+        textoDias += `    * Sesión ARANTXA: "${planDia.arantxa}" → Objetivo: ${oa.kcal} kcal | ${oa.p}g P | ${oa.ch}g CH | ${oa.g}g G\n`;
       });
 
       return `Actúa con tu rol de skill "nutricionista-deportivo" para Kinetix:
 
-=== DATOS DE CONTROL Y PESAJE (Viernes) ===
-- Fede: Peso actual ${ultFede.peso} kg (Cintura: ${ultFede.cintura || '--'} cm). Ajuste metabólico semanal aplicado: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en carbohidratos. Proteína fija en 200g.
-- Arantxa: Peso actual ${ultAra.peso} kg (Cintura: ${ultAra.cintura || '--'} cm). Ajuste metabólico: ${adjA >= 0 ? '+' : ''}${adjA} kcal/día. Proteína fija en ~140g.
+=== 1. CONTROL BIOMÉTRICO Y PESAJE (Viernes) ===
+- FEDE: Peso actual ${ultFede.peso} kg (Cintura: ${ultFede.cintura || '--'} cm, Cadera: ${ultFede.cadera || '--'} cm, Brazo: ${ultFede.brazo || '--'} cm, Muslo: ${ultFede.muslo || '--'} cm).
+  * Ajuste metabólico semanal aplicado: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en carbohidratos (Proteína fija en 200g).
+- ARANTXA: Peso actual ${ultAra.peso} kg (Cintura: ${ultAra.cintura || '--'} cm, Cadera: ${ultAra.cadera || '--'} cm, Brazo: ${ultAra.brazo || '--'} cm, Muslo: ${ultAra.muslo || '--'} cm).
+  * Ajuste metabólico semanal aplicado: ${adjA >= 0 ? '+' : ''}${adjA} kcal/día en carbohidratos (Proteína fija en ~140g).
 
-=== PLAN DE ENTRENAMIENTOS DE LA SEMANA (Definido el Domingo) Y METAS EXACTAS ===
+=== 2. PLANIFICACIÓN DE ENTRENAMIENTOS DE LA SEMANA (Definido el Domingo) ===
+(Los entrenamientos diarios pueden ser solo CrossFit, solo correr, doble sesión combinada o descanso total):
 ${textoDias}
 
-=== REGLAS DIETÉTICAS INMUTABLES (rules.md) ===
-1. Misma receta/plato en desayuno, comida, merienda y cena (Olla Común). Solo varían las cantidades en crudo.
-2. Cero salmón cocinado en caliente (solo atún natural o merluza empanada Mercadona).
-3. Pre-CrossFit (17:30): vaciado gástrico rápido (sin legumbres ni grasas pesadas).
-4. Todos los alimentos que se cocinan expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
+=== 3. REGLAS DIETÉTICAS INMUTABLES (rules.md) ===
+1. OLLA COMÚN: Misma receta/plato en desayuno, comida, merienda y cena para ambos. Solo varían las cantidades en crudo.
+2. CERO SALMÓN COCINADO EN CALIENTE (solo atún al natural o merluza empanada Mercadona).
+3. PRE-CROSSFIT (17:30): Vaciado gástrico rápido (sin legumbres ni grasas pesadas antes de entrenar).
+4. MODULACIÓN DE HIDRATOS: Modular los carbohidratos en crudo según si el día es de solo correr, solo CrossFit, doble sesión o descanso.
+5. Todos los alimentos que se cocinan expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
 
-=== INSTRUCCIÓN DE RESPUESTA ===
-Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un único array JSON válido.`;
+=== 4. FORMATO OBLIGATORIO DE RESPUESTA (JSON) ===
+Devuelve ÚNICAMENTE un array JSON válido con las 28 tomas (4 por día: Desayuno, Comida, Merienda, Cena) de Lunes a Domingo con esta estructura exacta:
+[
+  {
+    "dia": "Lunes",
+    "ventana": "08:30 Desayuno",
+    "plato": "Nombre del plato común",
+    "fede": "Detalle de ingredientes y gramos en crudo para Fede",
+    "macrosFede": "P: 45g | CH: 80g | G: 18g | 660 kcal",
+    "arantxa": "Detalle de ingredientes y gramos en crudo para Arantxa",
+    "macrosArantxa": "P: 30g | CH: 55g | G: 12g | 450 kcal"
+  }
+]`;
     },
 
     async copiarPromptGemini() {
@@ -1981,29 +2052,40 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
         throw new Error("Cliente de Supabase no disponible.");
       }
 
-      // 1. Desactivar semanas activas previas
-      await supabaseClient
-        .from('semanas')
-        .update({ activa: false })
-        .eq('activa', true);
+      // 1. Determinar ID de semana objetivo
+      let nuevaSemanaId = null;
 
-      // 2. Determinar número de semana y fecha
-      const numeroSemana = (this.semanasDisponibles.length || 0) + 1;
-      const nombreSemana = `Semana ${numeroSemana}`;
-      const fechaInicio = this.claveSemanaActual();
+      // Si la semana activa actual aún no tiene comidas (ej. se creó el viernes para el pesaje), usamos esa
+      if (this.semanaActivaId && (!this.dietaCompleta || this.dietaCompleta.length === 0)) {
+        nuevaSemanaId = this.semanaActivaId;
+        // Limpiar registros previos de comida/resumen por si acaso
+        await supabaseClient.from('dieta_diaria').delete().eq('semana_id', nuevaSemanaId);
+        await supabaseClient.from('resumen_semanal').delete().eq('semana_id', nuevaSemanaId);
+        await supabaseClient.from('estado_app').delete().eq('semana_id', nuevaSemanaId);
+      } else {
+        // Desactivar semanas activas previas
+        await supabaseClient
+          .from('semanas')
+          .update({ activa: false })
+          .eq('activa', true);
 
-      const { data: nuevaSemana, error: semErr } = await supabaseClient
-        .from('semanas')
-        .insert([{
-          nombre: nombreSemana,
-          fecha_inicio: fechaInicio,
-          activa: true
-        }])
-        .select()
-        .single();
+        const numeroSemana = (this.semanasDisponibles.length || 0) + 1;
+        const nombreSemana = `Semana ${numeroSemana}`;
+        const fechaInicio = this.claveSemanaActual();
 
-      if (semErr) throw semErr;
-      const nuevaSemanaId = nuevaSemana.id;
+        const { data: nuevaSemana, error: semErr } = await supabaseClient
+          .from('semanas')
+          .insert([{
+            nombre: nombreSemana,
+            fecha_inicio: fechaInicio,
+            activa: true
+          }])
+          .select()
+          .single();
+
+        if (semErr) throw semErr;
+        nuevaSemanaId = nuevaSemana.id;
+      }
 
       // 3. Insertar comidas en dieta_diaria
       const filasDieta = comidas.map(item => ({
@@ -2172,6 +2254,12 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
     },
 
     async importarDietaGemini() {
+      let limpio = (this.jsonNuevaDieta || '').trim();
+      if (limpio.startsWith('```')) {
+        limpio = limpio.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      }
+      this.jsonNuevaDieta = limpio;
+
       const val = this.validarJsonDieta();
       if (!val || !val.valido) {
         alert("Revisa el formato del JSON antes de publicar: " + (val ? val.error : 'JSON vacío'));
@@ -2182,6 +2270,7 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
         const comidas = JSON.parse(this.jsonNuevaDieta);
         await this.ejecutarPublicacionEnSupabase(comidas);
         this.anunciar('Plan nutricional semanal publicado con éxito en Supabase');
+        alert("¡Plan publicado con éxito en Supabase! Ya tienes tu nueva semana activa con el menú limpio.");
       } catch (e) {
         alert("Error al publicar en Supabase: " + (e.message || e));
       }

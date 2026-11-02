@@ -1201,21 +1201,21 @@
               <div class="relative pt-4 pb-1">
                 <div class="absolute inset-x-0 bottom-9 h-1.5 rounded-full striped-bar pointer-events-none"></div>
                 <div class="flex items-end gap-2 overflow-x-auto pb-1">
-                  <template x-for="item in historicoAtleta()" :key="'bar_' + item.semana">
+                  <template x-for="item in historicoAtleta()" :key="'bar_' + item.semana_id">
                     <button
                       type="button"
-                      @click="form.semana = item.semana; sincronizarFechaSemana()"
+                      @click="cambiarSemanaBiometria(item.semana_id)"
                       class="flex flex-col items-center shrink-0 min-w-[38px] group focus:outline-none"
                     >
-                      <span class="text-[10px] font-mono font-bold mb-1" :class="form.semana === item.semana ? 'text-sage' : 'text-ink-secondary'" x-text="item.peso ? item.peso : '—'"></span>
+                      <span class="text-[10px] font-mono font-bold mb-1" :class="form.semana_id === item.semana_id ? 'text-sage' : 'text-ink-secondary'" x-text="item.peso ? item.peso : '—'"></span>
                       <div class="w-3.5 h-20 rounded-full bg-surface border border-border flex items-end p-0.5 overflow-hidden">
                         <div
                           class="w-full rounded-full transition-all duration-300"
-                          :class="form.semana === item.semana ? 'bg-sage' : (item.peso ? 'bg-[#C99AA5]' : 'bg-subtle')"
+                          :class="form.semana_id === item.semana_id ? 'bg-sage' : (item.peso ? 'bg-[#C99AA5]' : 'bg-subtle')"
                           :style="'height: ' + alturaBarraPeso(item.peso) + '%'"
                         ></div>
                       </div>
-                      <span class="text-[11px] font-bold mt-1.5" :class="form.semana === item.semana ? 'text-sage underline' : 'text-ink-secondary'" x-text="item.semana.replace('Semana ', 'S')"></span>
+                      <span class="text-[11px] font-bold mt-1.5" :class="form.semana_id === item.semana_id ? 'text-sage underline' : 'text-ink-secondary'" x-text="item.semana.replace('Semana ', 'S')"></span>
                     </button>
                   </template>
                 </div>
@@ -1248,16 +1248,25 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-bold text-ink mb-1">Atleta</label>
-                  <select x-model="form.atleta" @change="seleccionarUltimaSemanaConPeso(form.atleta)" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-3 text-sm font-semibold">
+                  <select x-model="form.atleta" @change="cambiarAtletaBiometria(form.atleta)" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-3 text-sm font-semibold">
                     <option value="Fede">Fede</option>
                     <option value="Arantxa">Arantxa</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-bold text-ink mb-1">Semana</label>
-                  <select x-model="form.semana" @change="sincronizarFechaSemana()" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-3 text-sm font-semibold">
-                    <template x-for="item in historicoAtleta()" :key="'sel_' + item.semana">
-                      <option :value="item.semana" x-text="item.semana + (item.activa ? ' (Semana Activa)' : '')"></option>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold text-ink">Semana</label>
+                    <button
+                      type="button"
+                      @click="anadirNuevaSemanaControl()"
+                      :disabled="enviando"
+                      class="text-[11px] text-sage font-bold underline hover:opacity-80"
+                      title="Crear una nueva semana en Supabase para registrar el pesaje"
+                    >+ Nueva Semana</button>
+                  </div>
+                  <select x-model="form.semana_id" @change="cambiarSemanaBiometria($event.target.value)" class="w-full bg-canvas border border-border rounded-2xl px-3.5 py-3 text-sm font-semibold">
+                    <template x-for="item in historicoAtleta()" :key="'sel_' + item.semana_id">
+                      <option :value="item.semana_id" x-text="item.semana + (item.activa ? ' (Semana Activa)' : '') + (item.peso ? ' · ' + item.peso + 'kg' : ' · Sin pesaje')"></option>
                     </template>
                   </select>
                 </div>
@@ -1295,8 +1304,8 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-border/70">
-                    <template x-for="fila in historicoAtleta()" :key="fila.semana">
-                      <tr @click="form.semana = fila.semana; sincronizarFechaSemana()" :class="form.semana === fila.semana ? 'bg-sage-light font-bold' : 'hover:bg-canvas'" class="cursor-pointer">
+                    <template x-for="fila in historicoAtleta()" :key="fila.semana_id">
+                      <tr @click="cambiarSemanaBiometria(fila.semana_id)" :class="form.semana_id === fila.semana_id ? 'bg-sage-light font-bold' : 'hover:bg-canvas'" class="cursor-pointer">
                         <td class="py-2.5 font-bold" x-text="fila.semana.replace('Semana ', 'S')"></td>
                         <td class="py-2.5 font-mono text-ink-secondary" x-text="fila.fecha"></td>
                         <td class="py-2.5 font-mono font-bold text-sage" x-text="fila.peso ? fila.peso + 'kg' : '—'"></td>
@@ -1426,10 +1435,15 @@
                           type="button"
                           @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'CrossFit 17:30'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'CrossFit 17:30')"
                           class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
-                        >CF 17:30</button>
+                        >Solo CF</button>
                         <button
                           type="button"
-                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Tempo 10 km (08:30) + CrossFit (17:30)')"
+                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Rodaje 10 km (08:30)'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Rodaje 8 km (08:30)')"
+                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
+                        >Solo Correr</button>
+                        <button
+                          type="button"
+                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Tempo 8 km (08:30) + CrossFit 17:30'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Tempo 6 km (08:30) + CrossFit 17:30')"
                           class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
                         >Doble Sesión</button>
                         <button
@@ -1466,56 +1480,69 @@
               </div>
             </div>
 
-            <!-- PASO 3: BOTÓN DE GENERACIÓN DIRECTA 1-CLIC CON GEMINI -->
-            <div class="pt-3 border-t border-border space-y-3">
-              <button
-                type="button"
-                @click="generarDietaConGeminiAPI()"
-                :disabled="generandoConGemini"
-                class="w-full bg-sage hover:bg-sage-hover text-white font-extrabold py-4 rounded-full text-sm shadow-md transition flex items-center justify-center gap-2 min-h-[52px] active:scale-[0.99] disabled:opacity-50"
-              >
-                <svg x-show="!generandoConGemini" class="w-5 h-5 text-amber-300 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
-                <svg x-show="generandoConGemini" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <span x-text="generandoConGemini ? estadoGeneracionIA : '⚡ Generar y Publicar Dieta con Gemini (' + geminiModelo + ')'"></span>
-              </button>
-
-              <div x-show="generandoConGemini" class="bg-sage-light border border-sage-border rounded-2xl p-4 text-center space-y-1">
-                <span class="text-xs font-bold text-sage" x-text="estadoGeneracionIA"></span>
-                <p class="text-[11px] text-ink-secondary">Gemini está calculando las ecuaciones de la olla común y modulando los carbohidratos en crudo según tus entrenos.</p>
+            <!-- PASO 3: DOS FORMAS DE CREAR LA SEMANA (API DIRECTA O CHAT WEB CON SKILL) -->
+            <div class="pt-4 border-t border-border space-y-4">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-sage block">3. Generación y Publicación del Menú Semanal</span>
+                <p class="text-xs text-ink-secondary mt-0.5">Elige el método que prefieras: 100% automático con la API integrada o asistido copiando el prompt para tu chat web de Gemini.</p>
               </div>
 
-              <!-- ACORDEÓN DE RESPALDO MANUAL (COPIAR PROMPT O PEGAR JSON) -->
-              <div class="border-t border-border pt-2 text-center">
+              <!-- OPCIÓN A: GENERACIÓN DIRECTA 1-CLIC CON LA API -->
+              <div class="bg-canvas border border-border p-4 sm:p-5 rounded-2xl space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-sage text-white flex items-center justify-center font-bold text-xs">A</span>
+                    <span class="text-xs font-extrabold text-ink">Opción 1: Generar y Publicar Automáticamente con la API</span>
+                  </div>
+                  <span class="text-[11px] font-mono text-sage font-bold" x-text="geminiModelo"></span>
+                </div>
                 <button
                   type="button"
-                  @click="mostrarModoManualIA = !mostrarModoManualIA"
-                  class="text-xs font-semibold text-ink-secondary hover:text-sage transition underline"
-                  x-text="mostrarModoManualIA ? 'Ocultar opciones manuales de respaldo' : '¿Prefieres copiar el prompt o pegar el JSON a mano?'"
-                ></button>
-              </div>
-            </div>
-
-            <!-- SECCIÓN MANUAL DE RESPALDO -->
-            <div x-show="mostrarModoManualIA" class="space-y-4 pt-3 border-t border-border">
-              <button
-                type="button"
-                @click="copiarPromptGemini()"
-                class="w-full bg-canvas hover:bg-subtle border border-border text-ink font-bold py-3 rounded-full text-xs shadow-sm transition flex items-center justify-center gap-2"
-              >
-                <span>📋 Copiar Prompt de esta semana para el chat web de Gemini</span>
-              </button>
-
-              <div class="space-y-2">
-                <label class="block text-xs font-bold text-ink">O pega la respuesta JSON manualmente:</label>
-                <textarea x-model="jsonNuevaDieta" rows="6" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno", ...}]' class="w-full bg-canvas border border-border rounded-2xl p-3 text-xs font-mono text-ink"></textarea>
-                <button
-                  type="button"
-                  @click="importarDietaGemini()"
-                  :disabled="enviando || !jsonNuevaDieta"
-                  class="w-full bg-surface hover:bg-subtle border border-border text-ink font-bold py-2.5 rounded-full text-xs transition"
+                  @click="generarDietaConGeminiAPI()"
+                  :disabled="generandoConGemini"
+                  class="w-full bg-sage hover:bg-sage-hover text-white font-extrabold py-3.5 rounded-full text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 min-h-[48px] active:scale-[0.99] disabled:opacity-50"
                 >
-                  <span>Publicar JSON pegado en Supabase</span>
+                  <svg x-show="!generandoConGemini" class="w-4 h-4 text-amber-300 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+                  <svg x-show="generandoConGemini" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  <span x-text="generandoConGemini ? estadoGeneracionIA : '⚡ Generar y Publicar Dieta con Gemini API'"></span>
                 </button>
+                <div x-show="generandoConGemini" class="bg-surface border border-sage/30 rounded-xl p-3 text-center space-y-1">
+                  <span class="text-xs font-bold text-sage" x-text="estadoGeneracionIA"></span>
+                  <p class="text-[10px] text-ink-secondary">Calculando olla común, macronutrientes y publicando en Supabase...</p>
+                </div>
+              </div>
+
+              <!-- OPCIÓN B: GENERAR CON CHAT WEB DE GEMINI Y TU SKILL -->
+              <div class="bg-canvas border border-border p-4 sm:p-5 rounded-2xl space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-subtle text-ink flex items-center justify-center font-bold text-xs border border-border">B</span>
+                    <span class="text-xs font-extrabold text-ink">Opción 2: Generar en el Chat Web de Gemini (con tu Skill)</span>
+                  </div>
+                  <span class="text-[11px] text-ink-muted">Copiar Prompt → Web → Pegar JSON</span>
+                </div>
+
+                <button
+                  type="button"
+                  @click="copiarPromptGemini()"
+                  class="w-full bg-surface hover:bg-subtle border border-border text-ink font-bold py-3 rounded-full text-xs shadow-sm transition flex items-center justify-center gap-2 active:scale-[0.99]"
+                >
+                  <svg class="w-4 h-4 text-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  <span x-text="promptCopiado ? '✓ ¡Prompt Copiado al Portapapeles! Pégalo en Gemini Web' : '📋 1. Copiar Prompt de esta semana para Gemini Web'"></span>
+                </button>
+
+                <div class="space-y-2 pt-1 border-t border-border/60">
+                  <label class="block text-xs font-bold text-ink">2. Pega aquí el JSON generado por Gemini Web:</label>
+                  <textarea x-model="jsonNuevaDieta" rows="5" placeholder='[&#10;  {&#10;    "dia": "Lunes",&#10;    "ventana": "08:30 Desayuno",&#10;    "plato": "...",&#10;    "fede": "...",&#10;    "macrosFede": "...",&#10;    "arantxa": "...",&#10;    "macrosArantxa": "..."&#10;  }&#10;]' class="w-full bg-surface border border-border rounded-xl p-3 text-xs font-mono text-ink"></textarea>
+                  <button
+                    type="button"
+                    @click="importarDietaGemini()"
+                    :disabled="enviando || !jsonNuevaDieta"
+                    class="w-full bg-sage hover:bg-sage-hover text-white font-extrabold py-3 rounded-full text-xs shadow-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <span>🚀 3. Publicar Menú Pegado en Supabase</span>
+                  </button>
+                </div>
               </div>
             </div>
 
