@@ -137,7 +137,13 @@ function appData() {
     filtroCompra: '',
     jsonNuevaDieta: '',
     geminiApiKey: localStorage.getItem('hybrid_gemini_api_key') || '',
-    geminiModelo: localStorage.getItem('hybrid_gemini_modelo') || 'gemini-1.5-pro-latest',
+    geminiModelo: (() => {
+      const guardado = localStorage.getItem('hybrid_gemini_modelo');
+      if (guardado && !guardado.includes('tts') && !guardado.includes('audio') && !guardado.includes('embed')) {
+        return guardado;
+      }
+      return 'gemini-2.0-flash';
+    })(),
     modelosDetectados: [],
     detectandoModelos: false,
     mostrarConfigIA: false,
@@ -178,6 +184,12 @@ function appData() {
     },
 
     init() {
+      // Sanitizar modelo Gemini por si quedó en localStorage algún modelo de audio/voz no soportado
+      if (!this.geminiModelo || this.geminiModelo.includes('tts') || this.geminiModelo.includes('audio') || this.geminiModelo.includes('embed')) {
+        this.geminiModelo = 'gemini-2.0-flash';
+        localStorage.setItem('hybrid_gemini_modelo', 'gemini-2.0-flash');
+      }
+
       this.irAHoy();
       this.cenaSocialActiva = !!this.cenasSocialesPorDia[this.diaSeleccionado];
 
@@ -1757,7 +1769,7 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
     },
 
     /**
-     * AUTODETECTA LOS MODELOS EXACTOS DISPONIBLES EN LA CUENTA DEL USUARIO
+     * AUTODETECTA LOS MODELOS DE TEXTO REALMENTE DISPONIBLES EN LA CUENTA DEL USUARIO
      */
     async autodetectarModelosCuenta() {
       if (!this.geminiApiKey || !this.geminiApiKey.trim()) {
@@ -1772,26 +1784,30 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
           throw new Error((errData.error && errData.error.message) || `HTTP ${res.status}`);
         }
         const data = await res.json();
-        const modelos = (data.models || [])
+        // Filtrar estrictamente modelos de texto para chat/generación (EXCLUYENDO voz tts, embedding y audio)
+        const modelosTexto = (data.models || [])
           .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-          .map(m => m.name.replace(/^models\//, ''));
+          .map(m => m.name.replace(/^models\//, ''))
+          .filter(name => {
+            const n = name.toLowerCase();
+            return !n.includes('tts') && !n.includes('audio') && !n.includes('embed') && !n.includes('aqa') && !n.includes('imagen');
+          });
 
-        if (modelos.length > 0) {
-          this.modelosDetectados = modelos;
-          // Seleccionar automáticamente el mejor modelo Pro disponible
-          const proPref = modelos.find(m => m === 'gemini-1.5-pro-latest')
-            || modelos.find(m => m === 'gemini-2.5-pro')
-            || modelos.find(m => m.includes('1.5-pro'))
-            || modelos.find(m => m === 'gemini-2.0-flash')
-            || modelos.find(m => m.includes('pro'))
-            || modelos[0];
+        if (modelosTexto.length > 0) {
+          this.modelosDetectados = modelosTexto;
+          // Priorizar Flash moderno o Pro sin tts
+          const seleccionado = modelosTexto.find(m => m === 'gemini-2.0-flash')
+            || modelosTexto.find(m => m === 'gemini-1.5-flash')
+            || modelosTexto.find(m => m === 'gemini-1.5-pro-latest')
+            || modelosTexto.find(m => m.includes('flash'))
+            || modelosTexto[0];
 
-          this.geminiModelo = proPref;
-          localStorage.setItem('hybrid_gemini_modelo', proPref);
-          this.anunciar(`Modelos autodetectados. Modelo seleccionado: ${proPref}`);
-          alert(`¡Modelos detectados con éxito para tu cuenta!\n\nModelo configurado: ${proPref}\n\nModelos disponibles:\n- ${modelos.slice(0, 8).join('\n- ')}`);
+          this.geminiModelo = seleccionado;
+          localStorage.setItem('hybrid_gemini_modelo', seleccionado);
+          this.anunciar(`Modelo configurado: ${seleccionado}`);
+          alert(`¡Modelos de texto detectados con éxito!\n\nModelo asignado: ${seleccionado}\n\nModelos disponibles sin restricciones de audio:\n- ${modelosTexto.slice(0, 6).join('\n- ')}`);
         } else {
-          alert("No se detectaron modelos con generación de contenido para esta API Key.");
+          alert("No se detectaron modelos de generación de texto disponibles para esta API Key.");
         }
       } catch (e) {
         alert("Error al consultar modelos disponibles: " + e.message);
@@ -1802,45 +1818,38 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
 
     /**
      * CONEXIÓN RESILIENTE CON FALLBACK AUTOMÁTICO DE MODELOS
+     * Si un modelo no tiene cuota (limit: 0 en Free Tier) o no existe, prueba automáticamente el siguiente
      */
     async llamarGeminiConFallback(promptUsuario, systemPrompt) {
       let candidatos = [];
 
-      if (this.geminiModelo) {
+      // 1. Modelo preferido del usuario (siempre que no sea de voz)
+      if (this.geminiModelo && !this.geminiModelo.includes('tts')) {
         candidatos.push(this.geminiModelo);
       }
 
-      // Si el modelo pedido es Pro, añadir variantes de Pro
-      if (this.geminiModelo.includes('pro')) {
-        candidatos.push(
-          'gemini-1.5-pro-latest',
-          'gemini-2.5-pro',
-          'gemini-1.5-pro-002',
-          'gemini-1.5-pro-001',
-          'gemini-2.0-flash',
-          'gemini-1.5-flash-latest',
-          'gemini-1.5-flash'
-        );
-      } else {
-        candidatos.push(
-          'gemini-2.0-flash',
-          'gemini-1.5-flash',
-          'gemini-1.5-flash-latest',
-          'gemini-1.5-pro-latest',
-          'gemini-2.5-pro'
-        );
-      }
+      // 2. Modelos gratuitos recomendados para Google AI Studio (Free Tier)
+      candidatos.push(
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-pro-latest',
+        'gemini-2.5-pro'
+      );
 
+      // 3. Añadir modelos detectados válidos de texto
       if (this.modelosDetectados && this.modelosDetectados.length > 0) {
-        candidatos = [...this.modelosDetectados, ...candidatos];
+        const limpios = this.modelosDetectados.filter(m => !m.includes('tts') && !m.includes('audio') && !m.includes('embed'));
+        candidatos = [...candidatos, ...limpios];
       }
 
-      candidatos = [...new Set(candidatos)];
+      // Desduplicar y limpiar
+      candidatos = [...new Set(candidatos)].filter(m => !m.includes('tts') && !m.includes('audio'));
       let ultimoError = null;
 
       for (let i = 0; i < candidatos.length; i++) {
         const mod = candidatos[i];
-        this.estadoGeneracionIA = `2/4 ${mod} está razonando la dieta (intento ${i + 1}/${candidatos.length})...`;
+        this.estadoGeneracionIA = `2/4 Generando con ${mod} (intento ${i + 1}/${candidatos.length})...`;
 
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${this.geminiApiKey.trim()}`;
@@ -1863,12 +1872,20 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
             const errData = await res.json().catch(() => ({}));
             const msg = (errData.error && errData.error.message) ? errData.error.message : `HTTP ${res.status}`;
             
-            if (res.status === 404 || msg.includes('not found') || msg.includes('not supported')) {
-              console.warn(`Modelo ${mod} no soportado para generateContent (${msg}). Probando siguiente...`);
+            // Si el modelo no existe, no está soportado, o excede cuota / limit: 0 en Free Tier:
+            const esErrorCuotaOMisconfig = res.status === 404 || res.status === 429
+              || msg.includes('not found')
+              || msg.includes('not supported')
+              || msg.includes('Quota exceeded')
+              || msg.includes('limit: 0')
+              || msg.includes('rate-limits');
+
+            if (esErrorCuotaOMisconfig && i < candidatos.length - 1) {
+              console.warn(`Modelo ${mod} no disponible en Free Tier (${msg}). Probando alternativa: ${candidatos[i + 1]}...`);
               ultimoError = new Error(msg);
-              continue;
+              continue; // Saltar al siguiente modelo candidato
             } else {
-              throw new Error(`Error de Gemini API: ${msg}`);
+              throw new Error(`Error de Gemini API (${mod}): ${msg}`);
             }
           }
 
@@ -1882,14 +1899,14 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
           localStorage.setItem('hybrid_gemini_modelo', mod);
           return { data, modeloUsado: mod };
         } catch (err) {
-          if (err.message && err.message.startsWith('Error de Gemini API:')) {
+          if (err.message && err.message.startsWith('Error de Gemini API') && !err.message.includes('Quota exceeded') && !err.message.includes('limit: 0')) {
             throw err;
           }
           ultimoError = err;
         }
       }
 
-      throw ultimoError || new Error("No se pudo conectar con ningún modelo de Gemini disponible.");
+      throw ultimoError || new Error("No se pudo conectar con los modelos de Gemini disponibles.");
     },
 
     /**
