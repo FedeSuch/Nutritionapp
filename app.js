@@ -304,13 +304,12 @@ function appData() {
 
     limpiarSuplementosDeTexto(str) {
       if (!str) return '';
-      return str.split('+')
+      return this.dividirTextoEnIngredientes(str)
         .map(p => p.trim())
         .filter(parte => {
           const n = this.normalizar(parte);
           if (!n) return false;
           if (/\bcreatina\b|\bgel\b|\bgeles\b|\bisotonico\b|\bsales\b|\belectrolitos\b|\bevocarb\b|\bcafeina\b|\bprobiotico\b/.test(n)) return false;
-          if (/^\d+\s*ml\s*agua/.test(n)) return false;
           return true;
         })
         .join(' + ');
@@ -878,22 +877,23 @@ function appData() {
       const factorTotalGramosCH = factorEntrenoCH * factorCena;
       const swapConfig = this.swapsActivos[diaNombre + '_' + idx] || {};
 
-      let partes = textoOriginal.split('+').map(p => p.trim()).filter(Boolean);
+      let partes = this.dividirTextoEnIngredientes(textoOriginal);
       let idxProt = -1, infoProtOrig = null, gramosProtOrig = 0;
       let idxCH = -1, infoCHOrig = null, gramosCHOrig = 0;
       let idxAOVE = -1, mlAOVEOrig = 0;
 
       partes.forEach((parte, i) => {
-        const mAove = parte.match(/^(\d+(?:[.,]\d+)?)\s*ml\s+(aove|aceite)/i);
+        const mAove = parte.match(/^(\d+(?:[.,]\d+)?)\s*ml\s+(aove|aceite)/i) || parte.match(/(aove|aceite)[^0-9]*(\d+(?:[.,]\d+)?)\s*ml/i);
         if (mAove) {
           idxAOVE = i;
-          mlAOVEOrig = parseFloat(mAove[1].replace(',', '.'));
+          const numStr = mAove[1] && /\d/.test(mAove[1]) ? mAove[1] : mAove[2];
+          mlAOVEOrig = parseFloat(numStr.replace(',', '.'));
           return;
         }
-        const mGramo = parte.match(/^(\d+(?:[.,]\d+)?)\s*g\s+(.*)$/i);
-        if (mGramo) {
-          const gVal = parseFloat(mGramo[1].replace(',', '.'));
-          const idCat = this.identificarAlimentoCatalogo(mGramo[2]);
+        const parsed = this.parsearIngredienteIndividual(parte);
+        if (parsed && parsed.cantidad && parsed.cantidad.includes('g')) {
+          const gVal = parseFloat(parsed.cantidad.replace(',', '.'));
+          const idCat = this.identificarAlimentoCatalogo(parsed.nombre);
           if (idCat && CATALOGO_NUTRICIONAL[idCat]) {
             const catObj = CATALOGO_NUTRICIONAL[idCat];
             if (catObj.tipo === 'prot' && idxProt === -1) {
@@ -1119,13 +1119,158 @@ function appData() {
       return `${min} - ${meta}`;
     },
 
+    /**
+     * Divide cualquier texto de ingredientes (separado por '+', comas, saltos de línea o ';')
+     * respetando comas decimales (ej. 1,5 latas) y texto entre paréntesis (ej. salmón (crudo, marinado)).
+     */
+    dividirTextoEnIngredientes(str) {
+      if (!str) return [];
+      const res = [];
+      let buffer = '';
+      let parenDepth = 0;
+
+      for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        if (char === '(') {
+          parenDepth++;
+          buffer += char;
+        } else if (char === ')') {
+          if (parenDepth > 0) parenDepth--;
+          buffer += char;
+        } else if (char === '+' || char === ';' || char === '\n') {
+          if (parenDepth === 0) {
+            const trimmed = buffer.trim();
+            if (trimmed) res.push(trimmed);
+            buffer = '';
+          } else {
+            buffer += char;
+          }
+        } else if (char === ',') {
+          const prev = str[i - 1];
+          const next = str[i + 1];
+          const esDecimal = /\d/.test(prev) && /\d/.test(next);
+
+          if (parenDepth === 0 && !esDecimal) {
+            const trimmed = buffer.trim();
+            if (trimmed) res.push(trimmed);
+            buffer = '';
+          } else {
+            buffer += char;
+          }
+        } else {
+          buffer += char;
+        }
+      }
+
+      const resto = buffer.trim();
+      if (resto) res.push(resto);
+      return res;
+    },
+
+    /**
+     * Extrae el nombre limpio del alimento y su cantidad/unidad exacta para mostrarla en badge.
+     */
+    parsearIngredienteIndividual(parteRaw) {
+      if (!parteRaw) return null;
+      let limpio = parteRaw.trim().replace(/^[-•*]\s*/, '').replace(/^[\s+,;]+|[\s+,;]+$/g, '').trim();
+      if (!limpio) return null;
+
+      const unidadesRegex = '(?:latas?|tortitas?|rebanadas?|tostadas?|scoops?|cacitos?|cucharadas?|vasos?|unidades|uds?|gramos|gr|g|mililitros|ml|litros?|l|kilos?|kg)\\b';
+
+      const capitalizar = (txt) => {
+        if (!txt) return '';
+        return txt.charAt(0).toUpperCase() + txt.slice(1);
+      };
+
+      const normalizarUnidad = (u) => {
+        if (!u) return 'ud';
+        const l = u.toLowerCase().trim();
+        if (l === 'gr' || l === 'gramos') return 'g';
+        if (l === 'mililitros') return 'ml';
+        if (l === 'litro' || l === 'litros') return 'l';
+        if (l === 'kilo' || l === 'kilos') return 'kg';
+        if (l === 'unidades' || l === 'uds') return 'ud';
+        return l;
+      };
+
+      // 1. Patrón sufijo: "copos de avena (80g)", "arroz 90 g", "pollo 150g"
+      const regexSufijo = new RegExp(`^(.*?)\\s*\\(?(\\d+(?:[.,]\\d+)?)\\s*(${unidadesRegex})\\)?$`, 'i');
+      const matchSufijo = limpio.match(regexSufijo);
+      if (matchSufijo && matchSufijo[1].trim()) {
+        const num = matchSufijo[2];
+        const unit = normalizarUnidad(matchSufijo[3]);
+        return {
+          nombre: capitalizar(matchSufijo[1].trim()),
+          cantidad: `${num} ${unit}`.trim()
+        };
+      }
+
+      // 2. Patrón prefijo con unidad: "35g proteína whey", "150g pechuga de pollo", "10ml AOVE", "1,5 latas atún", "2 tortitas de arroz"
+      const regexPrefijoConUnidad = new RegExp(`^(\\d+(?:[.,]\\d+)?)\\s*(${unidadesRegex})\\s*(?:de\\s+)?(.*)$`, 'i');
+      const matchConUnidad = limpio.match(regexPrefijoConUnidad);
+      if (matchConUnidad) {
+        const num = matchConUnidad[1];
+        const rawUnit = matchConUnidad[2];
+        const restoNombre = (matchConUnidad[3] || '').trim();
+
+        // Caso especial: "2 tortitas de arroz"
+        if (/tortita/i.test(rawUnit) && /arroz/i.test(restoNombre)) {
+          return {
+            nombre: 'Tortitas de arroz',
+            cantidad: `${num} ud`
+          };
+        }
+
+        const unit = normalizarUnidad(rawUnit);
+
+        if (!restoNombre) {
+          return {
+            nombre: capitalizar(rawUnit),
+            cantidad: `${num} ud`
+          };
+        }
+
+        return {
+          nombre: capitalizar(restoNombre),
+          cantidad: `${num} ${unit}`.trim()
+        };
+      }
+
+      // 3. Patrón prefijo numérico sin unidad explícita: "2 huevos enteros a la plancha", "1 plátano", "2 tostadas pan masa madre"
+      const matchNumeroSinUnidad = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(?:de\s+)?(.*)$/i);
+      if (matchNumeroSinUnidad && matchNumeroSinUnidad[2].trim()) {
+        const num = matchNumeroSinUnidad[1];
+        const restoNombre = matchNumeroSinUnidad[2].trim();
+        return {
+          nombre: capitalizar(restoNombre),
+          cantidad: `${num} ud`
+        };
+      }
+
+      // 4. Patrón con paréntesis incrustado: "salmón fresco (120g crudo)"
+      const regexParentesis = new RegExp(`^(.*?)\\s*\\((?:peso\\s+en\\s+crudo\\s+)?(\\d+(?:[.,]\d+)?)\\s*(${unidadesRegex})[^)]*\\)(.*)$`, 'i');
+      const matchParentesis = limpio.match(regexParentesis);
+      if (matchParentesis) {
+        const num = matchParentesis[2];
+        const unit = normalizarUnidad(matchParentesis[3]);
+        const nombre = capitalizar((matchParentesis[1] + ' ' + matchParentesis[4]).replace(/\s+/g, ' ').trim());
+        return {
+          nombre,
+          cantidad: `${num} ${unit}`.trim()
+        };
+      }
+
+      // 5. Sin cantidad explícita (ej. "copos de avena crudos", "sal y pimienta")
+      return {
+        nombre: capitalizar(limpio),
+        cantidad: 'Al gusto'
+      };
+    },
+
     desglosarListaIngredientes(str) {
       if (!str) return [];
-      return str.split('+').map(p => p.trim()).filter(Boolean).map(parte => {
-        const match = parte.match(/^(\d+(?:[.,]\d+)?\s*(?:g|ml|kg|l|latas?|tortitas?|ud)?)\s+(.*)$/i);
-        if (match) return { cantidad: match[1].trim(), nombre: match[2].trim() };
-        return { cantidad: 'Al gusto', nombre: parte };
-      });
+      const partes = this.dividirTextoEnIngredientes(str);
+      return partes.map(p => this.parsearIngredienteIndividual(p)).filter(Boolean);
     },
 
     seleccionarUltimaSemanaConPeso(atletaNombre = this.form.atleta) {
@@ -1365,21 +1510,26 @@ function appData() {
       const mapa = new Map();
       const procesar = (texto) => {
         if (!texto) return;
-        texto.split('+').forEach(parte => {
+        this.dividirTextoEnIngredientes(texto).forEach(parte => {
           let limpio = parte.trim();
           if (!limpio) return;
-          const match = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?)?\s+(.*)$/i);
-          if (match) {
-            const cant = parseFloat(match[1].replace(',', '.'));
-            const unidad = (match[2] || 'ud').toLowerCase().replace(/s$/, '');
-            let nombre = match[3].trim().replace(/\(\d+.*?\)/g, '').trim();
-            const clave = unidad + '_' + this.normalizar(nombre);
-            if (mapa.has(clave)) mapa.get(clave).cantidad += cant;
-            else mapa.set(clave, { cantidad: cant, unidad: match[2] || '', nombre });
-          } else {
-            const claveTexto = this.normalizar(limpio);
-            if (!mapa.has(claveTexto)) mapa.set(claveTexto, { cantidad: null, unidad: '', nombre: limpio });
+          const parsed = this.parsearIngredienteIndividual(limpio);
+          if (parsed && parsed.cantidad && parsed.cantidad !== 'Al gusto') {
+            const m = parsed.cantidad.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+            if (m) {
+              const cant = parseFloat(m[1].replace(',', '.'));
+              const unidad = m[2] || '';
+              const clave = unidad + '_' + this.normalizar(parsed.nombre);
+              if (mapa.has(clave)) {
+                mapa.get(clave).cantidad += cant;
+              } else {
+                mapa.set(clave, { cantidad: cant, unidad, nombre: parsed.nombre });
+              }
+              return;
+            }
           }
+          const claveTexto = this.normalizar(limpio);
+          if (!mapa.has(claveTexto)) mapa.set(claveTexto, { cantidad: null, unidad: '', nombre: limpio });
         });
       };
       procesar(strFede);
@@ -1502,31 +1652,26 @@ function appData() {
           [txtFede, txtAra].forEach(texto => {
             if (!texto) return;
 
-            // Separar por '+', saltos de línea, punto y coma, o comas seguidas de número
-            const partes = texto.split(/[\+\n;]|\s*,\s*(?=\d)/);
+            // Separar de forma robusta por '+', comas, saltos de línea o ';'
+            const partes = this.dividirTextoEnIngredientes(texto);
 
             partes.forEach(parte => {
               let limpio = parte.trim();
               if (!limpio || esSuplementoORunning(limpio)) return;
 
+              const parsed = this.parsearIngredienteIndividual(limpio);
+              if (!parsed || esSuplementoORunning(parsed.nombre)) return;
+
               let cant = 0;
               let unidad = 'g';
-              let nombreRaw = '';
+              let nombreRaw = parsed.nombre;
 
-              // Patrón 1: "150g [de] pollo", "10ml AOVE", "2 latas atún", "3 huevos"
-              const matchPrefijo = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?|uds?|huevos?)?\s*(?:de\s+)?(.*)$/i);
-              
-              // Patrón 2: "Pollo (150g)", "Arroz 80g"
-              const matchSufijo = limpio.match(/^(.*?)\s*\(?(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|uds?)\)?$/i);
-
-              if (matchPrefijo && matchPrefijo[3]) {
-                cant = parseFloat(matchPrefijo[1].replace(',', '.'));
-                unidad = (matchPrefijo[2] || 'g').toLowerCase().replace(/s$/, '');
-                nombreRaw = matchPrefijo[3].trim();
-              } else if (matchSufijo) {
-                cant = parseFloat(matchSufijo[2].replace(',', '.'));
-                unidad = (matchSufijo[3] || 'g').toLowerCase().replace(/s$/, '');
-                nombreRaw = matchSufijo[1].trim();
+              if (parsed.cantidad && parsed.cantidad !== 'Al gusto') {
+                const mCant = parsed.cantidad.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+                if (mCant) {
+                  cant = parseFloat(mCant[1].replace(',', '.'));
+                  unidad = (mCant[2] || 'g').toLowerCase().replace(/s$/, '');
+                }
               } else {
                 return;
               }
@@ -1917,8 +2062,8 @@ REGLAS DE ORO INMUTABLES:
    - En tomas previas al entrenamiento de CrossFit (17:30), SOLO alimentos de vaciado gástrico rápido (arroz blanco, patata, claras de huevo, pan blanco), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
    - Todos los alimentos que se cocinan (arroz, pasta, patata, pollo, ternera, merluza) deben especificarse obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
 3. FORMATO DE INGREDIENTES PARA LA LISTA DE LA COMPRA AUTOMÁTICA:
-   - En los campos "fede" y "arantxa", separa OBLIGATORIAMENTE cada alimento con el símbolo "+" (NUNCA uses comas para separar alimentos).
-   - Cada alimento debe empezar por su cantidad y unidad en crudo (ej: "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE").
+   - En los campos "fede" y "arantxa", separa cada alimento con el símbolo "+" (ej: "70g copos de avena + 35g proteína whey + 120g plátano + 15g crema de cacahuete").
+   - Todos los alimentos deben incluir obligatoriamente su cantidad y unidad en crudo al inicio ('g', 'ml' o 'ud'). NUNCA dejes un alimento sin su cantidad (ej. pon siempre '70g copos de avena', nunca solo 'copos de avena').
    - Usa nombres consistentes para consolidar la despensa semanal: "pechuga de pollo", "ternera", "merluza empanada Mercadona", "atún al natural", "huevos", "claras de huevo", "skyr natural", "arroz basmati", "patatas", "boniato", "copos de avena", "pan blanco", "AOVE", "plátano".
 4. SALIDA JSON ESTRICTA: Responde ÚNICAMENTE con un array JSON válido sin texto previo ni posterior, cubriendo los 7 días (Lunes a Domingo) con 4 comidas por día (Desayuno, Comida, Merienda/Pre-WOD, Cena).
 Campos obligatorios por objeto:
