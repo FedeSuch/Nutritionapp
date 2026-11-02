@@ -1,4 +1,8 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwiBFN8Jo15OC9NppoNY21WA1p88M8M08W4QG4Iwl84VinasRmDUqjK8FUsgAq2UUqB/exec";
+const SUPABASE_URL = "https://ykzmuzjyskhdimnmovjv.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6Yvl1DZTz5-na2EceQt1_A_swbOZH5m";
+const supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 const FECHAS_SEMANAS_DEFAULT = {
   "Semana 1": "2026-10-26", "Semana 2": "2026-11-02", "Semana 3": "2026-11-09", "Semana 4": "2026-11-16",
@@ -116,10 +120,11 @@ function appData() {
     anuncioAccesible: '',
     filtroCompra: '',
     jsonNuevaDieta: '',
+    semanaActivaId: null,
+    semanasDisponibles: [],
+    historicoBiometria: [],
+    resumenSemanal: JSON.parse(localStorage.getItem('hybrid_cache_resumen_supabase') || '[]'),
     dietaCompleta: JSON.parse(localStorage.getItem('hybrid_cache_dieta') || '[]'),
-    resumenSemanalSheet: JSON.parse(localStorage.getItem('hybrid_cache_resumen') || '[]'),
-    progresionFede: JSON.parse(localStorage.getItem('hybrid_cache_prog_fede') || '[]'),
-    progresionArantxa: JSON.parse(localStorage.getItem('hybrid_cache_prog_ara') || '[]'),
     swapAbiertoIdx: null,
     swapsActivos: JSON.parse(localStorage.getItem('hybrid_swaps_activos') || '{}'),
     cargasEntreno: JSON.parse(localStorage.getItem('hybrid_cargas_entreno') || '{}'),
@@ -129,6 +134,7 @@ function appData() {
     form: {
       atleta: 'Fede',
       semana: 'Semana 1',
+      semana_id: null,
       fecha: '2026-10-26',
       peso: '93.5',
       pecho: '108',
@@ -286,30 +292,25 @@ function appData() {
     },
 
     /**
-     * Obtiene los Macros y Calorías Oficiales del Día desde RESUMEN_SEMANAL de tu Excel.
+     * Obtiene los Macros y Calorías Oficiales del Día desde RESUMEN_SEMANAL (Supabase o Fallback Oficial)
      */
     objetivoBaseDia(diaNombre, atletaKey) {
       const diaFuente = this.diaFuenteEfectivo(diaNombre);
       const dNorm = this.normalizar(diaFuente);
 
-      if (this.resumenSemanalSheet && this.resumenSemanalSheet.length > 5) {
-        let seccionActual = 'fede';
-        for (let i = 0; i < this.resumenSemanalSheet.length; i++) {
-          const fila = this.resumenSemanalSheet[i];
-          const col0 = this.normalizar(fila[0]);
-          if (col0.includes('arantxa')) { seccionActual = 'arantxa'; continue; }
-          if (col0.includes('fede')) { seccionActual = 'fede'; continue; }
-
-          if (seccionActual === atletaKey && col0 === dNorm && fila[1]) {
-            const p = parseFloat((fila[2] || '0').toString().replace(',', '.'));
-            const ch = parseFloat((fila[3] || '0').toString().replace(',', '.'));
-            const g = parseFloat((fila[4] || '0').toString().replace(',', '.'));
-            const kcalRaw = (fila[5] || '0').toString().replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
-            const kcal = parseFloat(kcalRaw);
-            if (kcal > 500) {
-              return { entreno: fila[1].toString().trim(), p: Math.round(p), ch: Math.round(ch), g: Math.round(g), kcal: Math.round(kcal) };
-            }
-          }
+      if (this.resumenSemanal && this.resumenSemanal.length > 0) {
+        const fila = this.resumenSemanal.find(r => 
+          this.normalizar(r.atleta) === atletaKey && 
+          this.normalizar(r.dia) === dNorm
+        );
+        if (fila && Number(fila.kcal) > 500) {
+          return {
+            entreno: fila.entrenamiento || '',
+            p: Math.round(Number(fila.p) || 0),
+            ch: Math.round(Number(fila.ch) || 0),
+            g: Math.round(Number(fila.g) || 0),
+            kcal: Math.round(Number(fila.kcal) || 0)
+          };
         }
       }
 
@@ -443,66 +444,138 @@ function appData() {
       this.cargandoDieta = true;
       this.errorConexion = false;
       try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        if (data.dieta && data.dieta.length > 1) {
-          this.dietaCompleta = data.dieta.slice(1).map(row => ({
-            dia: row[0],
-            ventana: row[1],
-            plato: row[2],
-            fede: row[3],
-            macrosFede: row[4],
-            arantxa: row[5],
-            macrosArantxa: row[6]
-          }));
-          localStorage.setItem('hybrid_cache_dieta', JSON.stringify(this.dietaCompleta));
+        if (!supabaseClient) {
+          throw new Error("Cliente de Supabase no disponible");
         }
-        if (data.resumenSemanal) {
-          this.resumenSemanalSheet = data.resumenSemanal;
-          localStorage.setItem('hybrid_cache_resumen', JSON.stringify(this.resumenSemanalSheet));
+
+        // 1. Obtener todas las semanas registradas ordenadas cronológicamente
+        const { data: semData, error: semErr } = await supabaseClient
+          .from('semanas')
+          .select('*')
+          .order('id', { ascending: true });
+
+        if (semErr) throw semErr;
+
+        this.semanasDisponibles = semData || [];
+
+        // 2. Determinar la semana activa
+        const activa = this.semanasDisponibles.find(s => s.activa) || this.semanasDisponibles[this.semanasDisponibles.length - 1];
+        if (activa) {
+          this.semanaActivaId = activa.id;
         }
-        if (data.progresionFede) {
-          this.progresionFede = data.progresionFede;
-          localStorage.setItem('hybrid_cache_prog_fede', JSON.stringify(this.progresionFede));
-        }
-        if (data.progresionArantxa) {
-          this.progresionArantxa = data.progresionArantxa;
-          localStorage.setItem('hybrid_cache_prog_ara', JSON.stringify(this.progresionArantxa));
-        }
-        if (data.estadoApp) {
-          const fusionar = (claveremota, claveLocal, prop) => {
-            if (data.estadoApp[claveremota]) {
-              try {
-                const rem = JSON.parse(data.estadoApp[claveremota]);
-                this[prop] = { ...rem, ...this[prop] };
-                localStorage.setItem(claveLocal, JSON.stringify(this[prop]));
-              } catch(e) {}
-            }
-          };
-          fusionar('comidasCompletadas', 'hybrid_comidas_completadas', 'comidasCompletadas');
-          fusionar('swapsActivos', 'hybrid_swaps_activos', 'swapsActivos');
-          fusionar('cargasEntreno', 'hybrid_cargas_entreno', 'cargasEntreno');
-          fusionar('permutacionesDias', 'hybrid_permutaciones_dias', 'permutacionesDias');
-          fusionar('cenasSocialesPorDia', 'hybrid_cenas_sociales', 'cenasSocialesPorDia');
-          fusionar('ajustesMetabolicos', 'hybrid_ajustes_metabolicos', 'ajustesMetabolicos');
+
+        if (this.semanaActivaId) {
+          // 3. Cargar en paralelo dieta_diaria, resumen_semanal y estado_app de la semana activa
+          const [dietaRes, resumenRes, estadoRes] = await Promise.all([
+            supabaseClient
+              .from('dieta_diaria')
+              .select('*')
+              .eq('semana_id', this.semanaActivaId)
+              .order('id', { ascending: true }),
+            supabaseClient
+              .from('resumen_semanal')
+              .select('*')
+              .eq('semana_id', this.semanaActivaId)
+              .order('id', { ascending: true }),
+            supabaseClient
+              .from('estado_app')
+              .select('*')
+              .eq('semana_id', this.semanaActivaId)
+          ]);
+
+          if (dietaRes.error) throw dietaRes.error;
+          if (resumenRes.error) throw resumenRes.error;
+          if (estadoRes.error) throw estadoRes.error;
+
+          // Mapear dieta_diaria
+          if (dietaRes.data && dietaRes.data.length > 0) {
+            this.dietaCompleta = dietaRes.data.map(row => ({
+              id: row.id,
+              dia: row.dia,
+              ventana: row.ventana,
+              plato: row.plato,
+              fede: row.fede_detalles,
+              macrosFede: row.macros_fede || '',
+              arantxa: row.arantxa_detalles,
+              macrosArantxa: row.macros_arantxa || ''
+            }));
+            localStorage.setItem('hybrid_cache_dieta', JSON.stringify(this.dietaCompleta));
+          }
+
+          // Guardar resumen_semanal
+          this.resumenSemanal = resumenRes.data || [];
+          localStorage.setItem('hybrid_cache_resumen_supabase', JSON.stringify(this.resumenSemanal));
+
+          // Cargar estados aislados por semana activa
+          this.comidasCompletadas = {};
+          this.swapsActivos = {};
+          this.cargasEntreno = {};
+          this.permutacionesDias = {};
+          this.cenasSocialesPorDia = {};
+          this.ajustesMetabolicos = { fede: 0, arantxa: 0 };
+
+          if (estadoRes.data && estadoRes.data.length > 0) {
+            estadoRes.data.forEach(item => {
+              const val = typeof item.valor_json === 'string' ? JSON.parse(item.valor_json) : item.valor_json;
+              if (item.clave === 'comidasCompletadas') {
+                this.comidasCompletadas = val || {};
+                localStorage.setItem('hybrid_comidas_completadas', JSON.stringify(this.comidasCompletadas));
+              } else if (item.clave === 'swapsActivos') {
+                this.swapsActivos = val || {};
+                localStorage.setItem('hybrid_swaps_activos', JSON.stringify(this.swapsActivos));
+              } else if (item.clave === 'cargasEntreno') {
+                this.cargasEntreno = val || {};
+                localStorage.setItem('hybrid_cargas_entreno', JSON.stringify(this.cargasEntreno));
+              } else if (item.clave === 'permutacionesDias') {
+                this.permutacionesDias = val || {};
+                localStorage.setItem('hybrid_permutaciones_dias', JSON.stringify(this.permutacionesDias));
+              } else if (item.clave === 'cenasSocialesPorDia') {
+                this.cenasSocialesPorDia = val || {};
+                localStorage.setItem('hybrid_cenas_sociales', JSON.stringify(this.cenasSocialesPorDia));
+              } else if (item.clave === 'ajustesMetabolicos') {
+                this.ajustesMetabolicos = val || { fede: 0, arantxa: 0 };
+                localStorage.setItem('hybrid_ajustes_metabolicos', JSON.stringify(this.ajustesMetabolicos));
+              }
+            });
+          }
           this.cenaSocialActiva = !!this.cenasSocialesPorDia[this.diaSeleccionado];
         }
-        this.sincronizarFechaSemana();
-        this.anunciar('Sincronizado con Google Sheets');
+
+        // 4. Cargar biometría de todas las semanas ordenadas
+        const { data: bioData, error: bioErr } = await supabaseClient
+          .from('biometria')
+          .select('*, semanas(id, fecha_inicio, activa)')
+          .order('semana_id', { ascending: true });
+
+        if (bioErr) throw bioErr;
+        this.historicoBiometria = bioData || [];
+
+        // 5. Seleccionar por defecto la última semana que tenga peso real numérico > 0
+        this.seleccionarUltimaSemanaConPeso();
+
+        this.anunciar('Sincronizado con Supabase');
       } catch (e) {
+        console.error('Error cargando datos de Supabase:', e);
         this.errorConexion = true;
-        this.anunciar('Modo sin conexión: usando datos en caché local');
+        this.anunciar('Modo sin conexión: usando datos locales');
       }
       this.cargandoDieta = false;
     },
 
     async sincronizarEstadoRemoto(clave, objeto) {
+      if (!supabaseClient || !this.semanaActivaId) return;
       try {
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'sync_estado', clave, valor: JSON.stringify(objeto) })
-        });
-      } catch (e) {}
+        await supabaseClient
+          .from('estado_app')
+          .upsert({
+            semana_id: this.semanaActivaId,
+            clave: clave,
+            valor_json: objeto,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'semana_id,clave' });
+      } catch (e) {
+        console.error('Error al sincronizar estado en Supabase:', e);
+      }
     },
 
     claveSemanaActual() {
@@ -514,18 +587,14 @@ function appData() {
     },
 
     /**
-     * CHECK DE COMIDAS INDEPENDIENTE POR ATLETA (Fede vs Arantxa) + Compatibilidad Dual
+     * CHECK DE COMIDAS INDEPENDIENTE POR ATLETA (Aislado por semana activa en Supabase)
      */
     esComidaCompletadaAtleta(idx, atletaKey) {
-      const sem = this.claveSemanaActual();
-      const kAtletaSem = `${sem}_${this.diaSeleccionado}_${idx}_${atletaKey}`;
-      const kAtletaSimple = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
-      const kLegacySem = `${sem}_${this.diaSeleccionado}_${idx}`;
-      const kLegacySimple = `${this.diaSeleccionado}_${idx}`;
+      const kAtleta = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
+      const kLegacy = `${this.diaSeleccionado}_${idx}`;
 
-      if (this.comidasCompletadas[kAtletaSem] !== undefined) return !!this.comidasCompletadas[kAtletaSem];
-      if (this.comidasCompletadas[kAtletaSimple] !== undefined) return !!this.comidasCompletadas[kAtletaSimple];
-      return !!(this.comidasCompletadas[kLegacySem] || this.comidasCompletadas[kLegacySimple]);
+      if (this.comidasCompletadas[kAtleta] !== undefined) return !!this.comidasCompletadas[kAtleta];
+      return !!this.comidasCompletadas[kLegacy];
     },
 
     esComidaCompletada(idx) {
@@ -535,31 +604,13 @@ function appData() {
     },
 
     toggleComidaCompletadaAtleta(idx, atletaKey) {
-      const sem = this.claveSemanaActual();
-      const kAtletaSem = `${sem}_${this.diaSeleccionado}_${idx}_${atletaKey}`;
-      const kAtletaSimple = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
-      const kLegacySem = `${sem}_${this.diaSeleccionado}_${idx}`;
-      const kLegacySimple = `${this.diaSeleccionado}_${idx}`;
-
+      const kAtleta = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
       const nuevo = !this.esComidaCompletadaAtleta(idx, atletaKey);
-      const otroAtleta = atletaKey === 'fede' ? 'arantxa' : 'fede';
-      const estadoOtro = this.esComidaCompletadaAtleta(idx, otroAtleta);
-
-      // Limpiar clave legacy general y migrar ambos atletas explícitamente
-      delete this.comidasCompletadas[kLegacySem];
-      delete this.comidasCompletadas[kLegacySimple];
-
-      if (estadoOtro) {
-        this.comidasCompletadas[`${sem}_${this.diaSeleccionado}_${idx}_${otroAtleta}`] = true;
-        this.comidasCompletadas[`${this.diaSeleccionado}_${idx}_${otroAtleta}`] = true;
-      }
 
       if (nuevo) {
-        this.comidasCompletadas[kAtletaSem] = true;
-        this.comidasCompletadas[kAtletaSimple] = true;
+        this.comidasCompletadas[kAtleta] = true;
       } else {
-        delete this.comidasCompletadas[kAtletaSem];
-        delete this.comidasCompletadas[kAtletaSimple];
+        delete this.comidasCompletadas[kAtleta];
       }
 
       this.comidasCompletadas = { ...this.comidasCompletadas };
@@ -578,20 +629,14 @@ function appData() {
         return;
       }
       const nuevo = !this.esComidaCompletada(idx);
-      const sem = this.claveSemanaActual();
       ['fede', 'arantxa'].forEach(atletaKey => {
-        const kSem = `${sem}_${this.diaSeleccionado}_${idx}_${atletaKey}`;
-        const kSimple = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
+        const k = `${this.diaSeleccionado}_${idx}_${atletaKey}`;
         if (nuevo) {
-          this.comidasCompletadas[kSem] = true;
-          this.comidasCompletadas[kSimple] = true;
+          this.comidasCompletadas[k] = true;
         } else {
-          delete this.comidasCompletadas[kSem];
-          delete this.comidasCompletadas[kSimple];
+          delete this.comidasCompletadas[k];
         }
       });
-      delete this.comidasCompletadas[`${sem}_${this.diaSeleccionado}_${idx}`];
-      delete this.comidasCompletadas[`${this.diaSeleccionado}_${idx}`];
 
       this.comidasCompletadas = { ...this.comidasCompletadas };
       localStorage.setItem('hybrid_comidas_completadas', JSON.stringify(this.comidasCompletadas));
@@ -1015,69 +1060,91 @@ function appData() {
       });
     },
 
-    sincronizarFechaSemana() {
-      const tabla = (this.form.atleta === 'Fede') ? this.progresionFede : this.progresionArantxa;
-      let fechaAsignada = FECHAS_SEMANAS_DEFAULT[this.form.semana] || '';
-      let encontradoEnSheet = false;
+    seleccionarUltimaSemanaConPeso(atletaNombre = this.form.atleta) {
+      const historial = this.historicoAtleta(atletaNombre);
+      const conPeso = historial.filter(h => {
+        const p = parseFloat(h.peso);
+        return !isNaN(p) && p > 0;
+      });
 
-      if (tabla && tabla.length > 1) {
-        for (let i = 1; i < tabla.length; i++) {
-          const fila = tabla[i];
-          if (this.normalizar(fila[0]) === this.normalizar(this.form.semana)) {
-            encontradoEnSheet = true;
-            const fechaSheet = this.formatearFechaISO(fila[1]);
-            if (fechaSheet) fechaAsignada = fechaSheet;
-
-            this.form.peso = (fila[2] !== undefined && fila[2] !== '') ? fila[2].toString().replace(',', '.') : '';
-            this.form.pecho = (fila[3] !== undefined && fila[3] !== '') ? fila[3].toString().replace(',', '.') : '';
-            this.form.cintura = (fila[4] !== undefined && fila[4] !== '') ? fila[4].toString().replace(',', '.') : '';
-            this.form.cadera = (fila[5] !== undefined && fila[5] !== '') ? fila[5].toString().replace(',', '.') : '';
-            this.form.brazo = (fila[6] !== undefined && fila[6] !== '') ? fila[6].toString().replace(',', '.') : '';
-            this.form.muslo = (fila[7] !== undefined && fila[7] !== '') ? fila[7].toString().replace(',', '.') : '';
-            break;
-          }
-        }
+      if (conPeso.length > 0) {
+        const target = conPeso[conPeso.length - 1];
+        this.form.semana = target.semana;
+        this.form.semana_id = target.semana_id;
+      } else if (historial.length > 0) {
+        const activa = historial.find(h => h.activa) || historial[historial.length - 1];
+        this.form.semana = activa.semana;
+        this.form.semana_id = activa.semana_id;
       }
-
-      if (!encontradoEnSheet || (!this.form.peso && this.form.semana === 'Semana 1')) {
-        if (this.form.semana === 'Semana 1' && DATOS_SEMANA1_RESPALDO[this.form.atleta]) {
-          const resp = DATOS_SEMANA1_RESPALDO[this.form.atleta];
-          this.form.peso = resp.peso; this.form.pecho = resp.pecho; this.form.cintura = resp.cintura;
-          this.form.cadera = resp.cadera; this.form.brazo = resp.brazo; this.form.muslo = resp.muslo;
-        } else if (!encontradoEnSheet) {
-          this.form.peso = ''; this.form.pecho = ''; this.form.cintura = '';
-          this.form.cadera = ''; this.form.brazo = ''; this.form.muslo = '';
-        }
-      }
-      this.form.fecha = fechaAsignada;
+      this.sincronizarFechaSemana();
     },
 
-    historicoAtleta() {
-      const tabla = (this.form.atleta === 'Fede') ? this.progresionFede : this.progresionArantxa;
+    sincronizarFechaSemana() {
+      const historial = this.historicoAtleta(this.form.atleta);
+      const fila = historial.find(h => 
+        (this.form.semana_id && h.semana_id === this.form.semana_id) ||
+        this.normalizar(h.semana) === this.normalizar(this.form.semana)
+      );
+
+      if (fila) {
+        this.form.semana_id = fila.semana_id;
+        this.form.semana = fila.semana;
+        this.form.fecha = fila.fecha || '';
+        this.form.peso = fila.peso || '';
+        this.form.pecho = fila.pecho || '';
+        this.form.cintura = fila.cintura || '';
+        this.form.cadera = fila.cadera || '';
+        this.form.brazo = fila.brazo || '';
+        this.form.muslo = fila.muslo || '';
+      } else {
+        this.form.peso = '';
+        this.form.pecho = '';
+        this.form.cintura = '';
+        this.form.cadera = '';
+        this.form.brazo = '';
+        this.form.muslo = '';
+      }
+    },
+
+    historicoAtleta(atletaNombre = this.form.atleta) {
       const lista = [];
-      if (tabla && tabla.length > 1) {
-        for (let i = 1; i < tabla.length; i++) {
-          const r = tabla[i];
-          if (!r[0] || !this.normalizar(r[0]).startsWith('semana')) continue;
-          const semNombre = r[0].toString().trim();
-          const esSem1Vacia = (semNombre === 'Semana 1' && !r[2]);
-          const resp = esSem1Vacia ? DATOS_SEMANA1_RESPALDO[this.form.atleta] : null;
+
+      // Si tenemos semanas de Supabase, generamos la lista ordenada
+      if (this.semanasDisponibles && this.semanasDisponibles.length > 0) {
+        this.semanasDisponibles.forEach((sem, idx) => {
+          const semNombre = sem.nombre || `Semana ${idx + 1}`;
+          const bio = (this.historicoBiometria || []).find(b => 
+            b.semana_id === sem.id && 
+            this.normalizar(b.atleta) === this.normalizar(atletaNombre)
+          );
+
           lista.push({
+            semana_id: sem.id,
             semana: semNombre,
-            fecha: this.formatearFechaISO(r[1]) || FECHAS_SEMANAS_DEFAULT[semNombre] || '',
-            peso: resp ? resp.peso : (r[2] ? r[2].toString().replace(',', '.') : ''),
-            pecho: resp ? resp.pecho : (r[3] ? r[3].toString().replace(',', '.') : ''),
-            cintura: resp ? resp.cintura : (r[4] ? r[4].toString().replace(',', '.') : ''),
-            cadera: resp ? resp.cadera : (r[5] ? r[5].toString().replace(',', '.') : ''),
-            brazo: resp ? resp.brazo : (r[6] ? r[6].toString().replace(',', '.') : ''),
-            muslo: resp ? resp.muslo : (r[7] ? r[7].toString().replace(',', '.') : '')
+            fecha: (sem.fecha_inicio || '').split('T')[0],
+            activa: !!sem.activa,
+            peso: (bio && bio.peso !== null && bio.peso !== undefined && bio.peso !== '') ? bio.peso.toString() : '',
+            pecho: (bio && bio.pecho !== null && bio.pecho !== undefined && bio.pecho !== '') ? bio.pecho.toString() : '',
+            cintura: (bio && bio.cintura !== null && bio.cintura !== undefined && bio.cintura !== '') ? bio.cintura.toString() : '',
+            cadera: (bio && bio.cadera !== null && bio.cadera !== undefined && bio.cadera !== '') ? bio.cadera.toString() : '',
+            brazo: (bio && bio.brazo !== null && bio.brazo !== undefined && bio.brazo !== '') ? bio.brazo.toString() : '',
+            muslo: (bio && bio.muslo !== null && bio.muslo !== undefined && bio.muslo !== '') ? bio.muslo.toString() : ''
           });
-        }
+        });
       }
+
+      // Si aún no hay semanas en BD, dar datos iniciales de respaldo
       if (lista.length === 0) {
-        const r1 = DATOS_SEMANA1_RESPALDO[this.form.atleta];
-        lista.push({ semana: 'Semana 1', fecha: '2026-10-26', ...r1 });
+        const r1 = DATOS_SEMANA1_RESPALDO[atletaNombre] || DATOS_SEMANA1_RESPALDO['Fede'];
+        lista.push({
+          semana_id: 1,
+          semana: 'Semana 1',
+          fecha: '2026-10-26',
+          activa: true,
+          ...r1
+        });
       }
+
       return lista;
     },
 
@@ -1341,34 +1408,35 @@ function appData() {
     evaluarProgresoAtleta(atletaKey) {
       const esFede = atletaKey === 'fede';
       const nombreAtleta = esFede ? 'Fede' : 'Arantxa';
-      const tabla = esFede ? this.progresionFede : this.progresionArantxa;
+      const hist = this.historicoAtleta(nombreAtleta);
       const lista = [];
 
-      if (tabla && tabla.length > 1) {
-        for (let i = 1; i < tabla.length; i++) {
-          const r = tabla[i];
-          if (!r[0] || !this.normalizar(r[0]).startsWith('semana')) continue;
-          const sem = r[0].toString().trim();
-          const p = (r[2] !== undefined && r[2] !== '') ? parseFloat(r[2].toString().replace(',', '.')) : null;
-          const c = (r[4] !== undefined && r[4] !== '') ? parseFloat(r[4].toString().replace(',', '.')) : null;
-          const b = (r[6] !== undefined && r[6] !== '') ? parseFloat(r[6].toString().replace(',', '.')) : null;
-          if (p !== null && !isNaN(p)) {
-            lista.push({ semana: sem, peso: p, cintura: c, brazo: b });
-          }
+      hist.forEach(r => {
+        const p = parseFloat(r.peso);
+        const c = parseFloat(r.cintura);
+        const b = parseFloat(r.brazo);
+        if (!isNaN(p) && p > 0) {
+          lista.push({
+            semana: r.semana,
+            semana_id: r.semana_id,
+            peso: p,
+            cintura: !isNaN(c) ? c : null,
+            brazo: !isNaN(b) ? b : null
+          });
         }
-      }
+      });
 
       // Si el formulario actual tiene datos nuevos de pesaje para este atleta, integrarlo para feedback en tiempo real
       if (this.form.atleta === nombreAtleta && this.form.peso) {
         const pForm = parseFloat(this.form.peso);
         const cForm = this.form.cintura ? parseFloat(this.form.cintura) : null;
         const bForm = this.form.brazo ? parseFloat(this.form.brazo) : null;
-        if (!isNaN(pForm)) {
-          const idxSem = lista.findIndex(x => x.semana === this.form.semana);
+        if (!isNaN(pForm) && pForm > 0) {
+          const idxSem = lista.findIndex(x => x.semana === this.form.semana || (this.form.semana_id && x.semana_id === this.form.semana_id));
           if (idxSem !== -1) {
-            lista[idxSem] = { semana: this.form.semana, peso: pForm, cintura: cForm, brazo: bForm };
+            lista[idxSem] = { semana: this.form.semana, semana_id: this.form.semana_id, peso: pForm, cintura: cForm, brazo: bForm };
           } else {
-            lista.push({ semana: this.form.semana, peso: pForm, cintura: cForm, brazo: bForm });
+            lista.push({ semana: this.form.semana, semana_id: this.form.semana_id, peso: pForm, cintura: cForm, brazo: bForm });
           }
         }
       }
@@ -1590,21 +1658,55 @@ Responde ÚNICAMENTE con un bloque de código JSON válido, sin texto adicional 
     },
 
     async enviarCheckin() {
+      if (!supabaseClient) {
+        alert("Cliente de Supabase no disponible.");
+        return;
+      }
       this.enviando = true;
       try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'checkin', ...this.form })
-        });
-        const result = await res.json();
-        if (result.status === 'success') {
-          this.mensajeExito = true;
-          this.anunciar(`Medidas de ${this.form.semana} guardadas correctamente`);
-          await this.cargarDatos();
-          setTimeout(() => this.mensajeExito = false, 3500);
+        let targetSemanaId = this.form.semana_id;
+        if (!targetSemanaId) {
+          const encontrada = this.semanasDisponibles.find(s => 
+            (s.nombre && this.normalizar(s.nombre) === this.normalizar(this.form.semana)) ||
+            this.normalizar(`Semana ${s.id}`) === this.normalizar(this.form.semana)
+          );
+          targetSemanaId = encontrada ? encontrada.id : this.semanaActivaId;
         }
+
+        if (!targetSemanaId) {
+          throw new Error("No hay una semana activa o seleccionada para guardar las medidas.");
+        }
+
+        const payload = {
+          semana_id: targetSemanaId,
+          atleta: this.form.atleta,
+          peso: this.form.peso ? parseFloat(this.form.peso) : null,
+          pecho: this.form.pecho ? parseFloat(this.form.pecho) : null,
+          cintura: this.form.cintura ? parseFloat(this.form.cintura) : null,
+          cadera: this.form.cadera ? parseFloat(this.form.cadera) : null,
+          brazo: this.form.brazo ? parseFloat(this.form.brazo) : null,
+          muslo: this.form.muslo ? parseFloat(this.form.muslo) : null
+        };
+
+        const { error: bioErr } = await supabaseClient
+          .from('biometria')
+          .upsert(payload, { onConflict: 'semana_id,atleta' });
+
+        if (bioErr) throw bioErr;
+
+        if (this.form.fecha) {
+          await supabaseClient
+            .from('semanas')
+            .update({ fecha_inicio: this.form.fecha })
+            .eq('id', targetSemanaId);
+        }
+
+        this.mensajeExito = true;
+        this.anunciar(`Medidas de ${this.form.semana} (${this.form.atleta}) guardadas correctamente en Supabase`);
+        await this.cargarDatos();
+        setTimeout(() => { this.mensajeExito = false; }, 3500);
       } catch (e) {
-        alert("Error al guardar en Google Sheets: " + e.message);
+        alert("Error al guardar en Supabase: " + (e.message || e));
       }
       this.enviando = false;
     },
@@ -1615,35 +1717,152 @@ Responde ÚNICAMENTE con un bloque de código JSON válido, sin texto adicional 
         alert("Revisa el formato del JSON antes de publicar: " + (val ? val.error : 'JSON vacío'));
         return;
       }
+      if (!supabaseClient) {
+        alert("Cliente de Supabase no disponible.");
+        return;
+      }
       this.enviando = true;
       try {
         const comidas = JSON.parse(this.jsonNuevaDieta);
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'actualizar_dieta', comidas })
+
+        // 1. Desactivar todas las semanas activas actuales
+        const { error: updErr } = await supabaseClient
+          .from('semanas')
+          .update({ activa: false })
+          .eq('activa', true);
+
+        if (updErr) console.warn("Aviso al desactivar semanas previas:", updErr);
+
+        // 2. Insertar nueva semana activa
+        const numeroSemana = (this.semanasDisponibles.length || 0) + 1;
+        const nombreSemana = `Semana ${numeroSemana}`;
+        const fechaInicio = this.claveSemanaActual();
+
+        const { data: nuevaSemana, error: semErr } = await supabaseClient
+          .from('semanas')
+          .insert([{
+            nombre: nombreSemana,
+            fecha_inicio: fechaInicio,
+            activa: true
+          }])
+          .select()
+          .single();
+
+        if (semErr) throw semErr;
+        const nuevaSemanaId = nuevaSemana.id;
+
+        // 3. Insertar comidas en dieta_diaria
+        const filasDieta = comidas.map(item => ({
+          semana_id: nuevaSemanaId,
+          dia: item.dia,
+          ventana: item.ventana,
+          plato: item.plato,
+          fede_detalles: item.fede,
+          arantxa_detalles: item.arantxa,
+          macros_fede: item.macrosFede || '',
+          macros_arantxa: item.macrosArantxa || ''
+        }));
+
+        const { error: dietaErr } = await supabaseClient
+          .from('dieta_diaria')
+          .insert(filasDieta);
+
+        if (dietaErr) throw dietaErr;
+
+        // 4. Calcular e insertar entrenos y macros en resumen_semanal
+        const filasResumen = [];
+        const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+        dias.forEach(dia => {
+          const dNorm = this.normalizar(dia);
+          const comidasDia = comidas.filter(c => this.normalizar(c.dia) === dNorm);
+
+          // Suma Fede
+          let sumPFede = 0, sumCHFede = 0, sumGFede = 0, sumKcalFede = 0;
+          comidasDia.forEach(c => {
+            const m = this.parsearMacrosDeColumnaExcel(c.macrosFede);
+            sumPFede += m.p; sumCHFede += m.ch; sumGFede += m.g; sumKcalFede += m.kcal;
+          });
+          const baseFede = RESUMEN_OFICIAL_FEDE[dNorm] || { entreno: 'CrossFit 17:30', p: 200, ch: 320, g: 75, kcal: 2755 };
+          filasResumen.push({
+            semana_id: nuevaSemanaId,
+            atleta: 'Fede',
+            dia: dia,
+            entrenamiento: baseFede.entreno,
+            p: sumKcalFede > 0 ? Math.round(sumPFede) : baseFede.p,
+            ch: sumKcalFede > 0 ? Math.round(sumCHFede) : baseFede.ch,
+            g: sumKcalFede > 0 ? Math.round(sumGFede) : baseFede.g,
+            kcal: sumKcalFede > 0 ? Math.round(sumKcalFede) : baseFede.kcal
+          });
+
+          // Suma Arantxa
+          let sumPAra = 0, sumCHAra = 0, sumGAra = 0, sumKcalAra = 0;
+          comidasDia.forEach(c => {
+            const m = this.parsearMacrosDeColumnaExcel(c.macrosArantxa);
+            sumPAra += m.p; sumCHAra += m.ch; sumGAra += m.g; sumKcalAra += m.kcal;
+          });
+          const baseAra = RESUMEN_OFICIAL_ARANTXA[dNorm] || { entreno: 'CrossFit 17:30', p: 140, ch: 220, g: 50, kcal: 1890 };
+          filasResumen.push({
+            semana_id: nuevaSemanaId,
+            atleta: 'Arantxa',
+            dia: dia,
+            entrenamiento: baseAra.entreno,
+            p: sumKcalAra > 0 ? Math.round(sumPAra) : baseAra.p,
+            ch: sumKcalAra > 0 ? Math.round(sumCHAra) : baseAra.ch,
+            g: sumKcalAra > 0 ? Math.round(sumGAra) : baseAra.g,
+            kcal: sumKcalAra > 0 ? Math.round(sumKcalAra) : baseAra.kcal
+          });
         });
-        const result = await res.json();
-        if (result.status === 'success') {
-          this.mensajeDietaActualizada = true;
-          this.jsonNuevaDieta = '';
-          this.cargasEntreno = {};
-          this.permutacionesDias = {};
-          this.swapsActivos = {};
-          this.cenasSocialesPorDia = {};
-          this.cenaSocialActiva = false;
-          localStorage.removeItem('hybrid_cargas_entreno');
-          localStorage.removeItem('hybrid_permutaciones_dias');
-          localStorage.removeItem('hybrid_swaps_activos');
-          localStorage.removeItem('hybrid_cenas_sociales');
-          this.anunciar('Plan nutricional semanal publicado en Google Sheets');
-          await this.cargarDatos();
-          setTimeout(() => {
-            this.mensajeDietaActualizada = false;
-            this.cambiarTab('dieta');
-          }, 1800);
-        }
+
+        const { error: resumenErr } = await supabaseClient
+          .from('resumen_semanal')
+          .insert(filasResumen);
+
+        if (resumenErr) throw resumenErr;
+
+        // 5. Inserte un nuevo registro vacío {} en estado_app para checks y swaps (semana limpia)
+        const estadosLimpios = [
+          { semana_id: nuevaSemanaId, clave: 'comidasCompletadas', valor_json: {} },
+          { semana_id: nuevaSemanaId, clave: 'swapsActivos', valor_json: {} },
+          { semana_id: nuevaSemanaId, clave: 'cargasEntreno', valor_json: {} },
+          { semana_id: nuevaSemanaId, clave: 'permutacionesDias', valor_json: {} },
+          { semana_id: nuevaSemanaId, clave: 'cenasSocialesPorDia', valor_json: {} },
+          { semana_id: nuevaSemanaId, clave: 'ajustesMetabolicos', valor_json: { fede: 0, arantxa: 0 } }
+        ];
+
+        const { error: estErr } = await supabaseClient
+          .from('estado_app')
+          .insert(estadosLimpios);
+
+        if (estErr) throw estErr;
+
+        // 6. Limpiar memoria local y cache para empezar completamente limpio
+        this.mensajeDietaActualizada = true;
+        this.jsonNuevaDieta = '';
+        this.cargasEntreno = {};
+        this.permutacionesDias = {};
+        this.swapsActivos = {};
+        this.cenasSocialesPorDia = {};
+        this.cenaSocialActiva = false;
+        this.comidasCompletadas = {};
+        this.ajustesMetabolicos = { fede: 0, arantxa: 0 };
+
+        localStorage.removeItem('hybrid_cargas_entreno');
+        localStorage.removeItem('hybrid_permutaciones_dias');
+        localStorage.removeItem('hybrid_swaps_activos');
+        localStorage.removeItem('hybrid_cenas_sociales');
+        localStorage.removeItem('hybrid_comidas_completadas');
+        localStorage.removeItem('hybrid_ajustes_metabolicos');
+
+        this.anunciar('Plan nutricional semanal publicado con éxito en Supabase');
+        await this.cargarDatos();
+
+        setTimeout(() => {
+          this.mensajeDietaActualizada = false;
+          this.cambiarTab('dieta');
+        }, 1800);
       } catch (e) {
-        alert("Revisa el formato del JSON pegado: " + e.message);
+        alert("Error al publicar en Supabase: " + (e.message || e));
       }
       this.enviando = false;
     }
