@@ -1434,86 +1434,198 @@
               <p class="text-[11px] text-ink-muted">Tu API Key se almacena localmente en tu navegador. Puedes alternar entre Pro y Flash cuando quieras.</p>
             </div>
 
-            <!-- PASO 1: CONTEXTO DEL PESAJE DEL VIERNES -->
-            <div class="border border-border rounded-2xl p-4 bg-canvas/40 space-y-2">
-              <span class="text-xs font-bold uppercase tracking-wider text-sage block">1. Punto de Partida · Pesaje del Viernes</span>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div class="bg-surface border border-border p-3.5 rounded-xl space-y-1">
-                  <div class="flex justify-between items-center">
-                    <span class="font-extrabold text-ink">Fede</span>
-                    <span class="font-mono font-bold text-sage" x-text="(evaluarProgresoAtleta('fede').pesoActual || form.peso) + ' kg'"></span>
-                  </div>
-                  <p class="text-ink-secondary text-[11px]" x-text="evaluarProgresoAtleta('fede').titulo"></p>
-                  <span class="inline-block text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sage-light text-sage" x-text="'Ajuste metabólico: ' + ((ajustesMetabolicos.fede >= 0 ? '+' : '') + ajustesMetabolicos.fede) + ' kcal/día'"></span>
+            <!-- PASO 1: CONTEXTO DEL PESAJE DEL VIERNES (EVOLUCIÓN Y AVANCE/ATRASO) -->
+            <div class="border border-border rounded-2xl p-4 bg-canvas/40 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-sage block">1. Punto de Partida · Pesaje del Viernes</span>
+                  <p class="text-[11px] text-ink-muted">Comparativa automática Semana Actual vs Semana Anterior</p>
                 </div>
-                <div class="bg-surface border border-border p-3.5 rounded-xl space-y-1">
-                  <div class="flex justify-between items-center">
-                    <span class="font-extrabold text-ink">Arantxa</span>
-                    <span class="font-mono font-bold text-ara-dark" x-text="historicoAtleta('Arantxa').filter(x=>parseFloat(x.peso)>0).slice(-1)[0]?.peso + ' kg'"></span>
+                <button
+                  type="button"
+                  @click="cambiarTab('biometria')"
+                  class="text-[11px] font-bold text-sage underline hover:opacity-80 flex items-center gap-1"
+                >
+                  <span>Registrar nuevo pesaje</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <!-- FEDE -->
+                <div class="bg-surface border border-border p-3.5 rounded-xl space-y-2">
+                  <div class="flex justify-between items-center border-b border-border/60 pb-1.5">
+                    <span class="font-extrabold text-ink flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-sage"></span>
+                      Fede
+                      <span class="text-[10px] font-normal text-ink-muted" x-text="'(' + obtenerComparativaSemanalAtleta('Fede').semanaActual + (obtenerComparativaSemanalAtleta('Fede').semanaAnterior ? ' vs ' + obtenerComparativaSemanalAtleta('Fede').semanaAnterior : '') + ')'"></span>
+                    </span>
+                    <span class="font-mono font-bold text-sage" x-text="obtenerComparativaSemanalAtleta('Fede').actual?.peso ? (obtenerComparativaSemanalAtleta('Fede').actual.peso + ' kg ' + (obtenerComparativaSemanalAtleta('Fede').deltaPeso ? '(' + obtenerComparativaSemanalAtleta('Fede').deltaPeso.str + ' kg)' : '')) : '--'"></span>
                   </div>
-                  <p class="text-ink-secondary text-[11px]" x-text="evaluarProgresoAtleta('arantxa').titulo"></p>
-                  <span class="inline-block text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-subtle text-ink-secondary" x-text="'Ajuste metabólico: ' + ((ajustesMetabolicos.arantxa >= 0 ? '+' : '') + ajustesMetabolicos.arantxa) + ' kcal/día'"></span>
+                  <div class="grid grid-cols-3 gap-1.5 text-[10px] font-mono text-ink-secondary">
+                    <div>Cint: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Fede').actual?.cintura || '--'"></span> <span class="text-sage" x-show="obtenerComparativaSemanalAtleta('Fede').deltaCintura" x-text="'(' + obtenerComparativaSemanalAtleta('Fede').deltaCintura?.str + ')'"></span></div>
+                    <div>Cad: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Fede').actual?.cadera || '--'"></span> <span class="text-sage" x-show="obtenerComparativaSemanalAtleta('Fede').deltaCadera" x-text="'(' + obtenerComparativaSemanalAtleta('Fede').deltaCadera?.str + ')'"></span></div>
+                    <div>Pecho: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Fede').actual?.pecho || '--'"></span></div>
+                    <div>Brazo: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Fede').actual?.brazo || '--'"></span></div>
+                    <div class="col-span-2">Muslo: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Fede').actual?.muslo || '--'"></span></div>
+                  </div>
+                  <p class="text-[11px] text-ink-secondary leading-snug pt-1 border-t border-border/50" x-text="obtenerComparativaSemanalAtleta('Fede').diagnostico"></p>
+                </div>
+
+                <!-- ARANTXA -->
+                <div class="bg-surface border border-border p-3.5 rounded-xl space-y-2">
+                  <div class="flex justify-between items-center border-b border-border/60 pb-1.5">
+                    <span class="font-extrabold text-ink flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-ara-dark"></span>
+                      Arantxa
+                      <span class="text-[10px] font-normal text-ink-muted" x-text="'(' + obtenerComparativaSemanalAtleta('Arantxa').semanaActual + (obtenerComparativaSemanalAtleta('Arantxa').semanaAnterior ? ' vs ' + obtenerComparativaSemanalAtleta('Arantxa').semanaAnterior : '') + ')'"></span>
+                    </span>
+                    <span class="font-mono font-bold text-ara-dark" x-text="obtenerComparativaSemanalAtleta('Arantxa').actual?.peso ? (obtenerComparativaSemanalAtleta('Arantxa').actual.peso + ' kg ' + (obtenerComparativaSemanalAtleta('Arantxa').deltaPeso ? '(' + obtenerComparativaSemanalAtleta('Arantxa').deltaPeso.str + ' kg)' : '')) : '--'"></span>
+                  </div>
+                  <div class="grid grid-cols-3 gap-1.5 text-[10px] font-mono text-ink-secondary">
+                    <div>Cint: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Arantxa').actual?.cintura || '--'"></span> <span class="text-ara-dark" x-show="obtenerComparativaSemanalAtleta('Arantxa').deltaCintura" x-text="'(' + obtenerComparativaSemanalAtleta('Arantxa').deltaCintura?.str + ')'"></span></div>
+                    <div>Cad: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Arantxa').actual?.cadera || '--'"></span> <span class="text-ara-dark" x-show="obtenerComparativaSemanalAtleta('Arantxa').deltaCadera" x-text="'(' + obtenerComparativaSemanalAtleta('Arantxa').deltaCadera?.str + ')'"></span></div>
+                    <div>Pecho: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Arantxa').actual?.pecho || '--'"></span></div>
+                    <div>Brazo: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Arantxa').actual?.brazo || '--'"></span></div>
+                    <div class="col-span-2">Muslo: <span class="font-bold text-ink" x-text="obtenerComparativaSemanalAtleta('Arantxa').actual?.muslo || '--'"></span></div>
+                  </div>
+                  <p class="text-[11px] text-ink-secondary leading-snug pt-1 border-t border-border/50" x-text="obtenerComparativaSemanalAtleta('Arantxa').diagnostico"></p>
                 </div>
               </div>
             </div>
 
             <!-- PASO 2: PLANIFICADOR DE ENTRENAMIENTOS DEL DOMINGO (LUNES A DOMINGO) -->
             <div class="space-y-3 pt-1">
-              <div class="flex items-center justify-between">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <span class="text-xs font-bold uppercase tracking-wider text-sage block">2. Planificación de Sesiones (Domingo)</span>
                   <h3 class="text-sm font-extrabold text-ink">Entrenamientos de la Semana (Correr, CrossFit, Gym)</h3>
+                  <p class="text-[11px] text-ink-muted">Configura cada día de forma individual e independiente para Fede y Arantxa.</p>
                 </div>
-                <span class="text-[11px] text-ink-muted">Doble sesión soportada (ej: 8km + CF)</span>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    @click="limpiarEntrenosPlanificador()"
+                    class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-canvas border border-border hover:bg-subtle text-ink transition shadow-xs flex items-center gap-1.5 active:scale-95"
+                    title="Vaciar todos los campos para planificar de cero"
+                  >
+                    <svg class="w-3.5 h-3.5 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span>Limpiar Entrenos</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="cargarEntrenosDesdeResumen()"
+                    class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-canvas border border-border hover:bg-subtle text-ink transition shadow-xs flex items-center gap-1.5 active:scale-95"
+                    title="Cargar los entrenamientos de la dieta actual activa"
+                  >
+                    <svg class="w-3.5 h-3.5 text-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Cargar de Dieta</span>
+                  </button>
+                </div>
               </div>
 
               <div class="space-y-2.5">
                 <template x-for="dia in diasSemana" :key="'plan_' + dia">
-                  <div class="bg-canvas border border-border p-3 rounded-2xl space-y-2">
-                    <div class="flex items-center justify-between border-b border-border/70 pb-1.5">
-                      <span class="font-bold text-xs text-ink uppercase tracking-wide" x-text="dia"></span>
-                      <div class="flex items-center gap-1">
-                        <button
-                          type="button"
-                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'CrossFit 17:30'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'CrossFit 17:30')"
-                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
-                        >Solo CF</button>
-                        <button
-                          type="button"
-                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Rodaje 10 km (08:30)'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Rodaje 8 km (08:30)')"
-                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
-                        >Solo Correr</button>
-                        <button
-                          type="button"
-                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Tempo 8 km (08:30) + CrossFit 17:30'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Tempo 6 km (08:30) + CrossFit 17:30')"
-                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
-                        >Doble Sesión</button>
-                        <button
-                          type="button"
-                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Descanso total'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Descanso total')"
-                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
-                        >Descanso</button>
-                      </div>
+                  <div class="bg-canvas border border-border p-3.5 rounded-2xl space-y-2.5 shadow-xs">
+                    <div class="flex items-center justify-between border-b border-border/70 pb-2">
+                      <span class="font-extrabold text-xs text-ink uppercase tracking-wide flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-sage"></span>
+                        <span x-text="dia"></span>
+                      </span>
+                      <button
+                        type="button"
+                        @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Descanso total'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Descanso total')"
+                        class="text-[10px] text-ink-muted hover:text-ink font-semibold px-2 py-0.5 rounded-full hover:bg-subtle transition"
+                        title="Fijar descanso total a ambos"
+                      >Ambos descanso</button>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <label class="block text-[10px] font-bold text-sage mb-0.5">Fede (Entreno):</label>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <!-- COLUMNA INDIVIDUAL: FEDE -->
+                      <div class="bg-surface p-2.5 rounded-xl border border-border space-y-2">
+                        <div class="flex items-center justify-between">
+                          <span class="text-[11px] font-extrabold text-sage tracking-wider uppercase flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-sage"></span>
+                            Fede
+                          </span>
+                          <!-- Etiquetas rápidas individuales para Fede -->
+                          <div class="flex items-center gap-1">
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'CrossFit 17:30')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-sage hover:text-white transition"
+                              title="CrossFit 17:30"
+                            >CF</button>
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Rodaje 10 km (08:30)')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-sage hover:text-white transition"
+                              title="Rodaje 10 km (08:30)"
+                            >Correr</button>
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Rodaje 8 km (08:30) + CrossFit 17:30')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-sage hover:text-white transition"
+                              title="Doble sesión: 8km + CF"
+                            >Doble</button>
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Descanso total')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-sage hover:text-white transition"
+                              title="Descanso total"
+                            >Descanso</button>
+                          </div>
+                        </div>
                         <input
                           type="text"
                           :value="entrenosPlanificador[normalizar(dia)]?.fede || ''"
                           @input="actualizarEntrenoPlanificador(normalizar(dia), 'fede', $event.target.value)"
-                          placeholder="Ej: Cuestas 8 km + Gym Torso"
-                          class="w-full bg-surface border border-border rounded-xl px-2.5 py-1.5 text-xs font-semibold"
+                          placeholder="Ej: Rodaje 10 km o CrossFit 17:30"
+                          class="w-full bg-canvas border border-border rounded-xl px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:border-sage"
                         />
                       </div>
-                      <div>
-                        <label class="block text-[10px] font-bold text-ara-dark mb-0.5">Arantxa (Entreno):</label>
+
+                      <!-- COLUMNA INDIVIDUAL: ARANTXA -->
+                      <div class="bg-surface p-2.5 rounded-xl border border-border space-y-2">
+                        <div class="flex items-center justify-between">
+                          <span class="text-[11px] font-extrabold text-ara-dark tracking-wider uppercase flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-ara-dark"></span>
+                            Arantxa
+                          </span>
+                          <!-- Etiquetas rápidas individuales para Arantxa -->
+                          <div class="flex items-center gap-1">
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'CrossFit 17:30')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-ara-dark hover:text-white transition"
+                              title="CrossFit 17:30"
+                            >CF</button>
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Rodaje 8 km (08:30)')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-ara-dark hover:text-white transition"
+                              title="Rodaje 8 km (08:30)"
+                            >Correr</button>
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Rodaje 6 km (08:30) + CrossFit 17:30')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-ara-dark hover:text-white transition"
+                              title="Doble sesión: 6km + CF"
+                            >Doble</button>
+                            <button
+                              type="button"
+                              @click="actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Descanso total')"
+                              class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-canvas border border-border hover:bg-ara-dark hover:text-white transition"
+                              title="Descanso total"
+                            >Descanso</button>
+                          </div>
+                        </div>
                         <input
                           type="text"
                           :value="entrenosPlanificador[normalizar(dia)]?.arantxa || ''"
                           @input="actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', $event.target.value)"
-                          placeholder="Ej: CrossFit 17:30"
-                          class="w-full bg-surface border border-border rounded-xl px-2.5 py-1.5 text-xs font-semibold"
+                          placeholder="Ej: CrossFit 17:30 o Rodaje 8 km"
+                          class="w-full bg-canvas border border-border rounded-xl px-2.5 py-1.5 text-xs font-semibold text-ink focus:outline-none focus:border-ara-dark"
                         />
                       </div>
                     </div>
@@ -1564,14 +1676,38 @@
                   <span class="text-[11px] text-ink-muted">Copiar Prompt → Web → Pegar JSON</span>
                 </div>
 
-                <button
-                  type="button"
-                  @click="copiarPromptGemini()"
-                  class="w-full bg-surface hover:bg-subtle border border-border text-ink font-bold py-3 rounded-full text-xs shadow-sm transition flex items-center justify-center gap-2 active:scale-[0.99]"
-                >
-                  <svg class="w-4 h-4 text-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                  <span x-text="promptCopiado ? '✓ ¡Prompt Copiado al Portapapeles! Pégalo en Gemini Web' : '📋 1. Copiar Prompt de esta semana para Gemini Web'"></span>
-                </button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    @click="copiarPromptGemini()"
+                    class="bg-surface hover:bg-subtle border border-border text-ink font-bold py-3 px-4 rounded-full text-xs shadow-sm transition flex items-center justify-center gap-2 active:scale-[0.99]"
+                  >
+                    <svg class="w-4 h-4 text-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    <span x-text="promptCopiado ? '✓ ¡Prompt Copiado!' : '📋 Copiar Prompt para Gemini'"></span>
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="mostrarVistaPreviaPrompt = !mostrarVistaPreviaPrompt"
+                    class="bg-canvas hover:bg-subtle border border-border text-ink font-bold py-3 px-4 rounded-full text-xs shadow-sm transition flex items-center justify-center gap-2"
+                  >
+                    <svg class="w-4 h-4 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <span x-text="mostrarVistaPreviaPrompt ? 'Ocultar Prompt' : '👁️ Ver Prompt Generado'"></span>
+                  </button>
+                </div>
+
+                <!-- Previsualización expandible del prompt -->
+                <div x-show="mostrarVistaPreviaPrompt" x-cloak class="bg-surface border border-border rounded-xl p-3.5 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-sage uppercase tracking-wider">Vista Previa del Prompt Generado:</span>
+                    <button
+                      type="button"
+                      @click="copiarPromptGemini()"
+                      class="text-[10px] font-bold text-sage underline hover:opacity-80"
+                    >Copiar Texto</button>
+                  </div>
+                  <pre class="w-full max-h-60 overflow-y-auto text-[11px] font-mono bg-canvas p-3 rounded-lg border border-border text-ink whitespace-pre-wrap leading-relaxed" x-text="generarPromptGemini()"></pre>
+                </div>
 
                 <div class="space-y-2 pt-1 border-t border-border/60">
                   <label class="block text-xs font-bold text-ink">2. Pega aquí el JSON generado por Gemini Web:</label>

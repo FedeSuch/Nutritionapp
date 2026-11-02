@@ -149,17 +149,24 @@ function appData() {
     detectandoModelos: false,
     mostrarConfigIA: false,
     mostrarModoManualIA: false,
+    mostrarVistaPreviaPrompt: false,
     generandoConGemini: false,
     estadoGeneracionIA: '',
-    entrenosPlanificador: JSON.parse(localStorage.getItem('hybrid_planificador_entrenos') || JSON.stringify({
-      lunes:     { fede: 'CrossFit 17:30',                           arantxa: 'CrossFit 17:30' },
-      martes:    { fede: 'Cuestas 8 km (08:30) + Gym Torso (18:30)', arantxa: 'Cuestas 8 km (08:30) + Gym Torso (18:30)' },
-      miercoles: { fede: 'Tempo 10 km (08:30) + CrossFit (17:30)',   arantxa: 'Tempo 10 km (08:30) + CrossFit (17:30)' },
-      jueves:    { fede: 'Carrera fácil 8 km (18:30)',               arantxa: 'Carrera fácil 8 km (18:30)' },
-      viernes:   { fede: 'CrossFit 17:30',                           arantxa: 'CrossFit 17:30' },
-      sabado:    { fede: 'Descanso activo (Precarga Trail)',         arantxa: 'Descanso activo (Precarga Trail)' },
-      domingo:   { fede: 'Trail 22 km (08:30)',                      arantxa: 'Trail 22 km (08:30)' }
-    })),
+    entrenosPlanificador: (() => {
+      try {
+        const guardado = localStorage.getItem('hybrid_planificador_entrenos');
+        if (guardado) return JSON.parse(guardado);
+      } catch (e) {}
+      return {
+        lunes:     { fede: '', arantxa: '' },
+        martes:    { fede: '', arantxa: '' },
+        miercoles: { fede: '', arantxa: '' },
+        jueves:    { fede: '', arantxa: '' },
+        viernes:   { fede: '', arantxa: '' },
+        sabado:    { fede: '', arantxa: '' },
+        domingo:   { fede: '', arantxa: '' }
+      };
+    })(),
     semanaActivaId: null,
     semanasDisponibles: [],
     historicoBiometria: [],
@@ -674,9 +681,30 @@ function appData() {
               } else if (item.clave === 'ajustesMetabolicos') {
                 this.ajustesMetabolicos = val || { fede: 0, arantxa: 0 };
                 localStorage.setItem('hybrid_ajustes_metabolicos', JSON.stringify(this.ajustesMetabolicos));
+              } else if (item.clave === 'entrenosPlanificador') {
+                this.entrenosPlanificador = val || this.entrenosPlanificador;
+                localStorage.setItem('hybrid_planificador_entrenos', JSON.stringify(this.entrenosPlanificador));
+                if (this.semanaActivaId) {
+                  localStorage.setItem(`hybrid_planificador_entrenos_${this.semanaActivaId}`, JSON.stringify(this.entrenosPlanificador));
+                }
               }
             });
           }
+
+          const tieneEntrenosRemotos = estadoRes.data && estadoRes.data.some(it => it.clave === 'entrenosPlanificador');
+          if (!tieneEntrenosRemotos) {
+            const guardadoSemana = this.semanaActivaId ? localStorage.getItem(`hybrid_planificador_entrenos_${this.semanaActivaId}`) : null;
+            if (guardadoSemana) {
+              try {
+                this.entrenosPlanificador = JSON.parse(guardadoSemana);
+              } catch (e) {}
+            } else if (this.resumenSemanal && this.resumenSemanal.length > 0) {
+              this.cargarEntrenosDesdeResumen(false);
+            } else {
+              this.limpiarEntrenosPlanificador(false);
+            }
+          }
+
           this.cenaSocialActiva = !!this.cenasSocialesPorDia[this.diaSeleccionado];
         }
 
@@ -2165,6 +2193,44 @@ function appData() {
       this.anunciar(`Modelo de IA cambiado a ${m}`);
     },
 
+    limpiarEntrenosPlanificador(notificar = true) {
+      const vacio = {};
+      this.diasSemana.forEach(d => {
+        vacio[this.normalizar(d)] = { fede: '', arantxa: '' };
+      });
+      this.entrenosPlanificador = vacio;
+      localStorage.setItem('hybrid_planificador_entrenos', JSON.stringify(this.entrenosPlanificador));
+      if (this.semanaActivaId) {
+        localStorage.setItem(`hybrid_planificador_entrenos_${this.semanaActivaId}`, JSON.stringify(this.entrenosPlanificador));
+        this.sincronizarEstadoRemoto('entrenosPlanificador', this.entrenosPlanificador);
+      }
+      if (notificar) this.anunciar('Planificador de entrenamientos vaciado');
+    },
+
+    cargarEntrenosDesdeResumen(notificar = true) {
+      if (!this.resumenSemanal || this.resumenSemanal.length === 0) {
+        if (notificar) alert("No hay entrenamientos previos registrados en la dieta de esta semana.");
+        return;
+      }
+      const nuevo = {};
+      this.diasSemana.forEach(dia => {
+        const dNorm = this.normalizar(dia);
+        const filaFede = this.resumenSemanal.find(r => this.normalizar(r.atleta) === 'fede' && this.normalizar(r.dia) === dNorm);
+        const filaAra = this.resumenSemanal.find(r => this.normalizar(r.atleta) === 'arantxa' && this.normalizar(r.dia) === dNorm);
+        nuevo[dNorm] = {
+          fede: (filaFede && filaFede.entrenamiento) ? filaFede.entrenamiento : '',
+          arantxa: (filaAra && filaAra.entrenamiento) ? filaAra.entrenamiento : ''
+        };
+      });
+      this.entrenosPlanificador = nuevo;
+      localStorage.setItem('hybrid_planificador_entrenos', JSON.stringify(this.entrenosPlanificador));
+      if (this.semanaActivaId) {
+        localStorage.setItem(`hybrid_planificador_entrenos_${this.semanaActivaId}`, JSON.stringify(this.entrenosPlanificador));
+        this.sincronizarEstadoRemoto('entrenosPlanificador', this.entrenosPlanificador);
+      }
+      if (notificar) this.anunciar('Entrenamientos cargados desde la dieta activa');
+    },
+
     actualizarEntrenoPlanificador(diaKey, atletaKey, val) {
       if (!this.entrenosPlanificador[diaKey]) {
         this.entrenosPlanificador[diaKey] = { fede: '', arantxa: '' };
@@ -2172,6 +2238,10 @@ function appData() {
       this.entrenosPlanificador[diaKey][atletaKey] = val;
       this.entrenosPlanificador = { ...this.entrenosPlanificador };
       localStorage.setItem('hybrid_planificador_entrenos', JSON.stringify(this.entrenosPlanificador));
+      if (this.semanaActivaId) {
+        localStorage.setItem(`hybrid_planificador_entrenos_${this.semanaActivaId}`, JSON.stringify(this.entrenosPlanificador));
+        this.sincronizarEstadoRemoto('entrenosPlanificador', this.entrenosPlanificador);
+      }
     },
 
     /**
@@ -2183,27 +2253,205 @@ function appData() {
 - Arantxa: Recomposición corporal en ~65.0 kg y mejora de fuerza en CrossFit. Proteína fija innegociable: ~140g P.
 
 REGLAS DE ORO INMUTABLES:
-1. OLLA COMÚN: Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (08:30 Desayuno, 14:00 Comida, 17:00 Pre-WOD/Merienda y 21:00 Cena) para poder cocinar juntos. La ÚNICA diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus respectivos carbohidratos y calorías según el entrenamiento del día.
+1. OLLA COMÚN: Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (08:30 Desayuno, 14:00 Comida, 17:30 Merienda/Pre-WOD y 21:30 Cena) para poder cocinar juntos. La ÚNICA diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus respectivos carbohidratos y calorías según el entrenamiento del día.
 2. REGLAS DIETÉTICAS OBLIGATORIAS (rules.md):
-   - PROHIBIDO el salmón cocinado en platos calientes (en comidas calientes usar únicamente atún al natural o merluza). El salmón solo se permite crudo, marinado o ahumado en frío (ej. poke bowl o ensalada fría).
-   - La merluza debe ser específicamente "merluza empanada del Mercadona".
-   - En tomas previas al entrenamiento de CrossFit (17:30), SOLO alimentos de vaciado gástrico rápido (arroz blanco, patata, claras de huevo, pan blanco), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
+   - Eliminar batidos y proteína en polvo de la pauta habitual. Priorizar fuentes limpias reales: jamón serrano, pechuga de pollo, ternera, pavo, merluza empanada, atún, huevos.
+   - Desayuno: priorizar tostadas de pan de masa madre con tomate triturado, jamón serrano y aguacate.
+   - Recetas sabrosas y apetecibles estilo latino/peruano fit (ej: lomo saltado fit de pollo o ternera con arroz basmati, ají de gallina fit, merluza empanada con patata asada, etc.).
+   - PROHIBIDO el salmón cocinado en platos calientes (en comidas calientes usar únicamente atún al natural o merluza empanada del Mercadona). El salmón solo se permite crudo, marinado o ahumado en frío (ej. poke bowl o ensalada fría).
+   - En tomas previas al entrenamiento de CrossFit (17:30 Merienda), SOLO alimentos de vaciado gástrico rápido estricto (ej: tortitas de arroz con fiambre de pavo / jamón serrano), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
    - Todos los alimentos que se cocinan (arroz, pasta, patata, pollo, ternera, merluza) deben especificarse obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
 3. FORMATO DE INGREDIENTES PARA LA LISTA DE LA COMPRA AUTOMÁTICA:
-   - En los campos "fede" y "arantxa", separa cada alimento con el símbolo "+" (ej: "70g copos de avena + 35g proteína whey + 120g plátano + 15g crema de cacahuete").
-   - Todos los alimentos deben incluir obligatoriamente su cantidad y unidad en crudo al inicio ('g', 'ml' o 'ud'). NUNCA dejes un alimento sin su cantidad (ej. pon siempre '70g copos de avena', nunca solo 'copos de avena').
-   - Usa nombres consistentes para consolidar la despensa semanal: "pechuga de pollo", "ternera", "merluza empanada Mercadona", "atún al natural", "huevos", "claras de huevo", "skyr natural", "arroz basmati", "patatas", "boniato", "copos de avena", "pan blanco", "AOVE", "plátano".
+   - En los campos "fede" y "arantxa", separa cada alimento con el símbolo "+" (ej: "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate").
+   - Todos los alimentos deben incluir obligatoriamente su cantidad y unidad en crudo al inicio ('g', 'ml' o 'ud'). NUNCA dejes un alimento sin su cantidad.
+   - Usa nombres consistentes para consolidar la despensa semanal: "pan masa madre", "jamón serrano", "tomate triturado", "aguacate", "pechuga de pollo", "ternera", "merluza empanada Mercadona", "atún al natural", "tortitas de arroz", "fiambre de pavo", "huevos", "claras de huevo", "arroz basmati", "patatas", "boniato", "copos de avena", "AOVE".
 4. SALIDA JSON ESTRICTA: Responde ÚNICAMENTE con un array JSON válido sin texto previo ni posterior, cubriendo los 7 días (Lunes a Domingo) con 4 comidas por día (Desayuno, Comida, Merienda/Pre-WOD, Cena).
 Campos obligatorios por objeto:
 {
   "dia": "Lunes",
   "ventana": "08:30 Desayuno",
-  "plato": "Nombre del plato común",
-  "fede": "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE",
-  "macrosFede": "35g P | 58g CH | 12g G | 480 kcal",
-  "arantxa": "120g pechuga de pollo + 60g arroz basmati + 8ml AOVE",
-  "macrosArantxa": "25g P | 38g CH | 9g G | 333 kcal"
+  "plato": "Tostadas de masa madre con jamón serrano, tomate y aguacate",
+  "fede": "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate",
+  "macrosFede": "P: 50g | CH: 65g | G: 50g | 925 kcal",
+  "arantxa": "80g pan masa madre + 50g jamón serrano + 30g tomate triturado + 40g aguacate",
+  "macrosArantxa": "P: 35g | CH: 55g | G: 35g | 472 kcal"
 }`;
+    },
+
+    /**
+     * COMPARATIVA SEMANAL BIOMÉTRICA (Semana Actual vs Semana Anterior)
+     * Calcula diferencias exactas (+/-) para peso, cintura, cadera, pecho, brazo, muslo
+     * y genera el diagnóstico evolutivo de avance o atraso.
+     */
+    obtenerComparativaSemanalAtleta(atletaNombre, targetSemanaId = null) {
+      const esFede = this.normalizar(atletaNombre) === 'fede';
+      const nombreLimpio = esFede ? 'Fede' : 'Arantxa';
+      const hist = this.historicoAtleta(nombreLimpio);
+
+      // Filtrar registros que tengan al menos peso numérico > 0 o alguna medida corporal
+      const registros = hist.filter(r => {
+        const p = parseFloat(r.peso);
+        return (!isNaN(p) && p > 0) || r.cintura || r.pecho || r.cadera || r.brazo || r.muslo;
+      });
+
+      // Si el formulario actual tiene datos introducidos para este atleta, incorporarlos/actualizarlos
+      if (this.normalizar(this.form.atleta) === this.normalizar(nombreLimpio) && this.form.peso && parseFloat(this.form.peso) > 0) {
+        const semId = this.form.semana_id;
+        const semNom = this.form.semana || (semId ? `Semana ${semId}` : 'Semana Actual');
+        const itemForm = {
+          semana_id: semId,
+          semana: semNom,
+          peso: this.form.peso.toString(),
+          pecho: (this.form.pecho || '').toString(),
+          cintura: (this.form.cintura || '').toString(),
+          cadera: (this.form.cadera || '').toString(),
+          brazo: (this.form.brazo || '').toString(),
+          muslo: (this.form.muslo || '').toString()
+        };
+        const idxExistente = registros.findIndex(r => r.semana_id === semId || r.semana === semNom);
+        if (idxExistente !== -1) {
+          registros[idxExistente] = { ...registros[idxExistente], ...itemForm };
+        } else {
+          registros.push(itemForm);
+        }
+      }
+
+      // Si no hubiera ningún registro, tomar el de respaldo base
+      if (registros.length === 0) {
+        const resp = DATOS_SEMANA1_RESPALDO[nombreLimpio] || { peso: '93.5', pecho: '108', cintura: '95', cadera: '100', brazo: '37', muslo: '58' };
+        registros.push({
+          semana_id: 1,
+          semana: 'Semana 1',
+          ...resp
+        });
+      }
+
+      // Determinar la semana actual a evaluar
+      let idxActual = -1;
+      const semBuscada = targetSemanaId || this.form.semana_id || this.semanaActivaId;
+      if (semBuscada) {
+        idxActual = registros.findIndex(r => r.semana_id === semBuscada);
+      }
+      if (idxActual === -1) {
+        idxActual = registros.length - 1;
+      }
+
+      const actual = registros[idxActual];
+      const anterior = idxActual > 0 ? registros[idxActual - 1] : null;
+
+      // Cálculo de deltas numéricos y formateados
+      const calcDelta = (valAct, valAnt) => {
+        const numAct = parseFloat(valAct);
+        const numAnt = parseFloat(valAnt);
+        if (isNaN(numAct) || isNaN(numAnt)) return null;
+        const diff = Math.round((numAct - numAnt) * 10) / 10;
+        return {
+          actual: numAct,
+          anterior: numAnt,
+          diff,
+          str: diff > 0 ? `+${diff.toFixed(1)}` : `${diff.toFixed(1)}`
+        };
+      };
+
+      const deltaPeso = calcDelta(actual ? actual.peso : null, anterior ? anterior.peso : null);
+      const deltaCintura = calcDelta(actual ? actual.cintura : null, anterior ? anterior.cintura : null);
+      const deltaCadera = calcDelta(actual ? actual.cadera : null, anterior ? anterior.cadera : null);
+      const deltaPecho = calcDelta(actual ? actual.pecho : null, anterior ? anterior.pecho : null);
+      const deltaBrazo = calcDelta(actual ? actual.brazo : null, anterior ? anterior.brazo : null);
+      const deltaMuslo = calcDelta(actual ? actual.muslo : null, anterior ? anterior.muslo : null);
+
+      let estado = 'inicial';
+      let diagnostico = '';
+      let ajusteSugerido = 0;
+      let chSugerido = 0;
+
+      if (!anterior) {
+        diagnostico = `Línea base inicial registrada para ${actual ? actual.semana : 'Semana 1'}. No existe semana previa para comparar diferencias. Se mantienen pautas base.`;
+      } else if (esFede) {
+        const dP = deltaPeso ? deltaPeso.diff : 0;
+        const dC = deltaCintura ? deltaCintura.diff : 0;
+        const dB = deltaBrazo ? deltaBrazo.diff : 0;
+
+        if (dP < 0) {
+          if (dB <= -0.5) {
+            estado = 'alerta_musculo';
+            ajusteSugerido = 100;
+            chSugerido = 25;
+            diagnostico = `AVANCE CON ALERTA: Bajada de ${dP} kg en ${actual.semana} vs ${anterior.semana}, pero con caída en perímetro de brazo (${dB} cm). Riesgo de pérdida de glucógeno o masa muscular. Asegurar 200g P fija y carbohidratos complejos suficientes.`;
+          } else if (dP < -0.8) {
+            estado = 'bajada_rapida';
+            ajusteSugerido = 80;
+            chSugerido = 20;
+            diagnostico = `AVANCE RÁPIDO: Pérdida pronunciada de ${dP} kg en 1 semana. Ritmo algo agresivo para ultratrail. Modular déficit moderado para evitar fatiga en tiradas y CrossFit.`;
+          } else {
+            estado = 'avance_optimo';
+            ajusteSugerido = 0;
+            chSugerido = 0;
+            diagnostico = `AVANCE POSITIVO ÓPTIMO: Bajada controlada de ${dP} kg hacia los 87.5 kg${deltaCintura ? `, cintura reducida (${deltaCintura.str} cm)` : ''} y masa muscular preservada. Mantener estructura y calorías actuales.`;
+          }
+        } else if (dP === 0) {
+          if (dC < 0) {
+            estado = 'avance_recomposicion';
+            ajusteSugerido = 0;
+            chSugerido = 0;
+            diagnostico = `AVANCE (Recomposición): Peso idéntico pero cintura reducida (${deltaCintura ? deltaCintura.str : ''} cm). Pérdida de grasa con ganancia o mantenimiento muscular. Mantener calorías.`;
+          } else {
+            estado = 'estancamiento';
+            ajusteSugerido = -180;
+            chSugerido = -45;
+            diagnostico = `ATRASO / ESTANCAMIENTO: Peso estancado (${actual.peso} kg) sin reducción en cintura. Se requiere recorte de -180 kcal/día (-45g CH en crudo) manteniendo intactos los 200g de proteína.`;
+          }
+        } else {
+          estado = 'atraso_subida';
+          ajusteSugerido = -200;
+          chSugerido = -50;
+          diagnostico = `ATRASO (Aumento de peso): Subida de ${deltaPeso ? deltaPeso.str : ''} kg respecto a ${anterior.semana}. Se requiere recorte en carbohidratos en crudo (-200 kcal/día / -50g CH) manteniendo proteína fija en 200g.`;
+        }
+      } else {
+        const dP = deltaPeso ? deltaPeso.diff : 0;
+        const dC = deltaCintura ? deltaCintura.diff : 0;
+        const pAct = parseFloat(actual ? actual.peso : 0) || 66;
+
+        if (pAct < 64.5 || dP < -0.6) {
+          estado = 'alerta_bajo_peso';
+          ajusteSugerido = 100;
+          chSugerido = 25;
+          diagnostico = `ALERTA: Peso por debajo del rango óptimo de fuerza (${actual.peso} kg, bajada de ${dP} kg). Subir +100 kcal/día (+25g CH) para blindar la fuerza en CrossFit.`;
+        } else if (dP > 0.3 && dC > 0.3) {
+          estado = 'atraso_superavit';
+          ajusteSugerido = -100;
+          chSugerido = -25;
+          diagnostico = `ATRASO (Ligero superávit): Subida de peso (${deltaPeso ? deltaPeso.str : ''} kg) y cintura (${deltaCintura ? deltaCintura.str : ''} cm). Reducir levemente carbohidratos (-100 kcal/día / -25g CH) con proteína intacta en ~140g.`;
+        } else if (dC <= 0 && Math.abs(dP) <= 0.4) {
+          estado = 'avance_optimo';
+          ajusteSugerido = 0;
+          chSugerido = 0;
+          diagnostico = `AVANCE POSITIVO ÓPTIMO: Recomposición corporal impecable en ~65 kg, cintura bajo control y fuerza en CrossFit protegida. Mantener calorías y macros intactos.`;
+        } else {
+          estado = 'avance_estable';
+          ajusteSugerido = 0;
+          chSugerido = 0;
+          diagnostico = `EVOLUCIÓN ESTABLE: Métricas en rango para Arantxa (${actual.peso} kg). Mantener calorías y macronutrientes.`;
+        }
+      }
+
+      return {
+        atleta: nombreLimpio,
+        semanaActual: actual ? actual.semana : 'Semana Actual',
+        semanaAnterior: anterior ? anterior.semana : null,
+        actual,
+        anterior,
+        deltaPeso,
+        deltaCintura,
+        deltaCadera,
+        deltaPecho,
+        deltaBrazo,
+        deltaMuslo,
+        estado,
+        diagnostico,
+        ajusteSugerido,
+        chSugerido
+      };
     },
 
     /**
@@ -2213,55 +2461,80 @@ Campos obligatorios por objeto:
       const adjF = (this.ajustesMetabolicos && this.ajustesMetabolicos.fede) || 0;
       const adjA = (this.ajustesMetabolicos && this.ajustesMetabolicos.arantxa) || 0;
 
-      // Medidas más recientes del pesaje del viernes
-      const histFede = this.historicoAtleta('Fede').filter(x => parseFloat(x.peso) > 0);
-      const histAra = this.historicoAtleta('Arantxa').filter(x => parseFloat(x.peso) > 0);
-      const ultFede = histFede[histFede.length - 1] || { peso: '93.5', cintura: '95', cadera: '100', brazo: '37', muslo: '58' };
-      const ultAra = histAra[histAra.length - 1] || { peso: '67.0', cintura: '80', cadera: '98', brazo: '28', muslo: '54' };
+      // Obtener comparativa semanal exhaustiva (Semana Actual vs Semana Anterior)
+      const compFede = this.obtenerComparativaSemanalAtleta('Fede');
+      const compAra = this.obtenerComparativaSemanalAtleta('Arantxa');
+
+      const fmtDelta = (d, unidad = 'cm') => {
+        if (!d) return '--';
+        return `${d.actual} ${unidad} (Δ ${d.str} ${unidad} vs ${d.anterior} ${unidad})`;
+      };
 
       let textoDias = '';
       this.diasSemana.forEach(dia => {
         const dNorm = this.normalizar(dia);
-        const planDia = this.entrenosPlanificador[dNorm] || { fede: 'CrossFit 17:30', arantxa: 'CrossFit 17:30' };
+        const planDia = (this.entrenosPlanificador && this.entrenosPlanificador[dNorm]) || { fede: '', arantxa: '' };
+        const entF = planDia.fede && planDia.fede.trim() ? planDia.fede.trim() : 'CrossFit 17:30';
+        const entA = planDia.arantxa && planDia.arantxa.trim() ? planDia.arantxa.trim() : 'CrossFit 17:30';
         const of = this.objetivoEfectivoDia(dia, 'fede');
         const oa = this.objetivoEfectivoDia(dia, 'arantxa');
 
         textoDias += `  - **${dia}**:\n`;
-        textoDias += `    * Sesión FEDE: "${planDia.fede}" → Objetivo: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
-        textoDias += `    * Sesión ARANTXA: "${planDia.arantxa}" → Objetivo: ${oa.kcal} kcal | ${oa.p}g P | ${oa.ch}g CH | ${oa.g}g G\n`;
+        textoDias += `    * Sesión FEDE: "${entF}" → Objetivo: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
+        textoDias += `    * Sesión ARANTXA: "${entA}" → Objetivo: ${oa.kcal} kcal | ${oa.p}g P | ${oa.ch}g CH | ${oa.g}g G\n`;
       });
 
       return `Actúa con tu rol de skill "nutricionista-deportivo" para Kinetix:
 
-=== 1. CONTROL BIOMÉTRICO Y PESAJE (Viernes) ===
-- FEDE: Peso actual ${ultFede.peso} kg (Cintura: ${ultFede.cintura || '--'} cm, Cadera: ${ultFede.cadera || '--'} cm, Brazo: ${ultFede.brazo || '--'} cm, Muslo: ${ultFede.muslo || '--'} cm).
-  * Ajuste metabólico semanal aplicado: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en carbohidratos (Proteína fija en 200g).
-- ARANTXA: Peso actual ${ultAra.peso} kg (Cintura: ${ultAra.cintura || '--'} cm, Cadera: ${ultAra.cadera || '--'} cm, Brazo: ${ultAra.brazo || '--'} cm, Muslo: ${ultAra.muslo || '--'} cm).
-  * Ajuste metabólico semanal aplicado: ${adjA >= 0 ? '+' : ''}${adjA} kcal/día en carbohidratos (Proteína fija en ~140g).
+=== 1. CONTROL BIOMÉTRICO Y EVOLUCIÓN (Pesaje Viernes: ${compFede.semanaActual}${compFede.semanaAnterior ? ` vs ${compFede.semanaAnterior}` : ''}) ===
 
-=== 2. PLANIFICACIÓN DE ENTRENAMIENTOS DE LA SEMANA (Definido el Domingo) ===
-(Los entrenamientos diarios pueden ser solo CrossFit, solo correr, doble sesión combinada o descanso total):
+* FEDE (Objetivo: 87.5 kg para ultratrail preservando masa muscular | Proteína fija: 200g P):
+  - Semana evaluada: ${compFede.semanaActual}${compFede.semanaAnterior ? ` (vs ${compFede.semanaAnterior})` : ' (Línea base inicial)'}
+  - Peso: ${compFede.actual ? compFede.actual.peso : '--'} kg${compFede.deltaPeso ? ` (Δ ${compFede.deltaPeso.str} kg vs ${compFede.deltaPeso.anterior} kg)` : ''}
+  - Cintura: ${fmtDelta(compFede.deltaCintura, 'cm')}
+  - Cadera: ${fmtDelta(compFede.deltaCadera, 'cm')}
+  - Pecho: ${fmtDelta(compFede.deltaPecho, 'cm')}
+  - Brazo: ${fmtDelta(compFede.deltaBrazo, 'cm')}
+  - Muslo: ${fmtDelta(compFede.deltaMuslo, 'cm')}
+  - Diagnóstico de evolución: ${compFede.diagnostico}
+  - Ajuste metabólico semanal aplicado en app: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en carbohidratos.
+
+* ARANTXA (Objetivo: Recomposición corporal en ~65 kg y fuerza CrossFit | Proteína fija: ~140g P):
+  - Semana evaluada: ${compAra.semanaActual}${compAra.semanaAnterior ? ` (vs ${compAra.semanaAnterior})` : ' (Línea base inicial)'}
+  - Peso: ${compAra.actual ? compAra.actual.peso : '--'} kg${compAra.deltaPeso ? ` (Δ ${compAra.deltaPeso.str} kg vs ${compAra.deltaPeso.anterior} kg)` : ''}
+  - Cintura: ${fmtDelta(compAra.deltaCintura, 'cm')}
+  - Cadera: ${fmtDelta(compAra.deltaCadera, 'cm')}
+  - Pecho: ${fmtDelta(compAra.deltaPecho, 'cm')}
+  - Brazo: ${fmtDelta(compAra.deltaBrazo, 'cm')}
+  - Muslo: ${fmtDelta(compAra.deltaMuslo, 'cm')}
+  - Diagnóstico de evolución: ${compAra.diagnostico}
+  - Ajuste metabólico semanal aplicado en app: ${adjA >= 0 ? '+' : ''}${adjA} kcal/día en carbohidratos.
+
+=== 2. PLANIFICACIÓN DE ENTRENAMIENTOS DE LA SEMANA (Domingo) ===
+(Configurado para cada atleta de forma independiente: solo CrossFit, solo correr, doble sesión o descanso total):
 ${textoDias}
 
 === 3. REGLAS DIETÉTICAS INMUTABLES (rules.md) ===
-1. OLLA COMÚN: Misma receta/plato en desayuno, comida, merienda y cena para ambos. Solo varían las cantidades en crudo.
-2. CERO SALMÓN COCINADO EN CALIENTE (solo atún al natural o merluza empanada Mercadona).
-3. PRE-CROSSFIT (17:30): Vaciado gástrico rápido (sin legumbres ni grasas pesadas antes de entrenar).
-4. MODULACIÓN DE HIDRATOS: Modular los carbohidratos en crudo según si el día es de solo correr, solo CrossFit, doble sesión o descanso.
-5. Todos los alimentos que se cocinan expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
-6. FORMATO PARA LISTA DE LA COMPRA AUTOMÁTICA: En "fede" y "arantxa" separa CADA alimento OBLIGATORIAMENTE con el símbolo "+" (NUNCA con comas). Cada alimento debe empezar por su cantidad y unidad (ej: "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE").
+1. OLLA COMÚN: Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (08:30 Desayuno, 14:00 Comida, 17:30 Merienda y 21:30 Cena) para cocinar juntos. La ÚNICA diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus calorías y macros según su entrenamiento del día.
+2. DESAYUNO: Priorizar tostadas de pan de masa madre con tomate triturado, jamón serrano y aguacate. CERO proteína en polvo / batidos en la pauta habitual (eliminar suplementación de whey).
+3. RECETAS SABROSAS: Enfoque de platos sabrosos estilo peruano/latino/fit (ej: lomo saltado fit de pollo o ternera con arroz basmati, ají de gallina fit, merluza empanada con patata asada, etc.).
+4. CERO SALMÓN COCINADO EN CALIENTE: En comidas calientes usar únicamente atún al natural o merluza empanada Mercadona. El salmón solo se permite crudo, marinado o ahumado en frío.
+5. MERIENDA PRE-CROSSFIT (17:30): Vaciado gástrico rápido estricto pre-WOD (ej: tortitas de arroz con fiambre de pavo / jamón serrano), sin legumbres ni grasas pesadas para evitar molestias digestivas.
+6. MODULACIÓN DE HIDRATOS: Modular los carbohidratos en crudo según si el día es de solo correr, solo CrossFit, doble sesión o descanso.
+7. PESOS EN CRUDO: Todos los alimentos que se cocinan (arroz basmati, patata, pasta, pollo, merluza, ternera) expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
+8. FORMATO PARA LISTA DE LA COMPRA AUTOMÁTICA: En "fede" y "arantxa" separa CADA alimento OBLIGATORIAMENTE con el símbolo "+" (NUNCA con comas). Cada alimento debe empezar por su cantidad y unidad (ej: "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate").
 
 === 4. FORMATO OBLIGATORIO DE RESPUESTA (JSON) ===
-Devuelve ÚNICAMENTE un array JSON válido con las 28 tomas (4 por día: Desayuno, Comida, Merienda, Cena) de Lunes a Domingo con esta estructura exacta:
+Devuelve ÚNICAMENTE un array JSON válido (28 tomas, 4 tomas por día de Lunes a Domingo) con esta estructura exacta:
 [
   {
     "dia": "Lunes",
     "ventana": "08:30 Desayuno",
-    "plato": "Nombre del plato común",
-    "fede": "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE",
-    "macrosFede": "P: 45g | CH: 80g | G: 18g | 660 kcal",
-    "arantxa": "120g pechuga de pollo + 60g arroz basmati + 8ml AOVE",
-    "macrosArantxa": "P: 30g | CH: 55g | G: 12g | 450 kcal"
+    "plato": "Tostadas de masa madre con jamón serrano, tomate y aguacate",
+    "fede": "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate",
+    "macrosFede": "P: 50g | CH: 65g | G: 50g | 925 kcal",
+    "arantxa": "80g pan masa madre + 50g jamón serrano + 30g tomate triturado + 40g aguacate",
+    "macrosArantxa": "P: 35g | CH: 55g | G: 35g | 472 kcal"
   }
 ]`;
     },
