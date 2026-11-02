@@ -351,7 +351,7 @@
             <div x-show="panelEntrenoAbierto" x-cloak class="bg-canvas border border-border rounded-3xl p-4 sm:p-5 space-y-4 mt-4">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
                 <div>
-                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Ajuste de Sesiones (Anclado a RESUMEN_SEMANAL · Esc para cerrar)</h3>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-ink">Ajuste de Sesiones y Carga de Entrenamiento (Esc para cerrar)</h3>
                   <p class="text-xs text-ink-secondary mt-0.5">Al cambiar el tipo de sesión, las calorías y gramos de carbohidratos en crudo se adaptan automáticamente sin tocar la proteína.</p>
                 </div>
                 <button x-show="tieneModificacionEntrenoDia(diaSeleccionado)" type="button" @click="restaurarEntrenoDia(diaSeleccionado)" class="px-3.5 py-1.5 rounded-full bg-surface border border-border text-xs font-bold text-sage hover:bg-sage-light shrink-0">
@@ -366,11 +366,11 @@
                     <p class="text-xs text-ink-secondary mt-0.5">Escala los hidratos en crudo al número real de sesiones de hoy.</p>
                   </div>
 
-                  <div class="space-y-3">
+                  <div class="space-y-4">
                     <div>
                       <label class="block text-xs font-bold text-ink mb-1">Sesiones hoy para FEDE:</label>
                       <select :value="obtenerCargaAtleta(diaSeleccionado, 'fede')" @change="fijarCargaAtleta(diaSeleccionado, 'fede', $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
-                        <option value="auto" x-text="'Seguir Excel original (' + objetivoBaseDia(diaSeleccionado, 'fede').entreno + ' → ' + objetivoBaseDia(diaSeleccionado, 'fede').kcal + ' kcal)'"></option>
+                        <option value="auto" x-text="'Plan semanal activo (' + (objetivoBaseDia(diaSeleccionado, 'fede').entreno || 'Plan activo') + ' · ' + objetivoBaseDia(diaSeleccionado, 'fede').kcal + ' kcal · ' + objetivoBaseDia(diaSeleccionado, 'fede').ch + 'g CH)'"></option>
                         <option value="descanso">0 Sesiones · Descanso Total (2.345 kcal | 200g CH)</option>
                         <option value="unica_run_suave">1 Sesión · Carrera Fácil 8 km (2.707 kcal | 310g CH)</option>
                         <option value="unica_cf">1 Sesión · Solo CrossFit WOD (2.755 kcal | 320g CH)</option>
@@ -380,12 +380,19 @@
                         <option value="doble_cf">2 Sesiones · Tempo / Series + CrossFit WOD (3.295 kcal | 450g CH)</option>
                         <option value="trail_largo">Tirada Larga · Trail 22 km +1000m (3.400 kcal | 495g CH)</option>
                       </select>
+                      <div class="flex flex-wrap gap-1.5 mt-2">
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'fede', 'descanso')" :class="obtenerCargaAtleta(diaSeleccionado, 'fede') === 'descanso' ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🛋️ Descanso</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'fede', 'unica_cf')" :class="obtenerCargaAtleta(diaSeleccionado, 'fede') === 'unica_cf' ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🏋️ Solo CF</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'fede', 'unica_run_intensa')" :class="obtenerCargaAtleta(diaSeleccionado, 'fede') === 'unica_run_intensa' ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🏃 Solo Correr</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'fede', 'doble_cf')" :class="obtenerCargaAtleta(diaSeleccionado, 'fede') === 'doble_cf' ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">⚡ Doble Sesión</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'fede', 'auto')" :class="obtenerCargaAtleta(diaSeleccionado, 'fede') === 'auto' ? 'bg-sage-light text-sage border border-sage-border' : 'bg-canvas text-ink-secondary border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">↩ Semanal</button>
+                      </div>
                     </div>
 
                     <div>
                       <label class="block text-xs font-bold text-ink mb-1">Sesiones hoy para ARANTXA:</label>
                       <select :value="obtenerCargaAtleta(diaSeleccionado, 'arantxa')" @change="fijarCargaAtleta(diaSeleccionado, 'arantxa', $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
-                        <option value="auto" x-text="'Seguir Excel original (' + objetivoBaseDia(diaSeleccionado, 'arantxa').entreno + ' → ' + objetivoBaseDia(diaSeleccionado, 'arantxa').kcal + ' kcal)'"></option>
+                        <option value="auto" x-text="'Plan semanal activo (' + (objetivoBaseDia(diaSeleccionado, 'arantxa').entreno || 'Plan activo') + ' · ' + objetivoBaseDia(diaSeleccionado, 'arantxa').kcal + ' kcal · ' + objetivoBaseDia(diaSeleccionado, 'arantxa').ch + 'g CH)'"></option>
                         <option value="descanso">0 Sesiones · Descanso Total (1.630 kcal | 145g CH)</option>
                         <option value="unica_run_suave">1 Sesión · Carrera Fácil 8 km (1.860 kcal | 215g CH)</option>
                         <option value="unica_cf">1 Sesión · Solo CrossFit WOD (1.890 kcal | 220g CH)</option>
@@ -395,6 +402,13 @@
                         <option value="doble_cf">2 Sesiones · Tempo / Series + CrossFit WOD (2.280 kcal | 310g CH)</option>
                         <option value="trail_largo">Tirada Larga · Trail 22 km +1000m (2.380 kcal | 345g CH)</option>
                       </select>
+                      <div class="flex flex-wrap gap-1.5 mt-2">
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'arantxa', 'descanso')" :class="obtenerCargaAtleta(diaSeleccionado, 'arantxa') === 'descanso' ? 'bg-ara-dark text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🛋️ Descanso</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'arantxa', 'unica_cf')" :class="obtenerCargaAtleta(diaSeleccionado, 'arantxa') === 'unica_cf' ? 'bg-ara-dark text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🏋️ Solo CF</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'arantxa', 'unica_run_intensa')" :class="obtenerCargaAtleta(diaSeleccionado, 'arantxa') === 'unica_run_intensa' ? 'bg-ara-dark text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🏃 Solo Correr</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'arantxa', 'doble_cf')" :class="obtenerCargaAtleta(diaSeleccionado, 'arantxa') === 'doble_cf' ? 'bg-ara-dark text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">⚡ Doble Sesión</button>
+                        <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'arantxa', 'auto')" :class="obtenerCargaAtleta(diaSeleccionado, 'arantxa') === 'auto' ? 'bg-ara-badge/20 text-ara-dark border border-ara-border' : 'bg-canvas text-ink-secondary border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">↩ Semanal</button>
+                      </div>
                     </div>
                   </div>
                 </div>

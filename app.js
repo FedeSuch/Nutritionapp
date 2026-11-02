@@ -110,7 +110,8 @@ const CATALOGO_NUTRICIONAL = {
   "lentejas bote":              { tipo: 'ch',   p: 8.0,  ch: 15.0, g: 1.0 },
   "quinoa":                     { tipo: 'ch',   p: 14.0, ch: 64.0, g: 6.0 },
   "cuscús":                     { tipo: 'ch',   p: 12.0, ch: 72.0, g: 1.5 },
-  "fideos de arroz":            { tipo: 'ch',   p: 3.5,  ch: 80.0, g: 0.2 }
+  "fideos de arroz":            { tipo: 'ch',   p: 3.5,  ch: 80.0, g: 0.2 },
+  "aguacate":                   { tipo: 'grasa', p: 2.0,  ch: 2.0,  g: 15.0 }
 };
 
 function appData() {
@@ -320,13 +321,27 @@ function appData() {
       return titulo.replace(/\s+y\s+creatina/gi, '').replace(/\s*\+\s*creatina/gi, '').trim();
     },
 
-    // Lee el texto de macros escrito en la pestaña DIETA del Excel (ej. "66g P | 170g CH | 49g G | 1.385 kcal")
+    // Lee el texto de macros en cualquier formato (ej. "P: 50g | CH: 60g | G: 80g | 1105 kcal" o "66g P | 170g CH | 49g G | 1.385 kcal")
     parsearMacrosDeColumnaExcel(txt) {
       if (!txt) return { p: 0, ch: 0, g: 0, kcal: 0 };
-      const mP = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*P\b/i);
-      const mCH = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*CH\b/i);
-      const mG = txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*G\b/i);
-      const mKcal = txt.match(/(\d+(?:[.,]\d+)?)\s*kcal/i);
+
+      // P / Proteína (soporta tanto "P: 50g" como "50g P")
+      const mP = txt.match(/(?:P|Prot|Prote[íi]na)[\s:]*(\d+(?:[.,]\d+)?)\s*g?\b/i) ||
+                 txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*(?:P|Prot|Prote[íi]na)\b/i);
+
+      // CH / Carbohidratos (soporta tanto "CH: 60g" como "60g CH")
+      const mCH = txt.match(/(?:CH|Carbs?|Carbohidratos?)[\s:]*(\d+(?:[.,]\d+)?)\s*g?\b/i) ||
+                  txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*(?:CH|Carbs?|Carbohidratos?)\b/i);
+
+      // G / Grasas (evitar confundir "50g" de gramos con la letra G de grasa)
+      const mG = txt.match(/(?:^|[|\s,])(?:G|Grasas?|Fat)[\s:]*(\d+(?:[.,]\d+)?)\s*g?\b/i) ||
+                 txt.match(/(\d+(?:[.,]\d+)?)\s*g?\s*(?:Grasas?|Fat)\b/i) ||
+                 txt.match(/(\d+(?:[.,]\d+)?)\s*g\s+G\b/i) ||
+                 txt.match(/(?:^|[|\s,])(\d+(?:[.,]\d+)?)\s*G\b/i);
+
+      // Kcal / Calorías
+      const mKcal = txt.match(/(\d+(?:[.,]\d+)?)\s*k?cal/i) ||
+                    txt.match(/(?:kcal|calor[íi]as?)[\s:]*(\d+(?:[.,]\d+)?)/i);
 
       const p = mP ? parseFloat(mP[1].replace(',', '.')) : 0;
       const ch = mCH ? parseFloat(mCH[1].replace(',', '.')) : 0;
@@ -352,13 +367,37 @@ function appData() {
           this.normalizar(r.atleta) === atletaKey && 
           this.normalizar(r.dia) === dNorm
         );
-        if (fila && Number(fila.kcal) > 500) {
+        // Debe tener calorías y macros reales calculados (P > 0 o CH > 0)
+        if (fila && Number(fila.kcal) > 200 && (Number(fila.p) > 0 || Number(fila.ch) > 0)) {
           return {
             entreno: fila.entrenamiento || '',
             p: Math.round(Number(fila.p) || 0),
             ch: Math.round(Number(fila.ch) || 0),
             g: Math.round(Number(fila.g) || 0),
             kcal: Math.round(Number(fila.kcal) || 0)
+          };
+        }
+      }
+
+      // Si resumenSemanal no tiene macros válidos (ej. por importación anterior con 0g), sumarlos en tiempo real de dieta_diaria
+      const comidasDia = this.comidasDelDiaPara(diaFuente);
+      if (comidasDia && comidasDia.length > 0) {
+        let sumP = 0, sumCH = 0, sumG = 0, sumKcal = 0;
+        const campo = atletaKey === 'fede' ? 'macrosFede' : 'macrosArantxa';
+        comidasDia.forEach(c => {
+          const m = this.parsearMacrosDeColumnaExcel(c[campo]);
+          sumP += m.p; sumCH += m.ch; sumG += m.g; sumKcal += m.kcal;
+        });
+
+        if (sumP > 0 || sumCH > 0 || sumKcal > 0) {
+          const filaPrev = this.resumenSemanal ? this.resumenSemanal.find(r => this.normalizar(r.atleta) === atletaKey && this.normalizar(r.dia) === dNorm) : null;
+          const entreno = (filaPrev && filaPrev.entrenamiento) ? filaPrev.entrenamiento : (this.entrenosPlanificador && this.entrenosPlanificador[dNorm] ? (atletaKey === 'fede' ? this.entrenosPlanificador[dNorm].fede : this.entrenosPlanificador[dNorm].arantxa) : 'CrossFit 17:30');
+          return {
+            entreno,
+            p: Math.round(sumP),
+            ch: Math.round(sumCH),
+            g: Math.round(sumG),
+            kcal: Math.round(sumKcal > 0 ? sumKcal : (sumP * 4 + sumCH * 4 + sumG * 9))
           };
         }
       }
@@ -569,8 +608,41 @@ function appData() {
             localStorage.setItem('hybrid_cache_dieta', '[]');
           }
 
-          // Guardar resumen_semanal
+          // Guardar resumen_semanal y auto-reparar si las filas tenían macros en 0 por importación previa
           this.resumenSemanal = resumenRes.data || [];
+          if (this.dietaCompleta && this.dietaCompleta.length > 0 && this.resumenSemanal.length > 0) {
+            const filasReparar = [];
+            this.resumenSemanal.forEach(fila => {
+              if (Number(fila.p) === 0 && Number(fila.ch) === 0) {
+                const atletaKey = this.normalizar(fila.atleta);
+                const dNorm = this.normalizar(fila.dia);
+                const comidasDia = this.dietaCompleta.filter(c => this.normalizar(c.dia) === dNorm);
+                const campo = atletaKey === 'fede' ? 'macrosFede' : 'macrosArantxa';
+                let sumP = 0, sumCH = 0, sumG = 0, sumK = 0;
+                comidasDia.forEach(c => {
+                  const m = this.parsearMacrosDeColumnaExcel(c[campo]);
+                  sumP += m.p; sumCH += m.ch; sumG += m.g; sumK += m.kcal;
+                });
+                if (sumP > 0 || sumCH > 0) {
+                  fila.p = Math.round(sumP);
+                  fila.ch = Math.round(sumCH);
+                  fila.g = Math.round(sumG);
+                  fila.kcal = Math.round(sumK > 0 ? sumK : (sumP * 4 + sumCH * 4 + sumG * 9));
+                  filasReparar.push(fila);
+                }
+              }
+            });
+
+            if (filasReparar.length > 0) {
+              filasReparar.forEach(f => {
+                supabaseClient
+                  .from('resumen_semanal')
+                  .update({ p: f.p, ch: f.ch, g: f.g, kcal: f.kcal })
+                  .eq('id', f.id)
+                  .then(() => {});
+              });
+            }
+          }
           localStorage.setItem('hybrid_cache_resumen_supabase', JSON.stringify(this.resumenSemanal));
 
           // Cargar estados aislados por semana activa
@@ -814,7 +886,40 @@ function appData() {
       if (n.includes('quinoa')) return 'quinoa';
       if (n.includes('cuscus')) return 'cuscús';
       if (n.includes('fideo')) return 'fideos de arroz';
+      if (n.includes('aguacate')) return 'aguacate';
       return null;
+    },
+
+    nombreBonitoAlimento(id) {
+      const mapa = {
+        'pechuga pollo': 'Pechuga de pollo',
+        'pechuga pavo': 'Pechuga de pavo',
+        'atún al natural': 'Atún al natural',
+        'merluza blanca': 'Merluza blanca',
+        'merluza empanada Mercadona': 'Merluza empanada Mercadona',
+        'solomillo ternera': 'Solomillo de ternera',
+        'lomo embuchado': 'Lomo embuchado',
+        'jamón serrano': 'Jamón serrano',
+        'salmón fresco': 'Salmón fresco',
+        'claras de huevo': 'Claras de huevo',
+        'huevos enteros': 'Huevos enteros',
+        'lomo de cerdo magro': 'Lomo de cerdo magro',
+        'queso fresco batido': 'Queso fresco batido',
+        'arroz basmati': 'Arroz basmati',
+        'patata': 'Patata',
+        'boniato': 'Boniato',
+        'pasta blanca': 'Pasta blanca',
+        'pan masa madre': 'Pan masa madre',
+        'copos de avena': 'Copos de avena',
+        'tortitas de arroz': 'Tortitas de arroz',
+        'garbanzos bote': 'Garbanzos de bote',
+        'lentejas bote': 'Lentejas de bote',
+        'quinoa': 'Quinoa',
+        'cuscús': 'Cuscús',
+        'fideos de arroz': 'Fideos de arroz',
+        'aguacate': 'Aguacate'
+      };
+      return mapa[id] || id;
     },
 
     /**
@@ -981,11 +1086,11 @@ function appData() {
         if (nuevoMlAOVE < 0) nuevoMlAOVE = 0;
 
         if (idxProt !== -1 && nuevaProtObj) {
-          const nombreMostrarProt = haySwapProt ? swapConfig.prot : partes[idxProt].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
+          const nombreMostrarProt = haySwapProt ? this.nombreBonitoAlimento(swapConfig.prot) : partes[idxProt].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
           partes[idxProt] = `${nuevosGramosProt} g ${nombreMostrarProt}`;
         }
         if (idxCH !== -1 && nuevoCHObj) {
-          const nombreMostrarCH = haySwapCH ? swapConfig.ch : partes[idxCH].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
+          const nombreMostrarCH = haySwapCH ? this.nombreBonitoAlimento(swapConfig.ch) : partes[idxCH].replace(/^\d+(?:[.,]\d+)?\s*g\s+/i, '');
           partes[idxCH] = `${nuevosGramosCH} g ${nombreMostrarCH}`;
         }
         if (idxAOVE !== -1) {
@@ -993,6 +1098,29 @@ function appData() {
         } else if (nuevoMlAOVE > 0 && (haySwapProt || haySwapCH)) {
           partes.push(`${nuevoMlAOVE} ml AOVE`);
         }
+
+        // Si hay swap activo, reflejar los macros matemáticos reales del plato intercambiado
+        if (haySwapProt || haySwapCH) {
+          const finalP = Math.round((nuevosGramosProt / 100) * (nuevaProtObj ? nuevaProtObj.p : 0) + (nuevosGramosCH / 100) * (nuevoCHObj ? nuevoCHObj.p : 0));
+          const finalCH = Math.round((nuevosGramosProt / 100) * (nuevaProtObj ? nuevaProtObj.ch : 0) + (nuevosGramosCH / 100) * (nuevoCHObj ? nuevoCHObj.ch : 0));
+          const finalG = Math.round((nuevosGramosProt / 100) * (nuevaProtObj ? nuevaProtObj.g : 0) + (nuevosGramosCH / 100) * (nuevoCHObj ? nuevoCHObj.g : 0) + nuevoMlAOVE);
+          const finalKcal = (finalP * 4) + (finalCH * 4) + (finalG * 9);
+
+          if (finalP > 0 || finalCH > 0) {
+            pMetaComida = finalP;
+            chMetaComida = finalCH;
+            gMetaComida = finalG;
+            kcalMetaComida = finalKcal;
+          }
+        }
+      }
+
+      // Garantizar que los macros nunca queden a 0 si la fila tenía macros escritos válidos
+      if (pMetaComida === 0 && chMetaComida === 0 && (macrosEscritosFila.p > 0 || macrosEscritosFila.ch > 0)) {
+        pMetaComida = macrosEscritosFila.p;
+        chMetaComida = Math.round(macrosEscritosFila.ch * factorTotalGramosCH);
+        gMetaComida = macrosEscritosFila.g;
+        kcalMetaComida = Math.round((pMetaComida * 4) + (chMetaComida * 4) + (gMetaComida * 9));
       }
 
       let notaAjuste = '';
@@ -2432,9 +2560,9 @@ Devuelve ÚNICAMENTE un array JSON válido con las 28 tomas (4 por día: Desayun
           atleta: 'Fede',
           dia: dia,
           entrenamiento: planDia.fede || baseFede.entreno,
-          p: sumKcalFede > 0 ? Math.round(sumPFede) : baseFede.p,
-          ch: sumKcalFede > 0 ? Math.round(sumCHFede) : baseFede.ch,
-          g: sumKcalFede > 0 ? Math.round(sumGFede) : baseFede.g,
+          p: sumPFede > 0 ? Math.round(sumPFede) : baseFede.p,
+          ch: sumCHFede > 0 ? Math.round(sumCHFede) : baseFede.ch,
+          g: sumGFede > 0 ? Math.round(sumGFede) : baseFede.g,
           kcal: sumKcalFede > 0 ? Math.round(sumKcalFede) : baseFede.kcal
         });
 
@@ -2450,9 +2578,9 @@ Devuelve ÚNICAMENTE un array JSON válido con las 28 tomas (4 por día: Desayun
           atleta: 'Arantxa',
           dia: dia,
           entrenamiento: planDia.arantxa || baseAra.entreno,
-          p: sumKcalAra > 0 ? Math.round(sumPAra) : baseAra.p,
-          ch: sumKcalAra > 0 ? Math.round(sumCHAra) : baseAra.ch,
-          g: sumKcalAra > 0 ? Math.round(sumGAra) : baseAra.g,
+          p: sumPAra > 0 ? Math.round(sumPAra) : baseAra.p,
+          ch: sumCHAra > 0 ? Math.round(sumCHAra) : baseAra.ch,
+          g: sumGAra > 0 ? Math.round(sumGAra) : baseAra.g,
           kcal: sumKcalAra > 0 ? Math.round(sumKcalAra) : baseAra.kcal
         });
       });
