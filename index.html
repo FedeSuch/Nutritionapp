@@ -68,6 +68,8 @@
       }
     }
   </script>
+  <!-- Supabase JS Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
   
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -149,8 +151,8 @@
           </button>
 
           <button type="button" @click="cambiarTab('ia')" :aria-current="tab === 'ia' ? 'page' : false" :class="tab === 'ia' ? 'bg-sage text-white font-bold shadow-sm' : 'text-ink-secondary hover:bg-subtle hover:text-ink font-semibold'" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm transition">
-            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-            <span>Importar Plan IA</span>
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span>Planificador Semanal IA</span>
           </button>
         </nav>
       </div>
@@ -835,6 +837,19 @@
                LISTA DE COMIDAS REALES DEL DÍA (Con Resaltado de Próxima Toma y Checks Individuales)
                ========================================================= -->
           <div class="space-y-4">
+            <!-- Estado vacío cuando no hay comidas cargadas aún en la semana activa -->
+            <div x-show="comidasDelDia().length === 0 && !cargandoDieta" class="bg-surface border-2 border-dashed border-border rounded-[2rem] p-8 text-center space-y-4">
+              <div class="w-12 h-12 mx-auto rounded-full bg-sage-light text-sage flex items-center justify-center font-bold text-xl">🥗</div>
+              <div>
+                <h3 class="text-base font-extrabold text-ink">Semana iniciada en Supabase · Sin comidas cargadas</h3>
+                <p class="text-xs text-ink-secondary mt-1 max-w-md mx-auto">La base de datos relacional está conectada y limpia. Para cargar las tomas de los 7 días, ve a <strong>"Importar Plan IA"</strong> y pega la respuesta JSON de Gemini.</p>
+              </div>
+              <button type="button" @click="cambiarTab('ia')" class="inline-flex items-center gap-2 bg-sage hover:bg-sage-hover text-white font-bold px-6 py-3 rounded-full text-xs shadow-sm transition">
+                <span>Ir a Importar Plan IA</span>
+                <span>→</span>
+              </button>
+            </div>
+
             <template x-for="(comida, idx) in comidasDelDia()" :key="diaSeleccionado + '_' + idx">
               <article
                 :class="esProximaComida(idx) ? 'border-2 border-sage ring-4 ring-sage/5' : 'border border-border'"
@@ -1298,80 +1313,200 @@
         </section>
 
         <!-- =========================================================
-             VISTA 4: IMPORTAR SEMANA DESDE GEMINI (Con Generador de Prompt y Validador)
+             VISTA 4: PLANIFICADOR SEMANAL CON GEMINI AI (Skill Nutricionista Deportivo)
              ========================================================= -->
         <section x-show="tab === 'ia'" x-cloak class="space-y-6 pt-2">
-          
-          <!-- GENERADOR INTELIGENTE DE PROMPTS PARA GEMINI -->
-          <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-4 max-w-3xl">
-            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+
+          <!-- ENCABEZADO Y CONFIGURACIÓN DE GEMINI API -->
+          <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-4 max-w-4xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
               <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-sage">Paso 1 · Generador de Dieta Gemini</span>
-                <h2 class="text-xl font-extrabold text-ink mt-0.5">Prompt con Objetivos de Esta Semana</h2>
-                <p class="text-xs sm:text-sm text-ink-secondary mt-1">Genera automáticamente el prompt exacto para Gemini: misma receta para ambos (Olla Común), cantidades en crudo adaptadas a los macros de cada uno tras el pesaje, y respeto de las reglas dietéticas.</p>
+                <span class="text-xs font-bold uppercase tracking-wider text-sage">Automatización Inteligente</span>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-ink mt-0.5">Planificador Semanal con Gemini IA</h2>
+                <p class="text-xs text-ink-secondary mt-1">Conecta el pesaje del viernes con los entrenos del domingo para que Gemini cree y publique el menú en Supabase sin pasos manuales.</p>
               </div>
 
               <div class="flex items-center gap-2">
-                <span class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-canvas border border-border text-ink" x-text="'Fede: ' + (ajustesMetabolicos.fede >= 0 ? '+' : '') + ajustesMetabolicos.fede + ' kcal | Ara: ' + (ajustesMetabolicos.arantxa >= 0 ? '+' : '') + ajustesMetabolicos.arantxa + ' kcal'"></span>
+                <button
+                  type="button"
+                  @click="mostrarConfigIA = !mostrarConfigIA"
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition shadow-sm"
+                  :class="geminiApiKey ? 'bg-canvas border-border text-ink hover:bg-subtle' : 'bg-amber-100 border-amber-300 text-amber-900 animate-pulse'"
+                >
+                  <svg class="w-4 h-4 text-sage" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  <span x-text="geminiApiKey ? 'Ajustes Gemini (' + (geminiModelo === 'gemini-1.5-pro' ? 'Pro' : 'Flash') + ')' : 'Configurar API Key'"></span>
+                </button>
               </div>
             </div>
 
-            <div class="bg-canvas border border-border rounded-2xl p-4 space-y-2.5 text-xs">
-              <span class="font-extrabold text-ink block uppercase tracking-wider text-[11px]">Resumen de lo que exigirá a Gemini:</span>
-              <ul class="space-y-1.5 text-ink-secondary list-disc pl-4">
-                <li><strong class="text-ink">Misma preparación para los dos:</strong> Fede y Arantxa cocinan en una sola olla; Gemini solo ajusta los gramos en crudo.</li>
-                <li><strong class="text-ink">Macronutrientes clavados:</strong> 7 días con las calorías y carbohidratos exactos de cada entrenamiento y pesaje.</li>
-                <li><strong class="text-ink">Reglas de rules.md blindadas:</strong> Cero salmón cocinado, merluza empanada Mercadona y vaciado gástrico rápido pre-CrossFit 17:30.</li>
-              </ul>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                @click="copiarPromptGemini()"
-                class="w-full bg-sage hover:bg-sage-hover text-white font-extrabold py-4 rounded-full text-sm shadow-md transition flex items-center justify-center gap-2 min-h-[50px] active:scale-[0.99]"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                <span x-text="promptCopiado ? '✓ ¡Prompt Copiado al Portapapeles!' : '📋 Copiar Prompt Completo para Gemini'"></span>
-              </button>
-              <p x-show="promptCopiado" x-cloak class="text-center text-xs font-bold text-sage mt-2">✓ Pégalo en el chat de Gemini. Cuando te responda el JSON, pégalo en el recuadro de abajo.</p>
-            </div>
-          </div>
-
-          <!-- PUBLICADOR Y VALIDADOR DE DIETA -->
-          <div class="bg-surface border border-border rounded-[2rem] p-5 sm:p-7 shadow-soft space-y-5 max-w-3xl">
-            <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-sage">Paso 2 · Publicar en Supabase</span>
-              <h2 class="text-xl font-extrabold text-ink mt-0.5">Pega la Respuesta JSON de Gemini</h2>
-              <p class="text-xs text-ink-secondary mt-1">Verifica automáticamente la estructura del JSON y el cumplimiento de la Regla 4 (sin salmón caliente, merluza empanada Mercadona) antes de publicar en Supabase.</p>
-            </div>
-
-            <textarea x-model="jsonNuevaDieta" rows="9" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno","plato":"Tostadas con jamón","fede":"120 g pan masa madre + 80 g jamón serrano","macrosFede":"35g P | 58g CH | 12g G | 480 kcal","arantxa":"80 g pan masa madre + 60 g jamón serrano","macrosArantxa":"25g P | 38g CH | 9g G | 333 kcal"}]' class="w-full bg-canvas border border-border rounded-3xl p-4 text-xs font-mono text-ink"></textarea>
-
-            <!-- Previsualización del Validador en Tiempo Real -->
-            <template x-if="validarJsonDieta()">
-              <div :class="validarJsonDieta().valido ? 'bg-sage-light border-sage-border text-ink' : 'bg-[#F6E8EA] border-[#E0909E] text-sage'" class="border rounded-2xl p-4 text-xs space-y-2">
-                <div class="flex items-center justify-between font-extrabold">
-                  <span x-text="validarJsonDieta().valido ? '✓ JSON Válido (' + validarJsonDieta().totalTomas + ' tomas en ' + validarJsonDieta().totalDias + ' días)' : '✕ Error en el formato JSON'"></span>
+            <!-- Panel desplegable de configuración de Gemini -->
+            <div x-show="mostrarConfigIA || !geminiApiKey" class="p-4 bg-canvas border border-border rounded-2xl space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-ink">Credenciales de la API de Google Gemini</span>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="text-[11px] text-sage font-bold underline hover:opacity-80">Conseguir API Key gratuita en Google AI Studio ↗</a>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="sm:col-span-2">
+                  <label class="block text-[11px] font-bold text-ink-secondary mb-1">Gemini API Key</label>
+                  <input
+                    type="password"
+                    x-model="geminiApiKey"
+                    @change="guardarApiKeyGemini(geminiApiKey)"
+                    placeholder="AIzaSy..."
+                    class="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs font-mono font-semibold"
+                  />
                 </div>
-                <p x-show="!validarJsonDieta().valido" class="font-mono text-xs" x-text="validarJsonDieta().error"></p>
-                <template x-if="validarJsonDieta().valido && validarJsonDieta().alertasReglas.length > 0">
-                  <div class="pt-2 border-t border-sage-border space-y-1">
-                    <span class="font-extrabold text-[#8A5A19] block">⚠️ Avisos de Reglas Dietéticas (rules.md):</span>
-                    <ul class="list-disc pl-4 space-y-0.5 text-ink-secondary">
-                      <template x-for="(alerta, iAl) in validarJsonDieta().alertasReglas" :key="iAl">
-                        <li x-text="alerta"></li>
-                      </template>
-                    </ul>
+                <div>
+                  <label class="block text-[11px] font-bold text-ink-secondary mb-1">Modelo de IA</label>
+                  <select
+                    x-model="geminiModelo"
+                    @change="cambiarModeloGemini(geminiModelo)"
+                    class="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs font-bold"
+                  >
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Recomendado · Razonamiento Completo)</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash (Ultrarrápido)</option>
+                  </select>
+                </div>
+              </div>
+              <p class="text-[11px] text-ink-muted">Tu API Key se almacena localmente en tu navegador. Puedes alternar entre Pro y Flash cuando quieras.</p>
+            </div>
+
+            <!-- PASO 1: CONTEXTO DEL PESAJE DEL VIERNES -->
+            <div class="border border-border rounded-2xl p-4 bg-canvas/40 space-y-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-sage block">1. Punto de Partida · Pesaje del Viernes</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div class="bg-surface border border-border p-3.5 rounded-xl space-y-1">
+                  <div class="flex justify-between items-center">
+                    <span class="font-extrabold text-ink">Fede</span>
+                    <span class="font-mono font-bold text-sage" x-text="(evaluarProgresoAtleta('fede').pesoActual || form.peso) + ' kg'"></span>
+                  </div>
+                  <p class="text-ink-secondary text-[11px]" x-text="evaluarProgresoAtleta('fede').titulo"></p>
+                  <span class="inline-block text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sage-light text-sage" x-text="'Ajuste metabólico: ' + ((ajustesMetabolicos.fede >= 0 ? '+' : '') + ajustesMetabolicos.fede) + ' kcal/día'"></span>
+                </div>
+                <div class="bg-surface border border-border p-3.5 rounded-xl space-y-1">
+                  <div class="flex justify-between items-center">
+                    <span class="font-extrabold text-ink">Arantxa</span>
+                    <span class="font-mono font-bold text-ara-dark" x-text="historicoAtleta('Arantxa').filter(x=>parseFloat(x.peso)>0).slice(-1)[0]?.peso + ' kg'"></span>
+                  </div>
+                  <p class="text-ink-secondary text-[11px]" x-text="evaluarProgresoAtleta('arantxa').titulo"></p>
+                  <span class="inline-block text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-subtle text-ink-secondary" x-text="'Ajuste metabólico: ' + ((ajustesMetabolicos.arantxa >= 0 ? '+' : '') + ajustesMetabolicos.arantxa) + ' kcal/día'"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PASO 2: PLANIFICADOR DE ENTRENAMIENTOS DEL DOMINGO (LUNES A DOMINGO) -->
+            <div class="space-y-3 pt-1">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-sage block">2. Planificación de Sesiones (Domingo)</span>
+                  <h3 class="text-sm font-extrabold text-ink">Entrenamientos de la Semana (Correr, CrossFit, Gym)</h3>
+                </div>
+                <span class="text-[11px] text-ink-muted">Doble sesión soportada (ej: 8km + CF)</span>
+              </div>
+
+              <div class="space-y-2.5">
+                <template x-for="dia in diasSemana" :key="'plan_' + dia">
+                  <div class="bg-canvas border border-border p-3 rounded-2xl space-y-2">
+                    <div class="flex items-center justify-between border-b border-border/70 pb-1.5">
+                      <span class="font-bold text-xs text-ink uppercase tracking-wide" x-text="dia"></span>
+                      <div class="flex items-center gap-1">
+                        <button
+                          type="button"
+                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'CrossFit 17:30'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'CrossFit 17:30')"
+                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
+                        >CF 17:30</button>
+                        <button
+                          type="button"
+                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Tempo 10 km (08:30) + CrossFit (17:30)')"
+                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
+                        >Doble Sesión</button>
+                        <button
+                          type="button"
+                          @click="actualizarEntrenoPlanificador(normalizar(dia), 'fede', 'Descanso total'); actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', 'Descanso total')"
+                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface border border-border hover:bg-subtle text-ink"
+                        >Descanso</button>
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label class="block text-[10px] font-bold text-sage mb-0.5">Fede (Entreno):</label>
+                        <input
+                          type="text"
+                          :value="entrenosPlanificador[normalizar(dia)]?.fede || ''"
+                          @input="actualizarEntrenoPlanificador(normalizar(dia), 'fede', $event.target.value)"
+                          placeholder="Ej: Cuestas 8 km + Gym Torso"
+                          class="w-full bg-surface border border-border rounded-xl px-2.5 py-1.5 text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-[10px] font-bold text-ara-dark mb-0.5">Arantxa (Entreno):</label>
+                        <input
+                          type="text"
+                          :value="entrenosPlanificador[normalizar(dia)]?.arantxa || ''"
+                          @input="actualizarEntrenoPlanificador(normalizar(dia), 'arantxa', $event.target.value)"
+                          placeholder="Ej: CrossFit 17:30"
+                          class="w-full bg-surface border border-border rounded-xl px-2.5 py-1.5 text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </template>
               </div>
-            </template>
+            </div>
 
-            <button type="button" @click="importarDietaGemini()" :disabled="enviando || !jsonNuevaDieta || (validarJsonDieta() && !validarJsonDieta().valido)" class="w-full bg-sage hover:bg-sage-hover text-white font-bold py-3.5 rounded-full text-sm shadow-sm transition disabled:opacity-40 min-h-[48px]">
-              <span x-text="enviando ? 'Creando nueva semana en Supabase...' : 'Publicar Nueva Semana en Supabase'"></span>
-            </button>
-            <p x-show="mensajeDietaActualizada" x-cloak class="text-sage text-xs font-bold text-center">✓ ¡Plan semanal actualizado en Supabase!</p>
+            <!-- PASO 3: BOTÓN DE GENERACIÓN DIRECTA 1-CLIC CON GEMINI -->
+            <div class="pt-3 border-t border-border space-y-3">
+              <button
+                type="button"
+                @click="generarDietaConGeminiAPI()"
+                :disabled="generandoConGemini"
+                class="w-full bg-sage hover:bg-sage-hover text-white font-extrabold py-4 rounded-full text-sm shadow-md transition flex items-center justify-center gap-2 min-h-[52px] active:scale-[0.99] disabled:opacity-50"
+              >
+                <svg x-show="!generandoConGemini" class="w-5 h-5 text-amber-300 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+                <svg x-show="generandoConGemini" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span x-text="generandoConGemini ? estadoGeneracionIA : '⚡ Generar y Publicar Dieta con ' + (geminiModelo === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : 'Gemini Flash')"></span>
+              </button>
+
+              <div x-show="generandoConGemini" class="bg-sage-light border border-sage-border rounded-2xl p-4 text-center space-y-1">
+                <span class="text-xs font-bold text-sage" x-text="estadoGeneracionIA"></span>
+                <p class="text-[11px] text-ink-secondary">Gemini Pro está calculando las ecuaciones de la olla común y modulando los carbohidratos en crudo según tus entrenos.</p>
+              </div>
+
+              <!-- ACORDEÓN DE RESPALDO MANUAL (COPIAR PROMPT O PEGAR JSON) -->
+              <div class="border-t border-border pt-2 text-center">
+                <button
+                  type="button"
+                  @click="mostrarModoManualIA = !mostrarModoManualIA"
+                  class="text-xs font-semibold text-ink-secondary hover:text-sage transition underline"
+                  x-text="mostrarModoManualIA ? 'Ocultar opciones manuales de respaldo' : '¿Prefieres copiar el prompt o pegar el JSON a mano?'"
+                ></button>
+              </div>
+            </div>
+
+            <!-- SECCIÓN MANUAL DE RESPALDO -->
+            <div x-show="mostrarModoManualIA" class="space-y-4 pt-3 border-t border-border">
+              <button
+                type="button"
+                @click="copiarPromptGemini()"
+                class="w-full bg-canvas hover:bg-subtle border border-border text-ink font-bold py-3 rounded-full text-xs shadow-sm transition flex items-center justify-center gap-2"
+              >
+                <span>📋 Copiar Prompt de esta semana para el chat web de Gemini</span>
+              </button>
+
+              <div class="space-y-2">
+                <label class="block text-xs font-bold text-ink">O pega la respuesta JSON manualmente:</label>
+                <textarea x-model="jsonNuevaDieta" rows="6" placeholder='[{"dia":"Lunes","ventana":"08:30 Desayuno", ...}]' class="w-full bg-canvas border border-border rounded-2xl p-3 text-xs font-mono text-ink"></textarea>
+                <button
+                  type="button"
+                  @click="importarDietaGemini()"
+                  :disabled="enviando || !jsonNuevaDieta"
+                  class="w-full bg-surface hover:bg-subtle border border-border text-ink font-bold py-2.5 rounded-full text-xs transition"
+                >
+                  <span>Publicar JSON pegado en Supabase</span>
+                </button>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -1416,10 +1551,10 @@
           type="button"
           @click="cambiarTab('ia')"
           :aria-current="tab === 'ia' ? 'page' : false"
-          aria-label="Importar Plan desde Gemini IA"
+          aria-label="Planificador Semanal IA"
           :class="tab === 'ia' ? 'ring-2 ring-sage bg-sage text-white' : 'bg-subtle text-ink border border-border'"
           class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold transition"
-          title="Importar Plan IA"
+          title="Planificador Semanal IA"
         >
           <span x-text="vistaAtleta === 'Fede' ? 'FE' : (vistaAtleta === 'Arantxa' ? 'AR' : 'IA')"></span>
         </button>
@@ -1430,9 +1565,8 @@
   </div>
 
   <!-- =========================================================
-       SUPABASE CLIENT SDK & MOTOR NUTRICIONAL
+       MOTOR NUTRICIONAL KINETIX (SUPABASE POSTGRESQL)
        ========================================================= -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>

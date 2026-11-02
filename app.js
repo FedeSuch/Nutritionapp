@@ -1,8 +1,24 @@
 const SUPABASE_URL = "https://ykzmuzjyskhdimnmovjv.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_6Yvl1DZTz5-na2EceQt1_A_swbOZH5m";
-const supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function')
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+
+function getSupabase() {
+  if (window._sbClientInstance) return window._sbClientInstance;
+  const s = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+  if (s && typeof s.createClient === 'function') {
+    window._sbClientInstance = s.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return window._sbClientInstance;
+  }
+  return null;
+}
+
+const supabaseClient = new Proxy({}, {
+  get: (_, prop) => {
+    const client = getSupabase();
+    if (!client) return undefined;
+    const val = client[prop];
+    return typeof val === 'function' ? val.bind(client) : val;
+  }
+});
 
 const FECHAS_SEMANAS_DEFAULT = {
   "Semana 1": "2026-10-26", "Semana 2": "2026-11-02", "Semana 3": "2026-11-09", "Semana 4": "2026-11-16",
@@ -120,6 +136,21 @@ function appData() {
     anuncioAccesible: '',
     filtroCompra: '',
     jsonNuevaDieta: '',
+    geminiApiKey: localStorage.getItem('hybrid_gemini_api_key') || '',
+    geminiModelo: localStorage.getItem('hybrid_gemini_modelo') || 'gemini-1.5-pro',
+    mostrarConfigIA: false,
+    mostrarModoManualIA: false,
+    generandoConGemini: false,
+    estadoGeneracionIA: '',
+    entrenosPlanificador: JSON.parse(localStorage.getItem('hybrid_planificador_entrenos') || JSON.stringify({
+      lunes:     { fede: 'CrossFit 17:30',                           arantxa: 'CrossFit 17:30' },
+      martes:    { fede: 'Cuestas 8 km (08:30) + Gym Torso (18:30)', arantxa: 'Cuestas 8 km (08:30) + Gym Torso (18:30)' },
+      miercoles: { fede: 'Tempo 10 km (08:30) + CrossFit (17:30)',   arantxa: 'Tempo 10 km (08:30) + CrossFit (17:30)' },
+      jueves:    { fede: 'Carrera fácil 8 km (18:30)',               arantxa: 'Carrera fácil 8 km (18:30)' },
+      viernes:   { fede: 'CrossFit 17:30',                           arantxa: 'CrossFit 17:30' },
+      sabado:    { fede: 'Descanso activo (Precarga Trail)',         arantxa: 'Descanso activo (Precarga Trail)' },
+      domingo:   { fede: 'Trail 22 km (08:30)',                      arantxa: 'Trail 22 km (08:30)' }
+    })),
     semanaActivaId: null,
     semanasDisponibles: [],
     historicoBiometria: [],
@@ -196,7 +227,7 @@ function appData() {
 
     cambiarTab(nuevaTab) {
       this.tab = nuevaTab;
-      const nombres = { dieta: 'Plan Diario y Entreno', compra: 'Despensa y Compra', checkin: 'Biometría y Progreso', ia: 'Importar Plan IA' };
+      const nombres = { dieta: 'Plan Diario y Entreno', compra: 'Despensa y Compra', checkin: 'Biometría y Progreso', ia: 'Planificador Semanal IA' };
       this.anunciar(`Vista cambiada a ${nombres[nuevaTab] || nuevaTab}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
@@ -458,10 +489,25 @@ function appData() {
 
         this.semanasDisponibles = semData || [];
 
+        // Si no hubiera ninguna semana en la BD, auto-crear Semana 1 activa
+        if (this.semanasDisponibles.length === 0) {
+          const fechaDef = this.claveSemanaActual();
+          const { data: creada } = await supabaseClient
+            .from('semanas')
+            .insert([{ nombre: 'Semana 1', fecha_inicio: fechaDef, activa: true }])
+            .select()
+            .single();
+          if (creada) this.semanasDisponibles = [creada];
+        }
+
         // 2. Determinar la semana activa
         const activa = this.semanasDisponibles.find(s => s.activa) || this.semanasDisponibles[this.semanasDisponibles.length - 1];
         if (activa) {
           this.semanaActivaId = activa.id;
+          if (!this.form.semana_id) {
+            this.form.semana = activa.nombre || `Semana ${activa.id}`;
+            this.form.semana_id = activa.id;
+          }
         }
 
         if (this.semanaActivaId) {
@@ -487,7 +533,7 @@ function appData() {
           if (resumenRes.error) throw resumenRes.error;
           if (estadoRes.error) throw estadoRes.error;
 
-          // Mapear dieta_diaria
+          // Mapear dieta_diaria (limpiar si la semana activa aún no tiene comidas)
           if (dietaRes.data && dietaRes.data.length > 0) {
             this.dietaCompleta = dietaRes.data.map(row => ({
               id: row.id,
@@ -500,6 +546,9 @@ function appData() {
               macrosArantxa: row.macros_arantxa || ''
             }));
             localStorage.setItem('hybrid_cache_dieta', JSON.stringify(this.dietaCompleta));
+          } else {
+            this.dietaCompleta = [];
+            localStorage.setItem('hybrid_cache_dieta', '[]');
           }
 
           // Guardar resumen_semanal
@@ -1600,49 +1649,97 @@ function appData() {
     /**
      * GENERADOR INTELIGENTE DE PROMPT PARA GEMINI
      */
+    guardarApiKeyGemini(key) {
+      this.geminiApiKey = (key || '').trim();
+      localStorage.setItem('hybrid_gemini_api_key', this.geminiApiKey);
+      this.anunciar('API Key de Gemini guardada correctamente');
+    },
+
+    cambiarModeloGemini(m) {
+      this.geminiModelo = m;
+      localStorage.setItem('hybrid_gemini_modelo', m);
+      this.anunciar(`Modelo de IA cambiado a ${m}`);
+    },
+
+    actualizarEntrenoPlanificador(diaKey, atletaKey, val) {
+      if (!this.entrenosPlanificador[diaKey]) {
+        this.entrenosPlanificador[diaKey] = { fede: '', arantxa: '' };
+      }
+      this.entrenosPlanificador[diaKey][atletaKey] = val;
+      this.entrenosPlanificador = { ...this.entrenosPlanificador };
+      localStorage.setItem('hybrid_planificador_entrenos', JSON.stringify(this.entrenosPlanificador));
+    },
+
+    /**
+     * SYSTEM PROMPT OFICIAL: SKILL NUTRICIONISTA-DEPORTIVO PARA KINETIX
+     */
+    systemPromptNutricionista() {
+      return `Actúas como "nutricionista-deportivo", un nutricionista deportivo de precisión de élite para Kinetix, especializado en dos atletas híbridos de alto rendimiento (Trail Running y CrossFit) que viven y cocinan juntos:
+- Fede: Bajar de 93.5 kg a 87.5 kg conservando intacta la masa muscular para Ultratrail de 50 km. Proteína fija innegociable: 200g P.
+- Arantxa: Recomposición corporal en ~65.0 kg y mejora de fuerza en CrossFit. Proteína fija innegociable: ~140g P.
+
+REGLAS DE ORO INMUTABLES:
+1. OLLA COMÚN: Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (08:30 Desayuno, 14:00 Comida, 17:00 Pre-WOD/Merienda y 21:00 Cena) para poder cocinar juntos. La ÚNICA diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus respectivos carbohidratos y calorías según el entrenamiento del día.
+2. REGLAS DIETÉTICAS OBLIGATORIAS (rules.md):
+   - PROHIBIDO el salmón cocinado en platos calientes (en comidas calientes usar únicamente atún al natural o merluza). El salmón solo se permite crudo, marinado o ahumado en frío (ej. poke bowl o ensalada fría).
+   - La merluza debe ser específicamente "merluza empanada del Mercadona".
+   - En tomas previas al entrenamiento de CrossFit (17:30), SOLO alimentos de vaciado gástrico rápido (arroz blanco, patata, claras de huevo, pan blanco), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
+   - Todos los alimentos que se cocinan (arroz, pasta, patata, pollo, ternera, merluza) deben especificarse obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
+3. SALIDA JSON ESTRICTA: Responde ÚNICAMENTE con un array JSON válido sin texto previo ni posterior, cubriendo los 7 días (Lunes a Domingo) con 4 comidas por día (Desayuno, Comida, Merienda/Pre-WOD, Cena).
+Campos obligatorios por objeto:
+{
+  "dia": "Lunes",
+  "ventana": "08:30 Desayuno",
+  "plato": "Nombre del plato común",
+  "fede": "ingredientes con gramos en crudo para Fede",
+  "macrosFede": "35g P | 58g CH | 12g G | 480 kcal",
+  "arantxa": "ingredientes con gramos en crudo para Arantxa",
+  "macrosArantxa": "25g P | 38g CH | 9g G | 333 kcal"
+}`;
+    },
+
+    /**
+     * GENERADOR INTELIGENTE DE PROMPT PARA GEMINI (Integra pesaje viernes + entrenos domingo)
+     */
     generarPromptGemini() {
       const adjF = (this.ajustesMetabolicos && this.ajustesMetabolicos.fede) || 0;
       const adjA = (this.ajustesMetabolicos && this.ajustesMetabolicos.arantxa) || 0;
 
+      // Medidas más recientes del pesaje del viernes
+      const histFede = this.historicoAtleta('Fede').filter(x => parseFloat(x.peso) > 0);
+      const histAra = this.historicoAtleta('Arantxa').filter(x => parseFloat(x.peso) > 0);
+      const ultFede = histFede[histFede.length - 1] || { peso: '93.5', cintura: '95' };
+      const ultAra = histAra[histAra.length - 1] || { peso: '67.0', cintura: '80' };
+
       let textoDias = '';
       this.diasSemana.forEach(dia => {
+        const dNorm = this.normalizar(dia);
+        const planDia = this.entrenosPlanificador[dNorm] || { fede: 'CrossFit 17:30', arantxa: 'CrossFit 17:30' };
         const of = this.objetivoEfectivoDia(dia, 'fede');
         const oa = this.objetivoEfectivoDia(dia, 'arantxa');
-        textoDias += `  - **${dia}** (Entreno: ${of.entreno}):\n`;
-        textoDias += `    * FEDE: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
-        textoDias += `    * ARANTXA: ${oa.kcal} kcal | ${oa.p}g P | ${oa.ch}g CH | ${oa.g}g G\n`;
+
+        textoDias += `  - **${dia}**:\n`;
+        textoDias += `    * Entreno FEDE: "${planDia.fede}" → Objetivo: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
+        textoDias += `    * Entreno ARANTXA: "${planDia.arantxa}" → Objetivo: ${oa.kcal} kcal | ${oa.p}g P | ${oa.ch}g CH | ${oa.g}g G\n`;
       });
 
-      return `Actúa como nutricionista deportivo de precisión para Kinetix, una App de alto rendimiento para dos atletas híbridos (Trail Running y CrossFit) que viven y cocinan juntos:
-- Fede: Objetivo bajar de 93.5 kg a 87.5 kg manteniendo músculo para Ultratrail 50 km. (Ajuste metabólico aplicado tras pesaje: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en CH).
-- Arantxa: Objetivo recomposición corporal en ~65.0 kg y mejora de fuerza. (Ajuste metabólico: ${adjA >= 0 ? '+' : ''}${adjA} kcal/día).
+      return `Actúa con tu rol de skill "nutricionista-deportivo" para Kinetix:
 
-=== REGLA DE ORO DE COCINA Y REPARTO (OLLA COMÚN) ===
-Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (desayuno, comida, merienda y cena) para poder cocinar juntos.
-La única diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus respectivos macros y calorías.
+=== DATOS DE CONTROL Y PESAJE (Viernes) ===
+- Fede: Peso actual ${ultFede.peso} kg (Cintura: ${ultFede.cintura || '--'} cm). Ajuste metabólico semanal aplicado: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en carbohidratos. Proteína fija en 200g.
+- Arantxa: Peso actual ${ultAra.peso} kg (Cintura: ${ultAra.cintura || '--'} cm). Ajuste metabólico: ${adjA >= 0 ? '+' : ''}${adjA} kcal/día. Proteína fija en ~140g.
 
-=== OBJETIVOS DIARIOS EXACTOS DE ESTA SEMANA (LUNES A DOMINGO) ===
+=== PLAN DE ENTRENAMIENTOS DE LA SEMANA (Definido el Domingo) Y METAS EXACTAS ===
 ${textoDias}
-=== REGLAS DIETÉTICAS OBLIGATORIAS (rules.md) ===
-1. PROHIBIDO el salmón cocinado en platos calientes (en comidas calientes usar únicamente atún al natural o merluza). El salmón solo se permite crudo, marinado o ahumado en frío (ej. poke bowl o ensalada fría).
-2. La merluza debe ser específicamente "merluza empanada del Mercadona".
-3. En tomas previas al entrenamiento de CrossFit (17:30), SOLO alimentos de vaciado gástrico rápido (arroz blanco, patata, claras de huevo, pan blanco), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
-4. Todos los alimentos que se cocinan (arroz, pasta, patata, pollo, ternera, merluza) deben especificarse obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
 
-=== FORMATO DE SALIDA ESTRICTO ===
-Responde ÚNICAMENTE con un bloque de código JSON válido, sin texto adicional ni explicaciones:
+=== REGLAS DIETÉTICAS INMUTABLES (rules.md) ===
+1. Misma receta/plato en desayuno, comida, merienda y cena (Olla Común). Solo varían las cantidades en crudo.
+2. Cero salmón cocinado en caliente (solo atún natural o merluza empanada Mercadona).
+3. Pre-CrossFit (17:30): vaciado gástrico rápido (sin legumbres ni grasas pesadas).
+4. Todos los alimentos que se cocinan expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
 
-[
-  {
-    "dia": "Lunes",
-    "ventana": "08:30 Desayuno",
-    "plato": "Tortilla de claras con tostadas y AOVE",
-    "fede": "120 g pan masa madre + 200 g claras de huevo + 10 ml AOVE",
-    "macrosFede": "32g P | 58g CH | 11g G | 460 kcal",
-    "arantxa": "80 g pan masa madre + 150 g claras de huevo + 8 ml AOVE",
-    "macrosArantxa": "24g P | 38g CH | 9g G | 330 kcal"
-  }
-]`;
+=== INSTRUCCIÓN DE RESPUESTA ===
+Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un único array JSON válido.`;
     },
 
     async copiarPromptGemini() {
@@ -1650,11 +1747,240 @@ Responde ÚNICAMENTE con un bloque de código JSON válido, sin texto adicional 
       try {
         await navigator.clipboard.writeText(texto);
         this.promptCopiado = true;
-        this.anunciar('Prompt con objetivos de esta semana copiado al portapapeles');
+        this.anunciar('Prompt con objetivos y entrenamientos copiado');
         setTimeout(() => { this.promptCopiado = false; }, 4000);
       } catch (e) {
         alert("Selecciona y copia el texto del prompt manualmente.");
       }
+    },
+
+    /**
+     * GENERACIÓN AUTOMÁTICA CON LA API DE GEMINI (PRO / FLASH)
+     */
+    async generarDietaConGeminiAPI() {
+      if (!this.geminiApiKey || !this.geminiApiKey.trim()) {
+        this.mostrarConfigIA = true;
+        alert("Introduce tu Gemini API Key en el panel de configuración para generar la dieta con 1 clic.");
+        return;
+      }
+
+      this.generandoConGemini = true;
+      const nombreMod = this.geminiModelo === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : 'Gemini 2.0 Flash';
+      this.estadoGeneracionIA = `1/4 Conectando con ${nombreMod} e inyectando la skill nutricionista-deportivo...`;
+
+      try {
+        const promptUsuario = this.generarPromptGemini();
+        const systemPrompt = this.systemPromptNutricionista();
+
+        this.estadoGeneracionIA = `2/4 ${nombreMod} está razonando la dieta: cuadrando la olla común y modulando carbohidratos...`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModelo}:generateContent?key=${this.geminiApiKey.trim()}`;
+
+        const bodyPayload = {
+          system_instruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: promptUsuario }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            response_mime_type: "application/json"
+          }
+        };
+
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyPayload)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const msg = (errData.error && errData.error.message) ? errData.error.message : `HTTP ${res.status}`;
+          throw new Error(`Error de Gemini API: ${msg}`);
+        }
+
+        const data = await res.json();
+        const candidates = data.candidates;
+        if (!candidates || candidates.length === 0 || !candidates[0].content) {
+          throw new Error("Gemini no devolvió candidatos válidos.");
+        }
+
+        const textoJSON = candidates[0].content.parts[0].text;
+        this.estadoGeneracionIA = "3/4 Validando reglas dietéticas (rules.md) y estructura relacional...";
+
+        let comidas;
+        try {
+          comidas = JSON.parse(textoJSON);
+        } catch(e) {
+          throw new Error("La respuesta recibida no es un JSON válido: " + e.message);
+        }
+
+        this.jsonNuevaDieta = JSON.stringify(comidas, null, 2);
+        const val = this.validarJsonDieta();
+        if (!val || !val.valido) {
+          throw new Error("La dieta generada no superó la validación: " + (val ? val.error : "Estructura inválida"));
+        }
+
+        this.estadoGeneracionIA = "4/4 Creando nueva semana activa y guardando en Supabase...";
+        await this.ejecutarPublicacionEnSupabase(comidas);
+
+        this.anunciar(`¡Semana generada exitosamente con ${nombreMod} y publicada en Supabase!`);
+      } catch (err) {
+        console.error("Error al generar dieta con Gemini:", err);
+        alert(err.message || "Error al comunicar con la API de Gemini.");
+      } finally {
+        this.generandoConGemini = false;
+        this.estadoGeneracionIA = '';
+      }
+    },
+
+    /**
+     * PUBLICACIÓN EN SUPABASE (Reutilizable para API y manual)
+     */
+    async ejecutarPublicacionEnSupabase(comidas) {
+      if (!supabaseClient) {
+        throw new Error("Cliente de Supabase no disponible.");
+      }
+
+      // 1. Desactivar semanas activas previas
+      await supabaseClient
+        .from('semanas')
+        .update({ activa: false })
+        .eq('activa', true);
+
+      // 2. Determinar número de semana y fecha
+      const numeroSemana = (this.semanasDisponibles.length || 0) + 1;
+      const nombreSemana = `Semana ${numeroSemana}`;
+      const fechaInicio = this.claveSemanaActual();
+
+      const { data: nuevaSemana, error: semErr } = await supabaseClient
+        .from('semanas')
+        .insert([{
+          nombre: nombreSemana,
+          fecha_inicio: fechaInicio,
+          activa: true
+        }])
+        .select()
+        .single();
+
+      if (semErr) throw semErr;
+      const nuevaSemanaId = nuevaSemana.id;
+
+      // 3. Insertar comidas en dieta_diaria
+      const filasDieta = comidas.map(item => ({
+        semana_id: nuevaSemanaId,
+        dia: item.dia,
+        ventana: item.ventana,
+        plato: item.plato,
+        fede_detalles: item.fede,
+        arantxa_detalles: item.arantxa,
+        macros_fede: item.macrosFede || '',
+        macros_arantxa: item.macrosArantxa || ''
+      }));
+
+      const { error: dietaErr } = await supabaseClient
+        .from('dieta_diaria')
+        .insert(filasDieta);
+
+      if (dietaErr) throw dietaErr;
+
+      // 4. Calcular e insertar resumen_semanal con los entrenos del planificador
+      const filasResumen = [];
+      const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+      dias.forEach(dia => {
+        const dNorm = this.normalizar(dia);
+        const comidasDia = comidas.filter(c => this.normalizar(c.dia) === dNorm);
+        const planDia = this.entrenosPlanificador[dNorm] || { fede: 'CrossFit 17:30', arantxa: 'CrossFit 17:30' };
+
+        // Macros sumados Fede
+        let sumPFede = 0, sumCHFede = 0, sumGFede = 0, sumKcalFede = 0;
+        comidasDia.forEach(c => {
+          const m = this.parsearMacrosDeColumnaExcel(c.macrosFede);
+          sumPFede += m.p; sumCHFede += m.ch; sumGFede += m.g; sumKcalFede += m.kcal;
+        });
+        const baseFede = RESUMEN_OFICIAL_FEDE[dNorm] || { entreno: 'CrossFit 17:30', p: 200, ch: 320, g: 75, kcal: 2755 };
+        filasResumen.push({
+          semana_id: nuevaSemanaId,
+          atleta: 'Fede',
+          dia: dia,
+          entrenamiento: planDia.fede || baseFede.entreno,
+          p: sumKcalFede > 0 ? Math.round(sumPFede) : baseFede.p,
+          ch: sumKcalFede > 0 ? Math.round(sumCHFede) : baseFede.ch,
+          g: sumKcalFede > 0 ? Math.round(sumGFede) : baseFede.g,
+          kcal: sumKcalFede > 0 ? Math.round(sumKcalFede) : baseFede.kcal
+        });
+
+        // Macros sumados Arantxa
+        let sumPAra = 0, sumCHAra = 0, sumGAra = 0, sumKcalAra = 0;
+        comidasDia.forEach(c => {
+          const m = this.parsearMacrosDeColumnaExcel(c.macrosArantxa);
+          sumPAra += m.p; sumCHAra += m.ch; sumGAra += m.g; sumKcalAra += m.kcal;
+        });
+        const baseAra = RESUMEN_OFICIAL_ARANTXA[dNorm] || { entreno: 'CrossFit 17:30', p: 140, ch: 220, g: 50, kcal: 1890 };
+        filasResumen.push({
+          semana_id: nuevaSemanaId,
+          atleta: 'Arantxa',
+          dia: dia,
+          entrenamiento: planDia.arantxa || baseAra.entreno,
+          p: sumKcalAra > 0 ? Math.round(sumPAra) : baseAra.p,
+          ch: sumKcalAra > 0 ? Math.round(sumCHAra) : baseAra.ch,
+          g: sumKcalAra > 0 ? Math.round(sumGAra) : baseAra.g,
+          kcal: sumKcalAra > 0 ? Math.round(sumKcalAra) : baseAra.kcal
+        });
+      });
+
+      const { error: resumenErr } = await supabaseClient
+        .from('resumen_semanal')
+        .insert(filasResumen);
+
+      if (resumenErr) throw resumenErr;
+
+      // 5. Inserte un nuevo registro vacío {} en estado_app (semana limpia)
+      const estadosLimpios = [
+        { semana_id: nuevaSemanaId, clave: 'comidasCompletadas', valor_json: {} },
+        { semana_id: nuevaSemanaId, clave: 'swapsActivos', valor_json: {} },
+        { semana_id: nuevaSemanaId, clave: 'cargasEntreno', valor_json: {} },
+        { semana_id: nuevaSemanaId, clave: 'permutacionesDias', valor_json: {} },
+        { semana_id: nuevaSemanaId, clave: 'cenasSocialesPorDia', valor_json: {} },
+        { semana_id: nuevaSemanaId, clave: 'ajustesMetabolicos', valor_json: { fede: 0, arantxa: 0 } }
+      ];
+
+      const { error: estErr } = await supabaseClient
+        .from('estado_app')
+        .insert(estadosLimpios);
+
+      if (estErr) throw estErr;
+
+      // 6. Limpiar memoria local y cache
+      this.mensajeDietaActualizada = true;
+      this.jsonNuevaDieta = '';
+      this.cargasEntreno = {};
+      this.permutacionesDias = {};
+      this.swapsActivos = {};
+      this.cenasSocialesPorDia = {};
+      this.cenaSocialActiva = false;
+      this.comidasCompletadas = {};
+      this.ajustesMetabolicos = { fede: 0, arantxa: 0 };
+
+      localStorage.removeItem('hybrid_cargas_entreno');
+      localStorage.removeItem('hybrid_permutaciones_dias');
+      localStorage.removeItem('hybrid_swaps_activos');
+      localStorage.removeItem('hybrid_cenas_sociales');
+      localStorage.removeItem('hybrid_comidas_completadas');
+      localStorage.removeItem('hybrid_ajustes_metabolicos');
+
+      await this.cargarDatos();
+
+      setTimeout(() => {
+        this.mensajeDietaActualizada = false;
+        this.cambiarTab('dieta');
+      }, 1600);
     },
 
     async enviarCheckin() {
@@ -1717,150 +2043,11 @@ Responde ÚNICAMENTE con un bloque de código JSON válido, sin texto adicional 
         alert("Revisa el formato del JSON antes de publicar: " + (val ? val.error : 'JSON vacío'));
         return;
       }
-      if (!supabaseClient) {
-        alert("Cliente de Supabase no disponible.");
-        return;
-      }
       this.enviando = true;
       try {
         const comidas = JSON.parse(this.jsonNuevaDieta);
-
-        // 1. Desactivar todas las semanas activas actuales
-        const { error: updErr } = await supabaseClient
-          .from('semanas')
-          .update({ activa: false })
-          .eq('activa', true);
-
-        if (updErr) console.warn("Aviso al desactivar semanas previas:", updErr);
-
-        // 2. Insertar nueva semana activa
-        const numeroSemana = (this.semanasDisponibles.length || 0) + 1;
-        const nombreSemana = `Semana ${numeroSemana}`;
-        const fechaInicio = this.claveSemanaActual();
-
-        const { data: nuevaSemana, error: semErr } = await supabaseClient
-          .from('semanas')
-          .insert([{
-            nombre: nombreSemana,
-            fecha_inicio: fechaInicio,
-            activa: true
-          }])
-          .select()
-          .single();
-
-        if (semErr) throw semErr;
-        const nuevaSemanaId = nuevaSemana.id;
-
-        // 3. Insertar comidas en dieta_diaria
-        const filasDieta = comidas.map(item => ({
-          semana_id: nuevaSemanaId,
-          dia: item.dia,
-          ventana: item.ventana,
-          plato: item.plato,
-          fede_detalles: item.fede,
-          arantxa_detalles: item.arantxa,
-          macros_fede: item.macrosFede || '',
-          macros_arantxa: item.macrosArantxa || ''
-        }));
-
-        const { error: dietaErr } = await supabaseClient
-          .from('dieta_diaria')
-          .insert(filasDieta);
-
-        if (dietaErr) throw dietaErr;
-
-        // 4. Calcular e insertar entrenos y macros en resumen_semanal
-        const filasResumen = [];
-        const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-
-        dias.forEach(dia => {
-          const dNorm = this.normalizar(dia);
-          const comidasDia = comidas.filter(c => this.normalizar(c.dia) === dNorm);
-
-          // Suma Fede
-          let sumPFede = 0, sumCHFede = 0, sumGFede = 0, sumKcalFede = 0;
-          comidasDia.forEach(c => {
-            const m = this.parsearMacrosDeColumnaExcel(c.macrosFede);
-            sumPFede += m.p; sumCHFede += m.ch; sumGFede += m.g; sumKcalFede += m.kcal;
-          });
-          const baseFede = RESUMEN_OFICIAL_FEDE[dNorm] || { entreno: 'CrossFit 17:30', p: 200, ch: 320, g: 75, kcal: 2755 };
-          filasResumen.push({
-            semana_id: nuevaSemanaId,
-            atleta: 'Fede',
-            dia: dia,
-            entrenamiento: baseFede.entreno,
-            p: sumKcalFede > 0 ? Math.round(sumPFede) : baseFede.p,
-            ch: sumKcalFede > 0 ? Math.round(sumCHFede) : baseFede.ch,
-            g: sumKcalFede > 0 ? Math.round(sumGFede) : baseFede.g,
-            kcal: sumKcalFede > 0 ? Math.round(sumKcalFede) : baseFede.kcal
-          });
-
-          // Suma Arantxa
-          let sumPAra = 0, sumCHAra = 0, sumGAra = 0, sumKcalAra = 0;
-          comidasDia.forEach(c => {
-            const m = this.parsearMacrosDeColumnaExcel(c.macrosArantxa);
-            sumPAra += m.p; sumCHAra += m.ch; sumGAra += m.g; sumKcalAra += m.kcal;
-          });
-          const baseAra = RESUMEN_OFICIAL_ARANTXA[dNorm] || { entreno: 'CrossFit 17:30', p: 140, ch: 220, g: 50, kcal: 1890 };
-          filasResumen.push({
-            semana_id: nuevaSemanaId,
-            atleta: 'Arantxa',
-            dia: dia,
-            entrenamiento: baseAra.entreno,
-            p: sumKcalAra > 0 ? Math.round(sumPAra) : baseAra.p,
-            ch: sumKcalAra > 0 ? Math.round(sumCHAra) : baseAra.ch,
-            g: sumKcalAra > 0 ? Math.round(sumGAra) : baseAra.g,
-            kcal: sumKcalAra > 0 ? Math.round(sumKcalAra) : baseAra.kcal
-          });
-        });
-
-        const { error: resumenErr } = await supabaseClient
-          .from('resumen_semanal')
-          .insert(filasResumen);
-
-        if (resumenErr) throw resumenErr;
-
-        // 5. Inserte un nuevo registro vacío {} en estado_app para checks y swaps (semana limpia)
-        const estadosLimpios = [
-          { semana_id: nuevaSemanaId, clave: 'comidasCompletadas', valor_json: {} },
-          { semana_id: nuevaSemanaId, clave: 'swapsActivos', valor_json: {} },
-          { semana_id: nuevaSemanaId, clave: 'cargasEntreno', valor_json: {} },
-          { semana_id: nuevaSemanaId, clave: 'permutacionesDias', valor_json: {} },
-          { semana_id: nuevaSemanaId, clave: 'cenasSocialesPorDia', valor_json: {} },
-          { semana_id: nuevaSemanaId, clave: 'ajustesMetabolicos', valor_json: { fede: 0, arantxa: 0 } }
-        ];
-
-        const { error: estErr } = await supabaseClient
-          .from('estado_app')
-          .insert(estadosLimpios);
-
-        if (estErr) throw estErr;
-
-        // 6. Limpiar memoria local y cache para empezar completamente limpio
-        this.mensajeDietaActualizada = true;
-        this.jsonNuevaDieta = '';
-        this.cargasEntreno = {};
-        this.permutacionesDias = {};
-        this.swapsActivos = {};
-        this.cenasSocialesPorDia = {};
-        this.cenaSocialActiva = false;
-        this.comidasCompletadas = {};
-        this.ajustesMetabolicos = { fede: 0, arantxa: 0 };
-
-        localStorage.removeItem('hybrid_cargas_entreno');
-        localStorage.removeItem('hybrid_permutaciones_dias');
-        localStorage.removeItem('hybrid_swaps_activos');
-        localStorage.removeItem('hybrid_cenas_sociales');
-        localStorage.removeItem('hybrid_comidas_completadas');
-        localStorage.removeItem('hybrid_ajustes_metabolicos');
-
+        await this.ejecutarPublicacionEnSupabase(comidas);
         this.anunciar('Plan nutricional semanal publicado con éxito en Supabase');
-        await this.cargarDatos();
-
-        setTimeout(() => {
-          this.mensajeDietaActualizada = false;
-          this.cambiarTab('dieta');
-        }, 1800);
       } catch (e) {
         alert("Error al publicar en Supabase: " + (e.message || e));
       }
