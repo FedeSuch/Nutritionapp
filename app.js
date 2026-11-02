@@ -190,6 +190,11 @@ function appData() {
         localStorage.setItem('hybrid_gemini_modelo', 'gemini-2.0-flash');
       }
 
+      // Pre-cargar modelos válidos de la cuenta si la API Key está configurada
+      if (this.geminiApiKey) {
+        this.obtenerModelosValidosCuenta().catch(err => console.warn('Consulta modelos en init:', err));
+      }
+
       this.irAHoy();
       this.cenaSocialActiva = !!this.cenasSocialesPorDia[this.diaSeleccionado];
 
@@ -1769,7 +1774,46 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
     },
 
     /**
-     * AUTODETECTA LOS MODELOS DE TEXTO REALMENTE DISPONIBLES EN LA CUENTA DEL USUARIO
+     * CONSULTA EN TIEMPO REAL LOS MODELOS DE TEXTO SOPORTADOS POR LA API KEY
+     */
+    async obtenerModelosValidosCuenta() {
+      if (!this.geminiApiKey || !this.geminiApiKey.trim()) {
+        throw new Error("Por favor introduce tu Gemini API Key en Ajustes.");
+      }
+
+      if (this.modelosDetectados && this.modelosDetectados.length > 0) {
+        return this.modelosDetectados;
+      }
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.geminiApiKey.trim()}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const msg = (errData.error && errData.error.message) ? errData.error.message : `HTTP ${res.status}`;
+        throw new Error(`Error de validación con Google AI Studio: ${msg}`);
+      }
+
+      const data = await res.json();
+      const todos = data.models || [];
+
+      // Filtrar estrictamente modelos que admitan generateContent y excluir voz (tts), audio, embeddings
+      const validos = todos
+        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''))
+        .filter(name => {
+          const n = name.toLowerCase();
+          return !n.includes('tts') && !n.includes('audio') && !n.includes('embed') && !n.includes('aqa') && !n.includes('imagen');
+        });
+
+      if (validos.length === 0) {
+        throw new Error("No se detectaron modelos de generación de texto disponibles para esta API Key.");
+      }
+
+      this.modelosDetectados = validos;
+      return validos;
+    },
+
+    /**
+     * AUTODETECTA Y CONFIGURA EL MEJOR MODELO PARA LA CUENTA DEL USUARIO
      */
     async autodetectarModelosCuenta() {
       if (!this.geminiApiKey || !this.geminiApiKey.trim()) {
@@ -1778,37 +1822,19 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
       }
       this.detectandoModelos = true;
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.geminiApiKey.trim()}`);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error((errData.error && errData.error.message) || `HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        // Filtrar estrictamente modelos de texto para chat/generación (EXCLUYENDO voz tts, embedding y audio)
-        const modelosTexto = (data.models || [])
-          .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-          .map(m => m.name.replace(/^models\//, ''))
-          .filter(name => {
-            const n = name.toLowerCase();
-            return !n.includes('tts') && !n.includes('audio') && !n.includes('embed') && !n.includes('aqa') && !n.includes('imagen');
-          });
+        this.modelosDetectados = []; // Forzar refresco
+        const modelosTexto = await this.obtenerModelosValidosCuenta();
 
-        if (modelosTexto.length > 0) {
-          this.modelosDetectados = modelosTexto;
-          // Priorizar Flash moderno o Pro sin tts
-          const seleccionado = modelosTexto.find(m => m === 'gemini-2.0-flash')
-            || modelosTexto.find(m => m === 'gemini-1.5-flash')
-            || modelosTexto.find(m => m === 'gemini-1.5-pro-latest')
-            || modelosTexto.find(m => m.includes('flash'))
-            || modelosTexto[0];
+        // Priorizar modelos Flash (gratuitos en AI Studio con alta cuota)
+        const seleccionado = modelosTexto.find(m => m.includes('flash') && !m.includes('lite'))
+          || modelosTexto.find(m => m.includes('flash'))
+          || modelosTexto.find(m => m.includes('pro'))
+          || modelosTexto[0];
 
-          this.geminiModelo = seleccionado;
-          localStorage.setItem('hybrid_gemini_modelo', seleccionado);
-          this.anunciar(`Modelo configurado: ${seleccionado}`);
-          alert(`¡Modelos de texto detectados con éxito!\n\nModelo asignado: ${seleccionado}\n\nModelos disponibles sin restricciones de audio:\n- ${modelosTexto.slice(0, 6).join('\n- ')}`);
-        } else {
-          alert("No se detectaron modelos de generación de texto disponibles para esta API Key.");
-        }
+        this.geminiModelo = seleccionado;
+        localStorage.setItem('hybrid_gemini_modelo', seleccionado);
+        this.anunciar(`Modelo configurado: ${seleccionado}`);
+        alert(`¡Modelos detectados con éxito en tu cuenta de Google!\n\nModelo asignado: ${seleccionado}\n\nModelos de texto activos en tu cuenta:\n- ${modelosTexto.slice(0, 8).join('\n- ')}`);
       } catch (e) {
         alert("Error al consultar modelos disponibles: " + e.message);
       } finally {
@@ -1817,39 +1843,37 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
     },
 
     /**
-     * CONEXIÓN RESILIENTE CON FALLBACK AUTOMÁTICO DE MODELOS
-     * Si un modelo no tiene cuota (limit: 0 en Free Tier) o no existe, prueba automáticamente el siguiente
+     * CONEXIÓN RESILIENTE CON FALLBACK EN VIVO SOBRE MODELOS REALMENTE ACTIVOS
      */
     async llamarGeminiConFallback(promptUsuario, systemPrompt) {
+      this.estadoGeneracionIA = "1/4 Consultando modelos activos en tu cuenta de Google AI Studio...";
+      const modelosCuenta = await this.obtenerModelosValidosCuenta();
+
+      // Construir candidatos usando ÚNICAMENTE modelos devueltos por Google para esta clave
       let candidatos = [];
 
-      // 1. Modelo preferido del usuario (siempre que no sea de voz)
-      if (this.geminiModelo && !this.geminiModelo.includes('tts')) {
+      // 1. Si el usuario seleccionó un modelo y está activo en su cuenta, va primero
+      if (this.geminiModelo && modelosCuenta.includes(this.geminiModelo)) {
         candidatos.push(this.geminiModelo);
       }
 
-      // 2. Modelos gratuitos recomendados para Google AI Studio (Free Tier)
-      candidatos.push(
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-pro-latest',
-        'gemini-2.5-pro'
-      );
+      // 2. Separar por categorías para probar primero los gratuitos Flash más estables
+      const flashModels = modelosCuenta.filter(m => {
+        const n = m.toLowerCase();
+        return n.includes('flash') && !n.includes('lite');
+      });
+      const flashLiteModels = modelosCuenta.filter(m => m.toLowerCase().includes('flash-lite'));
+      const proModels = modelosCuenta.filter(m => m.toLowerCase().includes('pro'));
+      const otros = modelosCuenta.filter(m => !flashModels.includes(m) && !flashLiteModels.includes(m) && !proModels.includes(m));
 
-      // 3. Añadir modelos detectados válidos de texto
-      if (this.modelosDetectados && this.modelosDetectados.length > 0) {
-        const limpios = this.modelosDetectados.filter(m => !m.includes('tts') && !m.includes('audio') && !m.includes('embed'));
-        candidatos = [...candidatos, ...limpios];
-      }
+      candidatos = [...candidatos, ...flashModels, ...flashLiteModels, ...proModels, ...otros];
+      candidatos = [...new Set(candidatos)];
 
-      // Desduplicar y limpiar
-      candidatos = [...new Set(candidatos)].filter(m => !m.includes('tts') && !m.includes('audio'));
       let ultimoError = null;
 
       for (let i = 0; i < candidatos.length; i++) {
         const mod = candidatos[i];
-        this.estadoGeneracionIA = `2/4 Generando con ${mod} (intento ${i + 1}/${candidatos.length})...`;
+        this.estadoGeneracionIA = `2/4 Generando menú con ${mod} (intento ${i + 1}/${candidatos.length})...`;
 
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${this.geminiApiKey.trim()}`;
@@ -1871,42 +1895,30 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
             const msg = (errData.error && errData.error.message) ? errData.error.message : `HTTP ${res.status}`;
-            
-            // Si el modelo no existe, no está soportado, o excede cuota / limit: 0 en Free Tier:
-            const esErrorCuotaOMisconfig = res.status === 404 || res.status === 429
-              || msg.includes('not found')
-              || msg.includes('not supported')
-              || msg.includes('Quota exceeded')
-              || msg.includes('limit: 0')
-              || msg.includes('rate-limits');
-
-            if (esErrorCuotaOMisconfig && i < candidatos.length - 1) {
-              console.warn(`Modelo ${mod} no disponible en Free Tier (${msg}). Probando alternativa: ${candidatos[i + 1]}...`);
-              ultimoError = new Error(msg);
-              continue; // Saltar al siguiente modelo candidato
-            } else {
-              throw new Error(`Error de Gemini API (${mod}): ${msg}`);
-            }
+            console.warn(`Aviso: modelo ${mod} no respondió OK (${msg}). Probando alternativa...`);
+            ultimoError = new Error(`Error en ${mod}: ${msg}`);
+            continue; // Prueba el siguiente candidato automáticamente
           }
 
           const data = await res.json();
           const candidates = data.candidates;
           if (!candidates || candidates.length === 0 || !candidates[0].content) {
-            throw new Error(`Gemini (${mod}) no devolvió contenido válido.`);
+            ultimoError = new Error(`El modelo ${mod} no devolvió contenido.`);
+            continue;
           }
 
+          // Éxito: fijar este modelo como el principal
           this.geminiModelo = mod;
           localStorage.setItem('hybrid_gemini_modelo', mod);
           return { data, modeloUsado: mod };
         } catch (err) {
-          if (err.message && err.message.startsWith('Error de Gemini API') && !err.message.includes('Quota exceeded') && !err.message.includes('limit: 0')) {
-            throw err;
-          }
+          console.warn(`Error en ${mod}:`, err);
           ultimoError = err;
+          // Continúa con el siguiente candidato
         }
       }
 
-      throw ultimoError || new Error("No se pudo conectar con los modelos de Gemini disponibles.");
+      throw ultimoError || new Error("No se pudo generar el plan con ninguno de los modelos activos en tu cuenta.");
     },
 
     /**
@@ -1933,7 +1945,11 @@ Genera el plan completo de Lunes a Domingo (28 tomas en total: 4 por día) en un
 
         let comidas;
         try {
-          comidas = JSON.parse(textoJSON);
+          let limpio = textoJSON.trim();
+          if (limpio.startsWith('```')) {
+            limpio = limpio.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+          }
+          comidas = JSON.parse(limpio);
         } catch(e) {
           throw new Error("La respuesta recibida no es un JSON válido: " + e.message);
         }
