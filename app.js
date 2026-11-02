@@ -1291,13 +1291,29 @@ function appData() {
     },
 
     deltasBase() {
-      const base = DATOS_SEMANA1_RESPALDO[this.form.atleta] || { peso: 93.5, cintura: 95, brazo: 37, muslo: 58 };
-      const p1 = parseFloat(base.peso), c1 = parseFloat(base.cintura), b1 = parseFloat(base.brazo), m1 = parseFloat(base.muslo);
+      const base = DATOS_SEMANA1_RESPALDO[this.form.atleta] || { peso: 93.5, pecho: 108, cintura: 95, cadera: 100, brazo: 37, muslo: 58 };
+      const p1 = parseFloat(base.peso) || 93.5;
+      const pe1 = parseFloat(base.pecho) || 108;
+      const c1 = parseFloat(base.cintura) || 95;
+      const ca1 = parseFloat(base.cadera) || 100;
+      const b1 = parseFloat(base.brazo) || 37;
+      const m1 = parseFloat(base.muslo) || 58;
+
       const pActual = parseFloat(this.form.peso) || p1;
+      const peActual = parseFloat(this.form.pecho) || pe1;
       const cActual = parseFloat(this.form.cintura) || c1;
+      const caActual = parseFloat(this.form.cadera) || ca1;
       const bActual = parseFloat(this.form.brazo) || b1;
       const mActual = parseFloat(this.form.muslo) || m1;
-      return { peso: pActual - p1, cintura: cActual - c1, brazo: bActual - b1, muslo: mActual - m1 };
+
+      return {
+        peso: pActual - p1,
+        pecho: peActual - pe1,
+        cintura: cActual - c1,
+        cadera: caActual - ca1,
+        brazo: bActual - b1,
+        muslo: mActual - m1
+      };
     },
 
     formatDelta(n) {
@@ -1411,13 +1427,70 @@ function appData() {
 
     listaCompraAgrupada() {
       const acumulado = new Map();
-      const esSuplementoORunning = (txt) => /agua|gel|sales|sodio|isotonico|evocarb|creatina|whey|proteina|cafeina|probiotico|\bna\b/.test(this.normalizar(txt));
+      const esSuplementoORunning = (txt) => /agua|gel|sales|sodio|isotonico|evocarb|creatina|whey|proteina\s+en\s+polvo|cafeina|probiotico|\bna\b/.test(this.normalizar(txt));
+
       const clasificarCategoria = (nombre) => {
         const n = this.normalizar(nombre);
-        if (/pollo|pavo|ternera|solomillo|merluza|salmon|atun|jamon|lomo|hamburguesa|cerdo/.test(n)) return 'Carnicería, Pescadería y Charcutería';
-        if (/skyr|queso|yogur|leche|huevo|clara|batido|cottage/.test(n)) return 'Lácteos y Huevos';
-        if (/arroz|pan|patata|boniato|avena|tortita|pasta|miel|aove|aceite|garbanzo|lenteja|quinoa|cuscus|fideo/.test(n)) return 'Despensa, Panadería y Almidones';
-        return 'Fruta y Verdura Fresca';
+        if (/pollo|pavo|ternera|solomillo|merluza|salmon|atun|jamon|lomo|hamburguesa|cerdo|pescado|carne/.test(n)) {
+          return 'Carnicería, Pescadería y Charcutería';
+        }
+        if (/skyr|queso|yogur|leche|huevo|clara|batido|cottage|mozzarella|parmesano/.test(n)) {
+          return 'Lácteos y Huevos';
+        }
+        if (/arroz|pan|patata|boniato|avena|tortita|pasta|miel|aove|aceite|garbanzo|lenteja|quinoa|cuscus|fideo|harina|cereal/.test(n)) {
+          return 'Despensa, Panadería y Almidones';
+        }
+        return 'Frutas, Verduras y Frescos';
+      };
+
+      // Normalizador de nombres de alimentos para consolidar la compra semanal
+      const unificarNombreAlimento = (nombreRaw) => {
+        let n = this.normalizar(nombreRaw)
+          .replace(/^de\s+/, '')
+          .replace(/^del\s+/, '')
+          .replace(/\s+en\s+crudo.*$/, '')
+          .replace(/\s+a\s+la\s+plancha.*$/, '')
+          .replace(/\s+cocido.*$/, '')
+          .trim();
+
+        if (/pollo|pechuga\s+de\s+pollo|filete.*pollo/.test(n)) return { nombre: 'Pechuga de pollo', unidadStd: 'g' };
+        if (/ternera|solomillo.*ternera|hamburguesa.*ternera|filete.*ternera/.test(n)) return { nombre: 'Ternera (Solomillo/Picada)', unidadStd: 'g' };
+        if (/merluza.*empanada|merluza.*mercadona|merluza/.test(n)) return { nombre: 'Merluza empanada Mercadona', unidadStd: 'g' };
+        if (/atun/.test(n)) return { nombre: 'Atún al natural', unidadStd: 'latas' };
+        if (/salmon/.test(n)) return { nombre: 'Salmón (crudo/ahumado)', unidadStd: 'g' };
+        if (/pavo|pechuga\s+de\s+pavo/.test(n)) return { nombre: 'Pechuga de pavo', unidadStd: 'g' };
+        if (/jamon\s+serrano|lomo\s+embuchado|charcuteria/.test(n)) return { nombre: 'Jamón serrano / Lomo', unidadStd: 'g' };
+
+        if (/clara.*huevo|claras/.test(n)) return { nombre: 'Claras de huevo', unidadStd: 'ml' };
+        if (/huevo|huevos/.test(n)) return { nombre: 'Huevos', unidadStd: 'ud' };
+        if (/skyr/.test(n)) return { nombre: 'Skyr natural', unidadStd: 'g' };
+        if (/queso\s+cottage|cottage/.test(n)) return { nombre: 'Queso cottage', unidadStd: 'g' };
+        if (/queso|mozzarella|parmesano/.test(n)) return { nombre: 'Queso (bajo en grasa)', unidadStd: 'g' };
+        if (/leche/.test(n)) return { nombre: 'Leche (entera/desnatada)', unidadStd: 'ml' };
+        if (/yogur/.test(n)) return { nombre: 'Yogur natural', unidadStd: 'g' };
+
+        if (/arroz/.test(n)) return { nombre: 'Arroz basmati / blanco', unidadStd: 'g' };
+        if (/avena|copos\s+de\s+avena/.test(n)) return { nombre: 'Copos de avena', unidadStd: 'g' };
+        if (/patata/.test(n)) return { nombre: 'Patatas', unidadStd: 'g' };
+        if (/boniato/.test(n)) return { nombre: 'Boniato', unidadStd: 'g' };
+        if (/pasta|macarron|espagueti|fideo/.test(n)) return { nombre: 'Pasta', unidadStd: 'g' };
+        if (/pan/.test(n)) return { nombre: 'Pan (blanco/integral)', unidadStd: 'g' };
+        if (/tortita.*arroz|tortita/.test(n)) return { nombre: 'Tortitas de arroz', unidadStd: 'ud' };
+        if (/aove|aceite.*oliva|aceite/.test(n)) return { nombre: 'AOVE (Aceite de Oliva)', unidadStd: 'ml' };
+        if (/miel/.test(n)) return { nombre: 'Miel', unidadStd: 'g' };
+        if (/lenteja|garbanzo|alubia|legumbre/.test(n)) return { nombre: 'Legumbres (bote/secas)', unidadStd: 'g' };
+
+        if (/platano/.test(n)) return { nombre: 'Plátanos', unidadStd: 'ud' };
+        if (/manzana/.test(n)) return { nombre: 'Manzanas', unidadStd: 'ud' };
+        if (/datil/.test(n)) return { nombre: 'Dátiles', unidadStd: 'g' };
+        if (/arandano|frutos\s+rojos/.test(n)) return { nombre: 'Frutos rojos / Arándanos', unidadStd: 'g' };
+        if (/tomate/.test(n)) return { nombre: 'Tomates', unidadStd: 'g' };
+        if (/zanahoria/.test(n)) return { nombre: 'Zanahorias', unidadStd: 'g' };
+        if (/calabacin/.test(n)) return { nombre: 'Calabacín', unidadStd: 'g' };
+        if (/espinaca|lechuga|ensalada|canonigos|rucula/.test(n)) return { nombre: 'Verdura / Ensalada variada', unidadStd: 'g' };
+
+        const limpioCapital = nombreRaw.charAt(0).toUpperCase() + nombreRaw.slice(1);
+        return { nombre: limpioCapital, unidadStd: null };
       };
 
       this.diasSemana.forEach(diaNombre => {
@@ -1428,20 +1501,63 @@ function appData() {
 
           [txtFede, txtAra].forEach(texto => {
             if (!texto) return;
-            texto.split('+').forEach(parte => {
+
+            // Separar por '+', saltos de línea, punto y coma, o comas seguidas de número
+            const partes = texto.split(/[\+\n;]|\s*,\s*(?=\d)/);
+
+            partes.forEach(parte => {
               let limpio = parte.trim();
               if (!limpio || esSuplementoORunning(limpio)) return;
-              const match = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?)?\s+(.*)$/i);
-              if (match) {
-                const cant = parseFloat(match[1].replace(',', '.'));
-                const unidadNorm = (match[2] || 'ud').toLowerCase().replace(/s$/, '');
-                let nombre = match[3].trim().replace(/\(\d+.*?\)/g, '').trim();
-                if (esSuplementoORunning(nombre)) return;
-                if (this.filtroCompra && !this.normalizar(nombre).includes(this.normalizar(this.filtroCompra))) return;
 
-                const clave = unidadNorm + '_' + this.normalizar(nombre);
-                if (acumulado.has(clave)) acumulado.get(clave).cantidad += cant;
-                else acumulado.set(clave, { clave, nombre, unidad: unidadNorm, cantidad: cant, categoria: clasificarCategoria(nombre) });
+              let cant = 0;
+              let unidad = 'g';
+              let nombreRaw = '';
+
+              // Patrón 1: "150g [de] pollo", "10ml AOVE", "2 latas atún", "3 huevos"
+              const matchPrefijo = limpio.match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|tortitas?|plátanos?|dátiles?|uds?|huevos?)?\s*(?:de\s+)?(.*)$/i);
+              
+              // Patrón 2: "Pollo (150g)", "Arroz 80g"
+              const matchSufijo = limpio.match(/^(.*?)\s*\(?(\d+(?:[.,]\d+)?)\s*(g|ml|kg|l|latas?|uds?)\)?$/i);
+
+              if (matchPrefijo && matchPrefijo[3]) {
+                cant = parseFloat(matchPrefijo[1].replace(',', '.'));
+                unidad = (matchPrefijo[2] || 'g').toLowerCase().replace(/s$/, '');
+                nombreRaw = matchPrefijo[3].trim();
+              } else if (matchSufijo) {
+                cant = parseFloat(matchSufijo[2].replace(',', '.'));
+                unidad = (matchSufijo[3] || 'g').toLowerCase().replace(/s$/, '');
+                nombreRaw = matchSufijo[1].trim();
+              } else {
+                return;
+              }
+
+              // Normalizar múltiplos
+              if (unidad === 'kg') { cant *= 1000; unidad = 'g'; }
+              if (unidad === 'l') { cant *= 1000; unidad = 'ml'; }
+              if (unidad === 'huevo') unidad = 'ud';
+              if (unidad === 'lata') unidad = 'latas';
+
+              nombreRaw = nombreRaw.replace(/\(\d+.*?\)/g, '').replace(/[\(\)]/g, '').trim();
+              if (!nombreRaw || esSuplementoORunning(nombreRaw)) return;
+
+              if (this.filtroCompra && !this.normalizar(nombreRaw).includes(this.normalizar(this.filtroCompra))) {
+                return;
+              }
+
+              const { nombre, unidadStd } = unificarNombreAlimento(nombreRaw);
+              const unidadFinal = unidadStd || unidad;
+
+              const clave = unidadFinal + '_' + this.normalizar(nombre);
+              if (acumulado.has(clave)) {
+                acumulado.get(clave).cantidad += cant;
+              } else {
+                acumulado.set(clave, {
+                  clave,
+                  nombre,
+                  unidad: unidadFinal,
+                  cantidad: cant,
+                  categoria: clasificarCategoria(nombre)
+                });
               }
             });
           });
@@ -1450,9 +1566,26 @@ function appData() {
 
       const grupos = {};
       acumulado.forEach(item => {
-        if (item.unidad === 'g' && item.cantidad >= 1000) item.totalFormateado = (item.cantidad / 1000).toFixed(2) + ' kg';
-        else if (item.unidad === 'ud') item.totalFormateado = Math.round(item.cantidad) + ' uds';
-        else item.totalFormateado = Math.round(item.cantidad) + ' ' + item.unidad;
+        if (item.unidad === 'g') {
+          if (item.cantidad >= 1000) {
+            item.totalFormateado = (item.cantidad / 1000).toFixed(2) + ' kg';
+          } else {
+            item.totalFormateado = Math.round(item.cantidad) + ' g';
+          }
+        } else if (item.unidad === 'ml') {
+          if (item.cantidad >= 1000) {
+            item.totalFormateado = (item.cantidad / 1000).toFixed(2) + ' L';
+          } else {
+            item.totalFormateado = Math.round(item.cantidad) + ' ml';
+          }
+        } else if (item.unidad === 'ud') {
+          item.totalFormateado = Math.round(item.cantidad) + ' uds';
+        } else if (item.unidad === 'latas') {
+          item.totalFormateado = Math.round(item.cantidad) + ' latas';
+        } else {
+          item.totalFormateado = Math.round(item.cantidad) + ' ' + item.unidad;
+        }
+
         if (!grupos[item.categoria]) grupos[item.categoria] = [];
         grupos[item.categoria].push(item);
       });
@@ -1461,6 +1594,29 @@ function appData() {
         categoria: cat,
         items: grupos[cat].sort((a, b) => b.cantidad - a.cantidad)
       }));
+    },
+
+    async copiarListaCompra() {
+      const grupos = this.listaCompraAgrupada();
+      if (!grupos || grupos.length === 0) {
+        alert("La lista de la compra está vacía actualmente.");
+        return;
+      }
+      let texto = `🛒 LISTA DE LA COMPRA SEMANAL · KINETIX (${this.form.semana || 'Semana Activa'})\n\n`;
+      grupos.forEach(g => {
+        texto += `📦 ${g.categoria.toUpperCase()}:\n`;
+        g.items.forEach(it => {
+          texto += `  - [ ] ${it.nombre}: ${it.totalFormateado}\n`;
+        });
+        texto += `\n`;
+      });
+
+      try {
+        await navigator.clipboard.writeText(texto);
+        alert("✓ Lista de la compra copiada al portapapeles. ¡Lista para pegar en WhatsApp o Notas!");
+      } catch(e) {
+        alert("No se pudo copiar automáticamente. Puedes ver los alimentos en pantalla.");
+      }
     },
 
     contarPendientesCompra() {
@@ -1760,15 +1916,19 @@ REGLAS DE ORO INMUTABLES:
    - La merluza debe ser específicamente "merluza empanada del Mercadona".
    - En tomas previas al entrenamiento de CrossFit (17:30), SOLO alimentos de vaciado gástrico rápido (arroz blanco, patata, claras de huevo, pan blanco), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
    - Todos los alimentos que se cocinan (arroz, pasta, patata, pollo, ternera, merluza) deben especificarse obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
-3. SALIDA JSON ESTRICTA: Responde ÚNICAMENTE con un array JSON válido sin texto previo ni posterior, cubriendo los 7 días (Lunes a Domingo) con 4 comidas por día (Desayuno, Comida, Merienda/Pre-WOD, Cena).
+3. FORMATO DE INGREDIENTES PARA LA LISTA DE LA COMPRA AUTOMÁTICA:
+   - En los campos "fede" y "arantxa", separa OBLIGATORIAMENTE cada alimento con el símbolo "+" (NUNCA uses comas para separar alimentos).
+   - Cada alimento debe empezar por su cantidad y unidad en crudo (ej: "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE").
+   - Usa nombres consistentes para consolidar la despensa semanal: "pechuga de pollo", "ternera", "merluza empanada Mercadona", "atún al natural", "huevos", "claras de huevo", "skyr natural", "arroz basmati", "patatas", "boniato", "copos de avena", "pan blanco", "AOVE", "plátano".
+4. SALIDA JSON ESTRICTA: Responde ÚNICAMENTE con un array JSON válido sin texto previo ni posterior, cubriendo los 7 días (Lunes a Domingo) con 4 comidas por día (Desayuno, Comida, Merienda/Pre-WOD, Cena).
 Campos obligatorios por objeto:
 {
   "dia": "Lunes",
   "ventana": "08:30 Desayuno",
   "plato": "Nombre del plato común",
-  "fede": "ingredientes con gramos en crudo para Fede",
+  "fede": "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE",
   "macrosFede": "35g P | 58g CH | 12g G | 480 kcal",
-  "arantxa": "ingredientes con gramos en crudo para Arantxa",
+  "arantxa": "120g pechuga de pollo + 60g arroz basmati + 8ml AOVE",
   "macrosArantxa": "25g P | 38g CH | 9g G | 333 kcal"
 }`;
     },
@@ -1816,6 +1976,7 @@ ${textoDias}
 3. PRE-CROSSFIT (17:30): Vaciado gástrico rápido (sin legumbres ni grasas pesadas antes de entrenar).
 4. MODULACIÓN DE HIDRATOS: Modular los carbohidratos en crudo según si el día es de solo correr, solo CrossFit, doble sesión o descanso.
 5. Todos los alimentos que se cocinan expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
+6. FORMATO PARA LISTA DE LA COMPRA AUTOMÁTICA: En "fede" y "arantxa" separa CADA alimento OBLIGATORIAMENTE con el símbolo "+" (NUNCA con comas). Cada alimento debe empezar por su cantidad y unidad (ej: "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE").
 
 === 4. FORMATO OBLIGATORIO DE RESPUESTA (JSON) ===
 Devuelve ÚNICAMENTE un array JSON válido con las 28 tomas (4 por día: Desayuno, Comida, Merienda, Cena) de Lunes a Domingo con esta estructura exacta:
@@ -1824,9 +1985,9 @@ Devuelve ÚNICAMENTE un array JSON válido con las 28 tomas (4 por día: Desayun
     "dia": "Lunes",
     "ventana": "08:30 Desayuno",
     "plato": "Nombre del plato común",
-    "fede": "Detalle de ingredientes y gramos en crudo para Fede",
+    "fede": "180g pechuga de pollo + 90g arroz basmati + 10ml AOVE",
     "macrosFede": "P: 45g | CH: 80g | G: 18g | 660 kcal",
-    "arantxa": "Detalle de ingredientes y gramos en crudo para Arantxa",
+    "arantxa": "120g pechuga de pollo + 60g arroz basmati + 8ml AOVE",
     "macrosArantxa": "P: 30g | CH: 55g | G: 12g | 450 kcal"
   }
 ]`;

@@ -1084,9 +1084,20 @@
                 <h2 class="text-xl font-extrabold text-ink mt-0.5">Lista de la Compra Semanal</h2>
                 <p class="text-xs sm:text-sm text-ink-secondary mt-1">Suma exacta en crudo de los 7 días incluyendo tus adaptaciones de entreno e intercambios. Sin suplementos ni geles.</p>
               </div>
-              <button type="button" @click="limpiarChecksCompra()" class="px-4 py-2.5 rounded-full border border-border bg-canvas hover:bg-subtle text-xs font-bold text-ink transition">
-                Desmarcar todo
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  @click="copiarListaCompra()"
+                  class="px-4 py-2.5 rounded-full border border-sage bg-sage text-white text-xs font-bold hover:bg-sage-hover transition flex items-center gap-1.5 shadow-sm"
+                  title="Copiar lista consolidada con casillas de verificación para pegar en WhatsApp o Notas"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                  <span>Copiar Lista (WhatsApp/Notas)</span>
+                </button>
+                <button type="button" @click="limpiarChecksCompra()" class="px-4 py-2.5 rounded-full border border-border bg-canvas hover:bg-subtle text-xs font-bold text-ink transition">
+                  Desmarcar todo
+                </button>
+              </div>
             </div>
 
             <div class="mb-5">
@@ -1222,22 +1233,30 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1 tabular-nums">
-              <div class="bg-canvas border border-border p-4 rounded-2xl">
-                <span class="text-xs font-semibold text-ink-secondary block">Peso (vs Sem 1)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().peso <= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1 tabular-nums">
+              <div class="bg-canvas border border-border p-3.5 rounded-2xl">
+                <span class="text-[11px] font-semibold text-ink-secondary block">Peso (vs S1)</span>
+                <span class="text-base font-extrabold font-mono mt-0.5 block" :class="deltasBase().peso <= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().peso) + ' kg'"></span>
               </div>
-              <div class="bg-canvas border border-border p-4 rounded-2xl">
-                <span class="text-xs font-semibold text-ink-secondary block">Cintura (Grasa)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().cintura <= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
+              <div class="bg-canvas border border-border p-3.5 rounded-2xl">
+                <span class="text-[11px] font-semibold text-ink-secondary block">Pecho (vs S1)</span>
+                <span class="text-base font-extrabold font-mono mt-0.5 block" :class="deltasBase().pecho >= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().pecho) + ' cm'"></span>
               </div>
-              <div class="bg-canvas border border-border p-4 rounded-2xl">
-                <span class="text-xs font-semibold text-ink-secondary block">Brazo (Músculo)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().brazo >= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
+              <div class="bg-canvas border border-border p-3.5 rounded-2xl">
+                <span class="text-[11px] font-semibold text-ink-secondary block">Cintura (Grasa)</span>
+                <span class="text-base font-extrabold font-mono mt-0.5 block" :class="deltasBase().cintura <= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().cintura) + ' cm'"></span>
               </div>
-              <div class="bg-canvas border border-border p-4 rounded-2xl">
-                <span class="text-xs font-semibold text-ink-secondary block">Muslo (Músculo)</span>
-                <span class="text-lg font-extrabold font-mono mt-1 block" :class="deltasBase().muslo >= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
+              <div class="bg-canvas border border-border p-3.5 rounded-2xl">
+                <span class="text-[11px] font-semibold text-ink-secondary block">Cadera (vs S1)</span>
+                <span class="text-base font-extrabold font-mono mt-0.5 block" :class="deltasBase().cadera <= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().cadera) + ' cm'"></span>
+              </div>
+              <div class="bg-canvas border border-border p-3.5 rounded-2xl">
+                <span class="text-[11px] font-semibold text-ink-secondary block">Brazo (Músculo)</span>
+                <span class="text-base font-extrabold font-mono mt-0.5 block" :class="deltasBase().brazo >= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().brazo) + ' cm'"></span>
+              </div>
+              <div class="bg-canvas border border-border p-3.5 rounded-2xl">
+                <span class="text-[11px] font-semibold text-ink-secondary block">Muslo (Músculo)</span>
+                <span class="text-base font-extrabold font-mono mt-0.5 block" :class="deltasBase().muslo >= 0 ? 'text-sage' : 'text-[#8A5A19]'" x-text="formatDelta(deltasBase().muslo) + ' cm'"></span>
               </div>
             </div>
           </div>
@@ -1300,7 +1319,14 @@
                 <table class="w-full text-left text-xs tabular-nums">
                   <thead>
                     <tr class="text-ink-secondary border-b border-border">
-                      <th class="pb-2">Sem</th><th class="pb-2">Fecha</th><th class="pb-2">Peso</th><th class="pb-2">Cint.</th><th class="pb-2">Brazo</th><th class="pb-2">Muslo</th>
+                      <th class="pb-2">Sem</th>
+                      <th class="pb-2">Fecha</th>
+                      <th class="pb-2">Peso</th>
+                      <th class="pb-2">Pecho</th>
+                      <th class="pb-2">Cint.</th>
+                      <th class="pb-2">Cadera</th>
+                      <th class="pb-2">Brazo</th>
+                      <th class="pb-2">Muslo</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-border/70">
@@ -1309,7 +1335,9 @@
                         <td class="py-2.5 font-bold" x-text="fila.semana.replace('Semana ', 'S')"></td>
                         <td class="py-2.5 font-mono text-ink-secondary" x-text="fila.fecha"></td>
                         <td class="py-2.5 font-mono font-bold text-sage" x-text="fila.peso ? fila.peso + 'kg' : '—'"></td>
+                        <td class="py-2.5 font-mono" x-text="fila.pecho || '—'"></td>
                         <td class="py-2.5 font-mono" x-text="fila.cintura || '—'"></td>
+                        <td class="py-2.5 font-mono" x-text="fila.cadera || '—'"></td>
                         <td class="py-2.5 font-mono" x-text="fila.brazo || '—'"></td>
                         <td class="py-2.5 font-mono" x-text="fila.muslo || '—'"></td>
                       </tr>
