@@ -346,7 +346,7 @@ function appData() {
                  txt.match(/(\d+(?:[.,]\d+)?)\s*g\s+G\b/i) ||
                  txt.match(/(?:^|[|\s,])(\d+(?:[.,]\d+)?)\s*G\b/i);
 
-      // Kcal / Calorías
+      // Kcal / Calorías: Si se detectan macros (P, CH o G), se calcula siempre con la fórmula estricta: (P * 4) + (CH * 4) + (G * 9)
       const mKcal = txt.match(/(\d+(?:[.,]\d+)?)\s*k?cal/i) ||
                     txt.match(/(?:kcal|calor[íi]as?)[\s:]*(\d+(?:[.,]\d+)?)/i);
 
@@ -354,20 +354,87 @@ function appData() {
       const ch = mCH ? parseFloat(mCH[1].replace(',', '.')) : 0;
       const g = mG ? parseFloat(mG[1].replace(',', '.')) : 0;
       let kcal = 0;
-      if (mKcal) {
-        kcal = parseFloat(mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
-      } else {
+      if (p > 0 || ch > 0 || g > 0) {
         kcal = (p * 4) + (ch * 4) + (g * 9);
+      } else if (mKcal) {
+        kcal = parseFloat(mKcal[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'));
       }
       return { p: Math.round(p), ch: Math.round(ch), g: Math.round(g), kcal: Math.round(kcal) };
     },
 
     /**
+     * Mapea un texto libre de entrenamiento al perfil de gasto metabólico correspondiente
+     */
+    determinarPerfilEntreno(entrenoTexto) {
+      const norm = this.normalizar(entrenoTexto || '');
+      if (!norm || norm.includes('descanso') || norm.includes('reposo') || norm.includes('off') || norm.includes('0 sesion')) {
+        return 'descanso';
+      }
+      if (norm.includes('trail') || norm.includes('22 km') || norm.includes('tirada larga') || norm.includes('larga')) {
+        return 'trail_largo';
+      }
+      if (norm.includes('doble') || norm.includes('+') || (norm.includes('crossfit') && (norm.includes('correr') || norm.includes('rodaje') || norm.includes('km')))) {
+        return norm.includes('gym') ? 'doble_gym' : 'doble_cf';
+      }
+      if (norm.includes('tempo') || norm.includes('series') || norm.includes('cuestas') || norm.includes('intensa') || norm.includes('10 km')) {
+        return 'unica_run_intensa';
+      }
+      if (norm.includes('crossfit') || norm.includes('wod') || norm.includes('cf')) {
+        return 'unica_cf';
+      }
+      if (norm.includes('precarga')) {
+        return 'precarga_trail';
+      }
+      if (norm.includes('correr') || norm.includes('rodaje') || norm.includes('carrera') || norm.includes('km') || norm.includes('suave') || norm.includes('facil')) {
+        return 'unica_run_suave';
+      }
+      return 'unica_cf';
+    },
+
+    /**
+     * CÁLCULO SEPARADO Y ESTRICTO DE MACRONUTRIENTES Y CALORÍAS TOTALES
+     * Separa estrictamente la variable de Grasas (G) de las Proteínas (P).
+     * - Fede: 200g P fija | 75g-80g G fija (~0.85g/kg de peso corporal)
+     * - Arantxa: 140g P fija | 50g-55g G fija (~0.8g/kg de peso corporal)
+     * - Fórmula calórica exacta: Kcal = (Proteína * 4) + (Carbohidratos * 4) + (Grasas * 9)
+     */
+    calcularMacrosObjetivo(entrenoTexto, atletaKey) {
+      const esFede = this.normalizar(atletaKey) === 'fede';
+      const perfilKey = this.determinarPerfilEntreno(entrenoTexto);
+      const perf = PERFILES_SESION[esFede ? 'fede' : 'arantxa'][perfilKey] || PERFILES_SESION[esFede ? 'fede' : 'arantxa']['unica_cf'];
+
+      const p = esFede ? 200 : 140;
+      // Grasas fijas saludables calculadas con multiplicador de peso (~0.8-0.85g/kg), NUNCA iguales a la proteína
+      const g = esFede ? (perf.g || 78) : (perf.g || 52);
+      let ch = perf.ch || (esFede ? 320 : 220);
+
+      // Reajuste metabólico semanal aplicado a los carbohidratos
+      const adj = (this.ajustesMetabolicos && this.ajustesMetabolicos[esFede ? 'fede' : 'arantxa']) ? this.ajustesMetabolicos[esFede ? 'fede' : 'arantxa'] : 0;
+      if (adj !== 0) {
+        ch = Math.max(50, ch + Math.round(adj / 4));
+      }
+
+      // Cálculo matemático estricto: (P * 4) + (CH * 4) + (G * 9)
+      const kcal = Math.round((p * 4) + (ch * 4) + (g * 9));
+
+      return {
+        entreno: entrenoTexto && entrenoTexto.trim() ? entrenoTexto.trim() : perf.nombre,
+        p: Math.round(p),
+        ch: Math.round(ch),
+        g: Math.round(g),
+        kcal: kcal
+      };
+    },
+
+    /**
      * Obtiene los Macros y Calorías Oficiales del Día desde RESUMEN_SEMANAL (Supabase o Fallback Oficial)
+     * Sanea y protege las grasas para que NUNCA dupliquen a las proteínas.
      */
     objetivoBaseDia(diaNombre, atletaKey) {
       const diaFuente = this.diaFuenteEfectivo(diaNombre);
       const dNorm = this.normalizar(diaFuente);
+      const esFede = this.normalizar(atletaKey) === 'fede';
+      const maxGrasa = esFede ? 85 : 60;
 
       if (this.resumenSemanal && this.resumenSemanal.length > 0) {
         const fila = this.resumenSemanal.find(r => 
@@ -376,12 +443,20 @@ function appData() {
         );
         // Debe tener calorías y macros reales calculados (P > 0 o CH > 0)
         if (fila && Number(fila.kcal) > 200 && (Number(fila.p) > 0 || Number(fila.ch) > 0)) {
+          let pVal = Math.round(Number(fila.p) || (esFede ? 200 : 140));
+          let chVal = Math.round(Number(fila.ch) || (esFede ? 320 : 220));
+          let gVal = Math.round(Number(fila.g) || (esFede ? 78 : 52));
+          // Sanear si las grasas estaban infladas o duplicaban a las proteínas
+          if (gVal > maxGrasa || gVal >= pVal * 0.9) {
+            gVal = esFede ? 78 : 52;
+          }
+          const kcalVal = Math.round((pVal * 4) + (chVal * 4) + (gVal * 9));
           return {
             entreno: fila.entrenamiento || '',
-            p: Math.round(Number(fila.p) || 0),
-            ch: Math.round(Number(fila.ch) || 0),
-            g: Math.round(Number(fila.g) || 0),
-            kcal: Math.round(Number(fila.kcal) || 0)
+            p: pVal,
+            ch: chVal,
+            g: gVal,
+            kcal: kcalVal
           };
         }
       }
@@ -389,28 +464,42 @@ function appData() {
       // Si resumenSemanal no tiene macros válidos (ej. por importación anterior con 0g), sumarlos en tiempo real de dieta_diaria
       const comidasDia = this.comidasDelDiaPara(diaFuente);
       if (comidasDia && comidasDia.length > 0) {
-        let sumP = 0, sumCH = 0, sumG = 0, sumKcal = 0;
+        let sumP = 0, sumCH = 0, sumG = 0;
         const campo = atletaKey === 'fede' ? 'macrosFede' : 'macrosArantxa';
         comidasDia.forEach(c => {
           const m = this.parsearMacrosDeColumnaExcel(c[campo]);
-          sumP += m.p; sumCH += m.ch; sumG += m.g; sumKcal += m.kcal;
+          sumP += m.p; sumCH += m.ch; sumG += m.g;
         });
 
-        if (sumP > 0 || sumCH > 0 || sumKcal > 0) {
+        if (sumP > 0 || sumCH > 0) {
           const filaPrev = this.resumenSemanal ? this.resumenSemanal.find(r => this.normalizar(r.atleta) === atletaKey && this.normalizar(r.dia) === dNorm) : null;
           const entreno = (filaPrev && filaPrev.entrenamiento) ? filaPrev.entrenamiento : (this.entrenosPlanificador && this.entrenosPlanificador[dNorm] ? (atletaKey === 'fede' ? this.entrenosPlanificador[dNorm].fede : this.entrenosPlanificador[dNorm].arantxa) : 'CrossFit 17:30');
+          let pVal = Math.round(sumP);
+          let chVal = Math.round(sumCH);
+          let gVal = Math.round(sumG);
+          if (gVal > maxGrasa || gVal >= pVal * 0.9) {
+            gVal = esFede ? 78 : 52;
+          }
+          const kcalVal = Math.round((pVal * 4) + (chVal * 4) + (gVal * 9));
           return {
             entreno,
-            p: Math.round(sumP),
-            ch: Math.round(sumCH),
-            g: Math.round(sumG),
-            kcal: Math.round(sumKcal > 0 ? sumKcal : (sumP * 4 + sumCH * 4 + sumG * 9))
+            p: pVal,
+            ch: chVal,
+            g: gVal,
+            kcal: kcalVal
           };
         }
       }
 
       const dic = atletaKey === 'fede' ? RESUMEN_OFICIAL_FEDE : RESUMEN_OFICIAL_ARANTXA;
-      return dic[dNorm] || { entreno: "CrossFit 17:30", p: 200, ch: 320, g: 75, kcal: 2755 };
+      const def = dic[dNorm] || (esFede ? { entreno: "CrossFit 17:30", p: 200, ch: 320, g: 75, kcal: 2755 } : { entreno: "CrossFit 17:30", p: 140, ch: 220, g: 50, kcal: 1890 });
+      return {
+        entreno: def.entreno,
+        p: def.p,
+        ch: def.ch,
+        g: def.g,
+        kcal: Math.round((def.p * 4) + (def.ch * 4) + (def.g * 9))
+      };
     },
 
     objetivoEfectivoDia(diaNombre, atletaKey) {
@@ -428,8 +517,10 @@ function appData() {
       if (adj !== 0) {
         const deltaCH = Math.round(adj / 4);
         obj.ch = Math.max(50, obj.ch + deltaCH);
-        obj.kcal = (obj.p * 4) + (obj.ch * 4) + (obj.g * 9);
       }
+
+      // Garantizar cálculo matemático exacto: (P * 4) + (CH * 4) + (G * 9)
+      obj.kcal = Math.round((obj.p * 4) + (obj.ch * 4) + (obj.g * 9));
 
       return obj;
     },
@@ -615,28 +706,31 @@ function appData() {
             localStorage.setItem('hybrid_cache_dieta', '[]');
           }
 
-          // Guardar resumen_semanal y auto-reparar si las filas tenían macros en 0 por importación previa
+          // Guardar resumen_semanal y auto-reparar si las filas tenían macros en 0, grasas duplicadas de proteína o calorías desajustadas
           this.resumenSemanal = resumenRes.data || [];
-          if (this.dietaCompleta && this.dietaCompleta.length > 0 && this.resumenSemanal.length > 0) {
+          if (this.resumenSemanal.length > 0) {
             const filasReparar = [];
             this.resumenSemanal.forEach(fila => {
-              if (Number(fila.p) === 0 && Number(fila.ch) === 0) {
-                const atletaKey = this.normalizar(fila.atleta);
-                const dNorm = this.normalizar(fila.dia);
-                const comidasDia = this.dietaCompleta.filter(c => this.normalizar(c.dia) === dNorm);
-                const campo = atletaKey === 'fede' ? 'macrosFede' : 'macrosArantxa';
-                let sumP = 0, sumCH = 0, sumG = 0, sumK = 0;
-                comidasDia.forEach(c => {
-                  const m = this.parsearMacrosDeColumnaExcel(c[campo]);
-                  sumP += m.p; sumCH += m.ch; sumG += m.g; sumK += m.kcal;
-                });
-                if (sumP > 0 || sumCH > 0) {
-                  fila.p = Math.round(sumP);
-                  fila.ch = Math.round(sumCH);
-                  fila.g = Math.round(sumG);
-                  fila.kcal = Math.round(sumK > 0 ? sumK : (sumP * 4 + sumCH * 4 + sumG * 9));
-                  filasReparar.push(fila);
-                }
+              const atletaKey = this.normalizar(fila.atleta);
+              const esFede = atletaKey === 'fede';
+              const maxGrasa = esFede ? 85 : 60;
+              const pNum = Number(fila.p) || 0;
+              const chNum = Number(fila.ch) || 0;
+              const gNum = Number(fila.g) || 0;
+              const kcalNum = Number(fila.kcal) || 0;
+
+              const tieneMacrosEnCero = (pNum === 0 && chNum === 0);
+              const tieneGrasasInfladas = (gNum > maxGrasa) || (pNum > 0 && gNum >= pNum * 0.9);
+              const kcalCalculadas = Math.round((pNum * 4) + (chNum * 4) + (gNum * 9));
+              const tieneKcalDescuadradas = Math.abs(kcalNum - kcalCalculadas) > 35;
+
+              if (tieneMacrosEnCero || tieneGrasasInfladas || tieneKcalDescuadradas) {
+                const objSano = this.calcularMacrosObjetivo(fila.entrenamiento || 'CrossFit 17:30', atletaKey);
+                fila.p = (pNum > 0 && pNum <= (esFede ? 220 : 160)) ? pNum : objSano.p;
+                fila.ch = (chNum > 0 && chNum < 650) ? chNum : objSano.ch;
+                fila.g = (!tieneGrasasInfladas && gNum > 0) ? gNum : objSano.g;
+                fila.kcal = Math.round((fila.p * 4) + (fila.ch * 4) + (fila.g * 9));
+                filasReparar.push(fila);
               }
             });
 
@@ -2249,32 +2343,47 @@ function appData() {
      */
     systemPromptNutricionista() {
       return `Actúas como "nutricionista-deportivo", un nutricionista deportivo de precisión de élite para Kinetix, especializado en dos atletas híbridos de alto rendimiento (Trail Running y CrossFit) que viven y cocinan juntos:
-- Fede: Bajar de 93.5 kg a 87.5 kg conservando intacta la masa muscular para Ultratrail de 50 km. Proteína fija innegociable: 200g P.
-- Arantxa: Recomposición corporal en ~65.0 kg y mejora de fuerza en CrossFit. Proteína fija innegociable: ~140g P.
+- Fede: Bajar de 93.5 kg a 87.5 kg conservando intacta la masa muscular para Ultratrail de 50 km.
+  * Proteína fija innegociable: 200g P.
+  * Grasa fija saludable: 75g a 80g G (multiplicador ~0.85g/kg de peso corporal). PROHIBIDO TERMINANTEMENTE igualar las grasas a la proteína (las grasas NUNCA deben ser 200g).
+  * Carbohidratos: Modulados según entrenamiento del día (200g en descanso, 310-340g en carrera o CrossFit, 430-495g en doble sesión o trail).
+  * Calorías estrictas: Kcal = (Proteína * 4) + (Carbohidratos * 4) + (Grasas * 9).
+- Arantxa: Recomposición corporal en ~65.0 kg y mejora de fuerza en CrossFit.
+  * Proteína fija innegociable: ~140g P.
+  * Grasa fija saludable: 50g a 55g G (multiplicador ~0.8g/kg de peso corporal). PROHIBIDO TERMINANTEMENTE igualar las grasas a la proteína (las grasas NUNCA deben ser 140g).
+  * Carbohidratos: Modulados según entrenamiento del día (145g en descanso, 215-235g en carrera o CrossFit, 295-345g en doble sesión o trail).
+  * Calorías estrictas: Kcal = (Proteína * 4) + (Carbohidratos * 4) + (Grasas * 9).
 
 REGLAS DE ORO INMUTABLES:
 1. OLLA COMÚN: Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (08:30 Desayuno, 14:00 Comida, 17:30 Merienda/Pre-WOD y 21:30 Cena) para poder cocinar juntos. La ÚNICA diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus respectivos carbohidratos y calorías según el entrenamiento del día.
-2. REGLAS DIETÉTICAS OBLIGATORIAS (rules.md):
+2. REGLA ESTRICTA DE GRASAS (G) Y FÓRMULA CALÓRICA MATEMÁTICA:
+   - PROHIBIDO TERMINANTEMENTE copiar o igualar el valor de las grasas (G) a las proteínas (P). Las grasas son una variable independiente calculada a 0.8g - 0.85g por kg de peso corporal:
+     * Fede: Grasa fija diaria entre 75g y 80g G (NUNCA poner 200g de grasa).
+     * Arantxa: Grasa fija diaria entre 50g y 55g G (NUNCA poner 140g de grasa).
+   - En CADA comida y en el total del día, las calorías DEBEN sumar exactamente con la fórmula:
+     Kcal = (Proteína * 4) + (Carbohidratos * 4) + (Grasas * 9).
+     Por ejemplo: 200g P + 320g CH + 75g G = 800 + 1280 + 675 = 2.755 kcal (cualquier total de más de 3.500 kcal en días normales es un error matemático que debe evitarse).
+3. REGLAS DIETÉTICAS OBLIGATORIAS (rules.md):
    - Eliminar batidos y proteína en polvo de la pauta habitual. Priorizar fuentes limpias reales: jamón serrano, pechuga de pollo, ternera, pavo, merluza empanada, atún, huevos.
    - Desayuno: priorizar tostadas de pan de masa madre con tomate triturado, jamón serrano y aguacate.
    - Recetas sabrosas y apetecibles estilo latino/peruano fit (ej: lomo saltado fit de pollo o ternera con arroz basmati, ají de gallina fit, merluza empanada con patata asada, etc.).
    - PROHIBIDO el salmón cocinado en platos calientes (en comidas calientes usar únicamente atún al natural o merluza empanada del Mercadona). El salmón solo se permite crudo, marinado o ahumado en frío (ej. poke bowl o ensalada fría).
    - En tomas previas al entrenamiento de CrossFit (17:30 Merienda), SOLO alimentos de vaciado gástrico rápido estricto (ej: tortitas de arroz con fiambre de pavo / jamón serrano), SIN legumbres ni grasas pesadas para evitar molestias digestivas.
    - Todos los alimentos que se cocinan (arroz, pasta, patata, pollo, ternera, merluza) deben especificarse obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
-3. FORMATO DE INGREDIENTES PARA LA LISTA DE LA COMPRA AUTOMÁTICA:
+4. FORMATO DE INGREDIENTES PARA LA LISTA DE LA COMPRA AUTOMÁTICA:
    - En los campos "fede" y "arantxa", separa cada alimento con el símbolo "+" (ej: "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate").
    - Todos los alimentos deben incluir obligatoriamente su cantidad y unidad en crudo al inicio ('g', 'ml' o 'ud'). NUNCA dejes un alimento sin su cantidad.
    - Usa nombres consistentes para consolidar la despensa semanal: "pan masa madre", "jamón serrano", "tomate triturado", "aguacate", "pechuga de pollo", "ternera", "merluza empanada Mercadona", "atún al natural", "tortitas de arroz", "fiambre de pavo", "huevos", "claras de huevo", "arroz basmati", "patatas", "boniato", "copos de avena", "AOVE".
-4. SALIDA JSON ESTRICTA: Responde ÚNICAMENTE con un array JSON válido sin texto previo ni posterior, cubriendo los 7 días (Lunes a Domingo) con 4 comidas por día (Desayuno, Comida, Merienda/Pre-WOD, Cena).
+5. SALIDA JSON ESTRICTA: Responde ÚNICAMENTE con un array JSON válido sin texto previo ni posterior, cubriendo los 7 días (Lunes a Domingo) con 4 comidas por día (Desayuno, Comida, Merienda/Pre-WOD, Cena).
 Campos obligatorios por objeto:
 {
   "dia": "Lunes",
   "ventana": "08:30 Desayuno",
   "plato": "Tostadas de masa madre con jamón serrano, tomate y aguacate",
   "fede": "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate",
-  "macrosFede": "P: 50g | CH: 65g | G: 50g | 925 kcal",
+  "macrosFede": "P: 50g | CH: 65g | G: 20g | 640 kcal",
   "arantxa": "80g pan masa madre + 50g jamón serrano + 30g tomate triturado + 40g aguacate",
-  "macrosArantxa": "P: 35g | CH: 55g | G: 35g | 472 kcal"
+  "macrosArantxa": "P: 35g | CH: 55g | G: 14g | 486 kcal"
 }`;
     },
 
@@ -2476,8 +2585,8 @@ Campos obligatorios por objeto:
         const planDia = (this.entrenosPlanificador && this.entrenosPlanificador[dNorm]) || { fede: '', arantxa: '' };
         const entF = planDia.fede && planDia.fede.trim() ? planDia.fede.trim() : 'CrossFit 17:30';
         const entA = planDia.arantxa && planDia.arantxa.trim() ? planDia.arantxa.trim() : 'CrossFit 17:30';
-        const of = this.objetivoEfectivoDia(dia, 'fede');
-        const oa = this.objetivoEfectivoDia(dia, 'arantxa');
+        const of = this.calcularMacrosObjetivo(entF, 'fede');
+        const oa = this.calcularMacrosObjetivo(entA, 'arantxa');
 
         textoDias += `  - **${dia}**:\n`;
         textoDias += `    * Sesión FEDE: "${entF}" → Objetivo: ${of.kcal} kcal | ${of.p}g P | ${of.ch}g CH | ${of.g}g G\n`;
@@ -2488,7 +2597,7 @@ Campos obligatorios por objeto:
 
 === 1. CONTROL BIOMÉTRICO Y EVOLUCIÓN (Pesaje Viernes: ${compFede.semanaActual}${compFede.semanaAnterior ? ` vs ${compFede.semanaAnterior}` : ''}) ===
 
-* FEDE (Objetivo: 87.5 kg para ultratrail preservando masa muscular | Proteína fija: 200g P):
+* FEDE (Objetivo: 87.5 kg para ultratrail preservando masa muscular | Proteína fija: 200g P | Grasa fija saludable: 75-80g G):
   - Semana evaluada: ${compFede.semanaActual}${compFede.semanaAnterior ? ` (vs ${compFede.semanaAnterior})` : ' (Línea base inicial)'}
   - Peso: ${compFede.actual ? compFede.actual.peso : '--'} kg${compFede.deltaPeso ? ` (Δ ${compFede.deltaPeso.str} kg vs ${compFede.deltaPeso.anterior} kg)` : ''}
   - Cintura: ${fmtDelta(compFede.deltaCintura, 'cm')}
@@ -2499,7 +2608,7 @@ Campos obligatorios por objeto:
   - Diagnóstico de evolución: ${compFede.diagnostico}
   - Ajuste metabólico semanal aplicado en app: ${adjF >= 0 ? '+' : ''}${adjF} kcal/día en carbohidratos.
 
-* ARANTXA (Objetivo: Recomposición corporal en ~65 kg y fuerza CrossFit | Proteína fija: ~140g P):
+* ARANTXA (Objetivo: Recomposición corporal en ~65 kg y fuerza CrossFit | Proteína fija: ~140g P | Grasa fija saludable: 50-55g G):
   - Semana evaluada: ${compAra.semanaActual}${compAra.semanaAnterior ? ` (vs ${compAra.semanaAnterior})` : ' (Línea base inicial)'}
   - Peso: ${compAra.actual ? compAra.actual.peso : '--'} kg${compAra.deltaPeso ? ` (Δ ${compAra.deltaPeso.str} kg vs ${compAra.deltaPeso.anterior} kg)` : ''}
   - Cintura: ${fmtDelta(compAra.deltaCintura, 'cm')}
@@ -2516,13 +2625,20 @@ ${textoDias}
 
 === 3. REGLAS DIETÉTICAS INMUTABLES (rules.md) ===
 1. OLLA COMÚN: Ambos atletas comen EXACTAMENTE el mismo plato/receta en cada ventana del día (08:30 Desayuno, 14:00 Comida, 17:30 Merienda y 21:30 Cena) para cocinar juntos. La ÚNICA diferencia entre Fede y Arantxa son los GRAMOS EN CRUDO para clavar matemáticamente sus calorías y macros según su entrenamiento del día.
-2. DESAYUNO: Priorizar tostadas de pan de masa madre con tomate triturado, jamón serrano y aguacate. CERO proteína en polvo / batidos en la pauta habitual (eliminar suplementación de whey).
-3. RECETAS SABROSAS: Enfoque de platos sabrosos estilo peruano/latino/fit (ej: lomo saltado fit de pollo o ternera con arroz basmati, ají de gallina fit, merluza empanada con patata asada, etc.).
-4. CERO SALMÓN COCINADO EN CALIENTE: En comidas calientes usar únicamente atún al natural o merluza empanada Mercadona. El salmón solo se permite crudo, marinado o ahumado en frío.
-5. MERIENDA PRE-CROSSFIT (17:30): Vaciado gástrico rápido estricto pre-WOD (ej: tortitas de arroz con fiambre de pavo / jamón serrano), sin legumbres ni grasas pesadas para evitar molestias digestivas.
-6. MODULACIÓN DE HIDRATOS: Modular los carbohidratos en crudo según si el día es de solo correr, solo CrossFit, doble sesión o descanso.
-7. PESOS EN CRUDO: Todos los alimentos que se cocinan (arroz basmati, patata, pasta, pollo, merluza, ternera) expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
-8. FORMATO PARA LISTA DE LA COMPRA AUTOMÁTICA: En "fede" y "arantxa" separa CADA alimento OBLIGATORIAMENTE con el símbolo "+" (NUNCA con comas). Cada alimento debe empezar por su cantidad y unidad (ej: "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate").
+2. REGLA ESTRICTA DE GRASAS (G) Y FÓRMULA CALÓRICA MATEMÁTICA:
+   - PROHIBIDO TERMINANTEMENTE copiar o igualar el valor de las grasas (G) a las proteínas (P). Las grasas son una variable independiente calculada a 0.8g - 0.85g por kg de peso corporal:
+     * Fede: Grasa fija diaria saludable entre 75g y 80g G (NUNCA poner 200g de grasa).
+     * Arantxa: Grasa fija diaria saludable entre 50g y 55g G (NUNCA poner 140g de grasa).
+   - En CADA comida y en el total del día, las calorías DEBEN sumar exactamente con la fórmula:
+     Kcal = (Proteína * 4) + (Carbohidratos * 4) + (Grasas * 9).
+     Por ejemplo: 200g P + 320g CH + 75g G = 800 + 1280 + 675 = 2.755 kcal (cualquier total de más de 3.500 kcal en días normales es un error matemático que debe evitarse).
+3. DESAYUNO: Priorizar tostadas de pan de masa madre con tomate triturado, jamón serrano y aguacate. CERO proteína en polvo / batidos en la pauta habitual (eliminar suplementación de whey).
+4. RECETAS SABROSAS: Enfoque de platos sabrosos estilo peruano/latino/fit (ej: lomo saltado fit de pollo o ternera con arroz basmati, ají de gallina fit, merluza empanada con patata asada, etc.).
+5. CERO SALMÓN COCINADO EN CALIENTE: En comidas calientes usar únicamente atún al natural o merluza empanada Mercadona. El salmón solo se permite crudo, marinado o ahumado en frío.
+6. MERIENDA PRE-CROSSFIT (17:30): Vaciado gástrico rápido estricto pre-WOD (ej: tortitas de arroz con fiambre de pavo / jamón serrano), sin legumbres ni grasas pesadas para evitar molestias digestivas.
+7. MODULACIÓN DE HIDRATOS: Modular los carbohidratos en crudo según si el día es de solo correr, solo CrossFit, doble sesión o descanso.
+8. PESOS EN CRUDO: Todos los alimentos que se cocinan (arroz basmati, patata, pasta, pollo, merluza, ternera) expresados obligatoriamente con su PESO EN CRUDO ('g' o 'ml').
+9. FORMATO PARA LISTA DE LA COMPRA AUTOMÁTICA: En "fede" y "arantxa" separa CADA alimento OBLIGATORIAMENTE con el símbolo "+" (NUNCA con comas). Cada alimento debe empezar por su cantidad y unidad (ej: "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate").
 
 === 4. FORMATO OBLIGATORIO DE RESPUESTA (JSON) ===
 Devuelve ÚNICAMENTE un array JSON válido (28 tomas, 4 tomas por día de Lunes a Domingo) con esta estructura exacta:
@@ -2532,9 +2648,9 @@ Devuelve ÚNICAMENTE un array JSON válido (28 tomas, 4 tomas por día de Lunes 
     "ventana": "08:30 Desayuno",
     "plato": "Tostadas de masa madre con jamón serrano, tomate y aguacate",
     "fede": "120g pan masa madre + 80g jamón serrano + 50g tomate triturado + 80g aguacate",
-    "macrosFede": "P: 50g | CH: 65g | G: 50g | 925 kcal",
+    "macrosFede": "P: 50g | CH: 65g | G: 20g | 640 kcal",
     "arantxa": "80g pan masa madre + 50g jamón serrano + 30g tomate triturado + 40g aguacate",
-    "macrosArantxa": "P: 35g | CH: 55g | G: 35g | 472 kcal"
+    "macrosArantxa": "P: 35g | CH: 55g | G: 14g | 486 kcal"
   }
 ]`;
     },
@@ -2821,40 +2937,54 @@ Devuelve ÚNICAMENTE un array JSON válido (28 tomas, 4 tomas por día de Lunes 
         const comidasDia = comidas.filter(c => this.normalizar(c.dia) === dNorm);
         const planDia = this.entrenosPlanificador[dNorm] || { fede: 'CrossFit 17:30', arantxa: 'CrossFit 17:30' };
 
-        // Macros sumados Fede
+        // Macros sumados Fede con validación estricta de grasas saludables (75-80g, nunca 200g)
         let sumPFede = 0, sumCHFede = 0, sumGFede = 0, sumKcalFede = 0;
         comidasDia.forEach(c => {
           const m = this.parsearMacrosDeColumnaExcel(c.macrosFede);
           sumPFede += m.p; sumCHFede += m.ch; sumGFede += m.g; sumKcalFede += m.kcal;
         });
-        const baseFede = RESUMEN_OFICIAL_FEDE[dNorm] || { entreno: 'CrossFit 17:30', p: 200, ch: 320, g: 75, kcal: 2755 };
+        const entFede = (planDia.fede && planDia.fede.trim()) ? planDia.fede.trim() : 'CrossFit 17:30';
+        const objFede = this.calcularMacrosObjetivo(entFede, 'fede');
+        let pFede = sumPFede > 0 ? Math.round(sumPFede) : objFede.p;
+        let chFede = sumCHFede > 0 ? Math.round(sumCHFede) : objFede.ch;
+        // Si las grasas sumadas son anómalas (>85g o igualan a las proteínas), fijar las saludables
+        let gFede = (sumGFede > 0 && sumGFede <= 85 && sumGFede < pFede * 0.9) ? Math.round(sumGFede) : objFede.g;
+        let kcalFede = Math.round((pFede * 4) + (chFede * 4) + (gFede * 9));
+
         filasResumen.push({
           semana_id: nuevaSemanaId,
           atleta: 'Fede',
           dia: dia,
-          entrenamiento: planDia.fede || baseFede.entreno,
-          p: sumPFede > 0 ? Math.round(sumPFede) : baseFede.p,
-          ch: sumCHFede > 0 ? Math.round(sumCHFede) : baseFede.ch,
-          g: sumGFede > 0 ? Math.round(sumGFede) : baseFede.g,
-          kcal: sumKcalFede > 0 ? Math.round(sumKcalFede) : baseFede.kcal
+          entrenamiento: entFede,
+          p: pFede,
+          ch: chFede,
+          g: gFede,
+          kcal: kcalFede
         });
 
-        // Macros sumados Arantxa
+        // Macros sumados Arantxa con validación estricta de grasas saludables (50-55g, nunca 140g)
         let sumPAra = 0, sumCHAra = 0, sumGAra = 0, sumKcalAra = 0;
         comidasDia.forEach(c => {
           const m = this.parsearMacrosDeColumnaExcel(c.macrosArantxa);
           sumPAra += m.p; sumCHAra += m.ch; sumGAra += m.g; sumKcalAra += m.kcal;
         });
-        const baseAra = RESUMEN_OFICIAL_ARANTXA[dNorm] || { entreno: 'CrossFit 17:30', p: 140, ch: 220, g: 50, kcal: 1890 };
+        const entAra = (planDia.arantxa && planDia.arantxa.trim()) ? planDia.arantxa.trim() : 'CrossFit 17:30';
+        const objAra = this.calcularMacrosObjetivo(entAra, 'arantxa');
+        let pAra = sumPAra > 0 ? Math.round(sumPAra) : objAra.p;
+        let chAra = sumCHAra > 0 ? Math.round(sumCHAra) : objAra.ch;
+        // Si las grasas sumadas son anómalas (>60g o igualan a las proteínas), fijar las saludables
+        let gAra = (sumGAra > 0 && sumGAra <= 60 && sumGAra < pAra * 0.9) ? Math.round(sumGAra) : objAra.g;
+        let kcalAra = Math.round((pAra * 4) + (chAra * 4) + (gAra * 9));
+
         filasResumen.push({
           semana_id: nuevaSemanaId,
           atleta: 'Arantxa',
           dia: dia,
-          entrenamiento: planDia.arantxa || baseAra.entreno,
-          p: sumPAra > 0 ? Math.round(sumPAra) : baseAra.p,
-          ch: sumCHAra > 0 ? Math.round(sumCHAra) : baseAra.ch,
-          g: sumGAra > 0 ? Math.round(sumGAra) : baseAra.g,
-          kcal: sumKcalAra > 0 ? Math.round(sumKcalAra) : baseAra.kcal
+          entrenamiento: entAra,
+          p: pAra,
+          ch: chAra,
+          g: gAra,
+          kcal: kcalAra
         });
       });
 
