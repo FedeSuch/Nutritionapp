@@ -66,17 +66,17 @@ const PERFILES_SESION = {
     descanso:          { nombre: "0 Sesiones · Descanso Total",            p: 195, ch: 200, g: 85, kcal: 2345 },
     unica_run_suave:   { nombre: "1 Sesión · Carrera Fácil 8 km",          p: 198, ch: 310, g: 75, kcal: 2707 },
     unica_cf:          { nombre: "1 Sesión · Solo CrossFit WOD",           p: 200, ch: 320, g: 75, kcal: 2755 },
-    unica_run_intensa: { nombre: "1 Sesión · Series / Tempo 10 km",        p: 200, ch: 350, g: 73, kcal: 2855 },
+    unica_run_intensa: { nombre: "1 Sesión · Series / Tempo 10 km",        p: 200, ch: 350, g: 73, kcal: 2857 },
     precarga_trail:    { nombre: "Descanso Activo · Precarga Trail",       p: 198, ch: 380, g: 70, kcal: 2942 },
     doble_gym:         { nombre: "2 Sesiones · Carrera + Gym Fuerza",      p: 202, ch: 430, g: 72, kcal: 3176 },
     doble_cf:          { nombre: "2 Sesiones · Tempo/Series + CrossFit",   p: 205, ch: 450, g: 75, kcal: 3295 },
     trail_largo:       { nombre: "Tirada Larga · Trail 22 km",             p: 202, ch: 495, g: 68, kcal: 3400 }
   },
   arantxa: {
-    descanso:          { nombre: "0 Sesiones · Descanso Total",            p: 135, ch: 145, g: 55, kcal: 1630 },
+    descanso:          { nombre: "0 Sesiones · Descanso Total",            p: 135, ch: 145, g: 55, kcal: 1615 },
     unica_run_suave:   { nombre: "1 Sesión · Carrera Fácil 8 km",          p: 138, ch: 215, g: 50, kcal: 1862 },
     unica_cf:          { nombre: "1 Sesión · Solo CrossFit WOD",           p: 140, ch: 220, g: 50, kcal: 1890 },
-    unica_run_intensa: { nombre: "1 Sesión · Series / Tempo 10 km",        p: 140, ch: 245, g: 50, kcal: 1970 },
+    unica_run_intensa: { nombre: "1 Sesión · Series / Tempo 10 km",        p: 140, ch: 245, g: 50, kcal: 1990 },
     precarga_trail:    { nombre: "Descanso Activo · Precarga Trail",       p: 138, ch: 265, g: 48, kcal: 2044 },
     doble_gym:         { nombre: "2 Sesiones · Carrera + Gym Fuerza",      p: 142, ch: 295, g: 48, kcal: 2180 },
     doble_cf:          { nombre: "2 Sesiones · Tempo/Series + CrossFit",   p: 145, ch: 310, g: 50, kcal: 2270 },
@@ -398,7 +398,7 @@ function appData() {
      * - Arantxa: 140g P fija | 50g-55g G fija (~0.8g/kg de peso corporal)
      * - Fórmula calórica exacta: Kcal = (Proteína * 4) + (Carbohidratos * 4) + (Grasas * 9)
      */
-    calcularMacrosObjetivo(entrenoTexto, atletaKey) {
+    calcularMacrosObjetivo(entrenoTexto, atletaKey, conAjuste = true) {
       const esFede = this.normalizar(atletaKey) === 'fede';
       const perfilKey = this.determinarPerfilEntreno(entrenoTexto);
       const perf = PERFILES_SESION[esFede ? 'fede' : 'arantxa'][perfilKey] || PERFILES_SESION[esFede ? 'fede' : 'arantxa']['unica_cf'];
@@ -408,10 +408,12 @@ function appData() {
       const g = esFede ? (perf.g || 78) : (perf.g || 52);
       let ch = perf.ch || (esFede ? 320 : 220);
 
-      // Reajuste metabólico semanal aplicado a los carbohidratos
-      const adj = (this.ajustesMetabolicos && this.ajustesMetabolicos[esFede ? 'fede' : 'arantxa']) ? this.ajustesMetabolicos[esFede ? 'fede' : 'arantxa'] : 0;
-      if (adj !== 0) {
-        ch = Math.max(50, ch + Math.round(adj / 4));
+      // Reajuste metabólico semanal aplicado a los carbohidratos (opcional según si es base o efectivo)
+      if (conAjuste) {
+        const adj = (this.ajustesMetabolicos && this.ajustesMetabolicos[esFede ? 'fede' : 'arantxa']) ? this.ajustesMetabolicos[esFede ? 'fede' : 'arantxa'] : 0;
+        if (adj !== 0) {
+          ch = Math.max(50, ch + Math.round(adj / 4));
+        }
       }
 
       // Cálculo matemático estricto: (P * 4) + (CH * 4) + (G * 9)
@@ -427,79 +429,53 @@ function appData() {
     },
 
     /**
-     * Obtiene los Macros y Calorías Oficiales del Día desde RESUMEN_SEMANAL (Supabase o Fallback Oficial)
-     * Sanea y protege las grasas para que NUNCA dupliquen a las proteínas.
+     * Devuelve la lista ordenada de perfiles de sesión para el selector de "Adaptar entreno"
+     */
+    listaPerfilesSesion(atletaKey) {
+      const esFede = this.normalizar(atletaKey) === 'fede';
+      const perfs = PERFILES_SESION[esFede ? 'fede' : 'arantxa'];
+      return Object.entries(perfs).map(([key, p]) => ({
+        key,
+        nombre: p.nombre,
+        kcal: p.kcal,
+        ch: p.ch,
+        p: p.p,
+        g: p.g
+      }));
+    },
+
+    /**
+     * Obtiene los Macros y Calorías Oficiales Base del Día según el entrenamiento programado
+     * (entrenosPlanificador -> resumenSemanal -> Fallback Oficial).
+     * Siempre calcula los macros de forma estricta según el entrenamiento real del atleta.
      */
     objetivoBaseDia(diaNombre, atletaKey) {
       const diaFuente = this.diaFuenteEfectivo(diaNombre);
       const dNorm = this.normalizar(diaFuente);
       const esFede = this.normalizar(atletaKey) === 'fede';
-      const maxGrasa = esFede ? 85 : 60;
 
-      if (this.resumenSemanal && this.resumenSemanal.length > 0) {
+      // 1. Obtener el texto del entrenamiento para este día
+      let entreno = '';
+      if (this.entrenosPlanificador && this.entrenosPlanificador[dNorm] && this.entrenosPlanificador[dNorm][atletaKey]) {
+        entreno = this.entrenosPlanificador[dNorm][atletaKey].trim();
+      }
+      if (!entreno && this.resumenSemanal && this.resumenSemanal.length > 0) {
         const fila = this.resumenSemanal.find(r => 
           this.normalizar(r.atleta) === atletaKey && 
           this.normalizar(r.dia) === dNorm
         );
-        // Debe tener calorías y macros reales calculados (P > 0 o CH > 0)
-        if (fila && Number(fila.kcal) > 200 && (Number(fila.p) > 0 || Number(fila.ch) > 0)) {
-          let pVal = Math.round(Number(fila.p) || (esFede ? 200 : 140));
-          let chVal = Math.round(Number(fila.ch) || (esFede ? 320 : 220));
-          let gVal = Math.round(Number(fila.g) || (esFede ? 78 : 52));
-          // Sanear si las grasas estaban infladas o duplicaban a las proteínas
-          if (gVal > maxGrasa || gVal >= pVal * 0.9) {
-            gVal = esFede ? 78 : 52;
-          }
-          const kcalVal = Math.round((pVal * 4) + (chVal * 4) + (gVal * 9));
-          return {
-            entreno: fila.entrenamiento || '',
-            p: pVal,
-            ch: chVal,
-            g: gVal,
-            kcal: kcalVal
-          };
+        if (fila && fila.entrenamiento && fila.entrenamiento.trim()) {
+          entreno = fila.entrenamiento.trim();
         }
       }
-
-      // Si resumenSemanal no tiene macros válidos (ej. por importación anterior con 0g), sumarlos en tiempo real de dieta_diaria
-      const comidasDia = this.comidasDelDiaPara(diaFuente);
-      if (comidasDia && comidasDia.length > 0) {
-        let sumP = 0, sumCH = 0, sumG = 0;
-        const campo = atletaKey === 'fede' ? 'macrosFede' : 'macrosArantxa';
-        comidasDia.forEach(c => {
-          const m = this.parsearMacrosDeColumnaExcel(c[campo]);
-          sumP += m.p; sumCH += m.ch; sumG += m.g;
-        });
-
-        if (sumP > 0 || sumCH > 0) {
-          const filaPrev = this.resumenSemanal ? this.resumenSemanal.find(r => this.normalizar(r.atleta) === atletaKey && this.normalizar(r.dia) === dNorm) : null;
-          const entreno = (filaPrev && filaPrev.entrenamiento) ? filaPrev.entrenamiento : (this.entrenosPlanificador && this.entrenosPlanificador[dNorm] ? (atletaKey === 'fede' ? this.entrenosPlanificador[dNorm].fede : this.entrenosPlanificador[dNorm].arantxa) : 'CrossFit 17:30');
-          let pVal = Math.round(sumP);
-          let chVal = Math.round(sumCH);
-          let gVal = Math.round(sumG);
-          if (gVal > maxGrasa || gVal >= pVal * 0.9) {
-            gVal = esFede ? 78 : 52;
-          }
-          const kcalVal = Math.round((pVal * 4) + (chVal * 4) + (gVal * 9));
-          return {
-            entreno,
-            p: pVal,
-            ch: chVal,
-            g: gVal,
-            kcal: kcalVal
-          };
-        }
+      if (!entreno) {
+        const dic = esFede ? RESUMEN_OFICIAL_FEDE : RESUMEN_OFICIAL_ARANTXA;
+        const def = dic[dNorm] || (esFede ? { entreno: "CrossFit 17:30" } : { entreno: "CrossFit 17:30" });
+        entreno = def.entreno;
       }
 
-      const dic = atletaKey === 'fede' ? RESUMEN_OFICIAL_FEDE : RESUMEN_OFICIAL_ARANTXA;
-      const def = dic[dNorm] || (esFede ? { entreno: "CrossFit 17:30", p: 200, ch: 320, g: 75, kcal: 2755 } : { entreno: "CrossFit 17:30", p: 140, ch: 220, g: 50, kcal: 1890 });
-      return {
-        entreno: def.entreno,
-        p: def.p,
-        ch: def.ch,
-        g: def.g,
-        kcal: Math.round((def.p * 4) + (def.ch * 4) + (def.g * 9))
-      };
+      // 2. Calcular los macros y calorías base correspondientes a este entrenamiento (sin reajuste metabólico)
+      return this.calcularMacrosObjetivo(entreno, atletaKey, false);
     },
 
     objetivoEfectivoDia(diaNombre, atletaKey) {
@@ -706,7 +682,7 @@ function appData() {
             localStorage.setItem('hybrid_cache_dieta', '[]');
           }
 
-          // Guardar resumen_semanal y auto-reparar si las filas tenían macros en 0, grasas duplicadas de proteína o calorías desajustadas
+          // Guardar resumen_semanal y auto-reparar si las filas tenían macros en 0, desfasados, grasas duplicadas o calorías desajustadas
           this.resumenSemanal = resumenRes.data || [];
           if (this.resumenSemanal.length > 0) {
             const filasReparar = [];
@@ -714,6 +690,12 @@ function appData() {
               const atletaKey = this.normalizar(fila.atleta);
               const esFede = atletaKey === 'fede';
               const maxGrasa = esFede ? 85 : 60;
+              const dNorm = this.normalizar(fila.dia);
+              const planDia = (this.entrenosPlanificador && this.entrenosPlanificador[dNorm]) || {};
+              const entreno = (planDia[atletaKey] && planDia[atletaKey].trim()) || (fila.entrenamiento && fila.entrenamiento.trim()) || 'CrossFit 17:30';
+
+              const objSano = this.calcularMacrosObjetivo(entreno, atletaKey, false);
+
               const pNum = Number(fila.p) || 0;
               const chNum = Number(fila.ch) || 0;
               const gNum = Number(fila.g) || 0;
@@ -722,14 +704,16 @@ function appData() {
               const tieneMacrosEnCero = (pNum === 0 && chNum === 0);
               const tieneGrasasInfladas = (gNum > maxGrasa) || (pNum > 0 && gNum >= pNum * 0.9);
               const kcalCalculadas = Math.round((pNum * 4) + (chNum * 4) + (gNum * 9));
-              const tieneKcalDescuadradas = Math.abs(kcalNum - kcalCalculadas) > 35;
+              const tieneKcalDescuadradas = Math.abs(kcalNum - kcalCalculadas) > 30;
+              const tieneCHDesfasados = Math.abs(chNum - objSano.ch) > 25;
+              const entrenoCambiado = fila.entrenamiento !== entreno;
 
-              if (tieneMacrosEnCero || tieneGrasasInfladas || tieneKcalDescuadradas) {
-                const objSano = this.calcularMacrosObjetivo(fila.entrenamiento || 'CrossFit 17:30', atletaKey);
-                fila.p = (pNum > 0 && pNum <= (esFede ? 220 : 160)) ? pNum : objSano.p;
-                fila.ch = (chNum > 0 && chNum < 650) ? chNum : objSano.ch;
-                fila.g = (!tieneGrasasInfladas && gNum > 0) ? gNum : objSano.g;
-                fila.kcal = Math.round((fila.p * 4) + (fila.ch * 4) + (fila.g * 9));
+              if (tieneMacrosEnCero || tieneGrasasInfladas || tieneKcalDescuadradas || tieneCHDesfasados || entrenoCambiado) {
+                fila.entrenamiento = entreno;
+                fila.p = objSano.p;
+                fila.ch = objSano.ch;
+                fila.g = objSano.g;
+                fila.kcal = objSano.kcal;
                 filasReparar.push(fila);
               }
             });
@@ -738,7 +722,7 @@ function appData() {
               filasReparar.forEach(f => {
                 supabaseClient
                   .from('resumen_semanal')
-                  .update({ p: f.p, ch: f.ch, g: f.g, kcal: f.kcal })
+                  .update({ entrenamiento: f.entrenamiento, p: f.p, ch: f.ch, g: f.g, kcal: f.kcal })
                   .eq('id', f.id)
                   .then(() => {});
               });
@@ -1078,12 +1062,12 @@ function appData() {
       const pBaseComida    = Math.round(objDiaBase.p * pesoP);
       const chBaseComida   = Math.round(objDiaBase.ch * pesoCH);
       const gBaseComida    = Math.round(objDiaBase.g * pesoG);
-      const kcalBaseComida = Math.round(objDiaBase.kcal * pesoK);
+      const kcalBaseComida = Math.round((pBaseComida * 4) + (chBaseComida * 4) + (gBaseComida * 9));
 
       let pMetaComida    = Math.round(objDiaEfectivo.p * pesoP);
       let chMetaComida   = Math.round(objDiaEfectivo.ch * pesoCH);
       let gMetaComida    = Math.round(objDiaEfectivo.g * pesoG);
-      let kcalMetaComida = Math.round(objDiaEfectivo.kcal * pesoK);
+      let kcalMetaComida = Math.round((pMetaComida * 4) + (chMetaComida * 4) + (gMetaComida * 9));
 
       const factorEntrenoCH = objDiaBase.ch > 0 ? (objDiaEfectivo.ch / objDiaBase.ch) : 1.0;
 
@@ -2335,6 +2319,29 @@ function appData() {
       if (this.semanaActivaId) {
         localStorage.setItem(`hybrid_planificador_entrenos_${this.semanaActivaId}`, JSON.stringify(this.entrenosPlanificador));
         this.sincronizarEstadoRemoto('entrenosPlanificador', this.entrenosPlanificador);
+
+        // Si la semana activa ya tiene resumen_semanal cargado, sincronizar la fila correspondiente
+        if (this.resumenSemanal && this.resumenSemanal.length > 0) {
+          const fila = this.resumenSemanal.find(r => 
+            this.normalizar(r.atleta) === atletaKey && 
+            this.normalizar(r.dia) === diaKey
+          );
+          if (fila) {
+            const obj = this.calcularMacrosObjetivo(val, atletaKey, false);
+            fila.entrenamiento = val;
+            fila.p = obj.p;
+            fila.ch = obj.ch;
+            fila.g = obj.g;
+            fila.kcal = obj.kcal;
+            if (supabaseClient) {
+              supabaseClient
+                .from('resumen_semanal')
+                .update({ entrenamiento: val, p: obj.p, ch: obj.ch, g: obj.g, kcal: obj.kcal })
+                .eq('id', fila.id)
+                .then(() => {});
+            }
+          }
+        }
       }
     },
 
@@ -2937,54 +2944,34 @@ Devuelve ÚNICAMENTE un array JSON válido (28 tomas, 4 tomas por día de Lunes 
         const comidasDia = comidas.filter(c => this.normalizar(c.dia) === dNorm);
         const planDia = this.entrenosPlanificador[dNorm] || { fede: 'CrossFit 17:30', arantxa: 'CrossFit 17:30' };
 
-        // Macros sumados Fede con validación estricta de grasas saludables (75-80g, nunca 200g)
-        let sumPFede = 0, sumCHFede = 0, sumGFede = 0, sumKcalFede = 0;
-        comidasDia.forEach(c => {
-          const m = this.parsearMacrosDeColumnaExcel(c.macrosFede);
-          sumPFede += m.p; sumCHFede += m.ch; sumGFede += m.g; sumKcalFede += m.kcal;
-        });
+        // Macros objetivo oficiales de la semana para Fede según el entreno programado
         const entFede = (planDia.fede && planDia.fede.trim()) ? planDia.fede.trim() : 'CrossFit 17:30';
-        const objFede = this.calcularMacrosObjetivo(entFede, 'fede');
-        let pFede = sumPFede > 0 ? Math.round(sumPFede) : objFede.p;
-        let chFede = sumCHFede > 0 ? Math.round(sumCHFede) : objFede.ch;
-        // Si las grasas sumadas son anómalas (>85g o igualan a las proteínas), fijar las saludables
-        let gFede = (sumGFede > 0 && sumGFede <= 85 && sumGFede < pFede * 0.9) ? Math.round(sumGFede) : objFede.g;
-        let kcalFede = Math.round((pFede * 4) + (chFede * 4) + (gFede * 9));
+        const objFede = this.calcularMacrosObjetivo(entFede, 'fede', false);
 
         filasResumen.push({
           semana_id: nuevaSemanaId,
           atleta: 'Fede',
           dia: dia,
           entrenamiento: entFede,
-          p: pFede,
-          ch: chFede,
-          g: gFede,
-          kcal: kcalFede
+          p: objFede.p,
+          ch: objFede.ch,
+          g: objFede.g,
+          kcal: objFede.kcal
         });
 
-        // Macros sumados Arantxa con validación estricta de grasas saludables (50-55g, nunca 140g)
-        let sumPAra = 0, sumCHAra = 0, sumGAra = 0, sumKcalAra = 0;
-        comidasDia.forEach(c => {
-          const m = this.parsearMacrosDeColumnaExcel(c.macrosArantxa);
-          sumPAra += m.p; sumCHAra += m.ch; sumGAra += m.g; sumKcalAra += m.kcal;
-        });
+        // Macros objetivo oficiales de la semana para Arantxa según el entreno programado
         const entAra = (planDia.arantxa && planDia.arantxa.trim()) ? planDia.arantxa.trim() : 'CrossFit 17:30';
-        const objAra = this.calcularMacrosObjetivo(entAra, 'arantxa');
-        let pAra = sumPAra > 0 ? Math.round(sumPAra) : objAra.p;
-        let chAra = sumCHAra > 0 ? Math.round(sumCHAra) : objAra.ch;
-        // Si las grasas sumadas son anómalas (>60g o igualan a las proteínas), fijar las saludables
-        let gAra = (sumGAra > 0 && sumGAra <= 60 && sumGAra < pAra * 0.9) ? Math.round(sumGAra) : objAra.g;
-        let kcalAra = Math.round((pAra * 4) + (chAra * 4) + (gAra * 9));
+        const objAra = this.calcularMacrosObjetivo(entAra, 'arantxa', false);
 
         filasResumen.push({
           semana_id: nuevaSemanaId,
           atleta: 'Arantxa',
           dia: dia,
           entrenamiento: entAra,
-          p: pAra,
-          ch: chAra,
-          g: gAra,
-          kcal: kcalAra
+          p: objAra.p,
+          ch: objAra.ch,
+          g: objAra.g,
+          kcal: objAra.kcal
         });
       });
 

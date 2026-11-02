@@ -362,23 +362,18 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-surface border border-border rounded-2xl p-4 space-y-3">
                   <div>
-                    <span class="text-xs font-extrabold text-sage uppercase block">Opción A · Cambiar Sesiones de Hoy</span>
-                    <p class="text-xs text-ink-secondary mt-0.5">Escala los hidratos en crudo al número real de sesiones de hoy.</p>
+                    <span class="text-xs font-extrabold text-sage uppercase block" x-text="'Opción A · Adaptar Sesión del ' + diaSeleccionado"></span>
+                    <p class="text-xs text-ink-secondary mt-0.5" x-text="'Escala automáticamente los carbohidratos y calorías del ' + diaSeleccionado + ' al entreno real de cada atleta.'"></p>
                   </div>
 
                   <div class="space-y-4">
                     <div>
-                      <label class="block text-xs font-bold text-ink mb-1">Sesiones hoy para FEDE:</label>
+                      <label class="block text-xs font-bold text-ink mb-1" x-text="'Sesión del ' + diaSeleccionado + ' para FEDE:'"></label>
                       <select :value="obtenerCargaAtleta(diaSeleccionado, 'fede')" @change="fijarCargaAtleta(diaSeleccionado, 'fede', $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
-                        <option value="auto" x-text="'Plan semanal activo (' + (objetivoBaseDia(diaSeleccionado, 'fede').entreno || 'Plan activo') + ' · ' + objetivoBaseDia(diaSeleccionado, 'fede').kcal + ' kcal · ' + objetivoBaseDia(diaSeleccionado, 'fede').ch + 'g CH)'"></option>
-                        <option value="descanso">0 Sesiones · Descanso Total (2.345 kcal | 200g CH)</option>
-                        <option value="unica_run_suave">1 Sesión · Carrera Fácil 8 km (2.707 kcal | 310g CH)</option>
-                        <option value="unica_cf">1 Sesión · Solo CrossFit WOD (2.755 kcal | 320g CH)</option>
-                        <option value="unica_run_intensa">1 Sesión · Carrera Intensa: Series / Tempo 10 km (2.855 kcal | 350g CH)</option>
-                        <option value="precarga_trail">Descanso Activo · Precarga Trail (2.942 kcal | 380g CH)</option>
-                        <option value="doble_gym">2 Sesiones · Cuestas / Carrera + Gym Fuerza (3.176 kcal | 430g CH)</option>
-                        <option value="doble_cf">2 Sesiones · Tempo / Series + CrossFit WOD (3.295 kcal | 450g CH)</option>
-                        <option value="trail_largo">Tirada Larga · Trail 22 km +1000m (3.400 kcal | 495g CH)</option>
+                        <option value="auto" x-text="'Plan semanal activo (' + objetivoBaseDia(diaSeleccionado, 'fede').entreno + ' · ' + objetivoBaseDia(diaSeleccionado, 'fede').kcal + ' kcal · ' + objetivoBaseDia(diaSeleccionado, 'fede').ch + 'g CH)'"></option>
+                        <template x-for="p in listaPerfilesSesion('fede')" :key="p.key">
+                          <option :value="p.key" x-text="p.nombre + ' (' + p.kcal + ' kcal | ' + p.ch + 'g CH)'"></option>
+                        </template>
                       </select>
                       <div class="flex flex-wrap gap-1.5 mt-2">
                         <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'fede', 'descanso')" :class="obtenerCargaAtleta(diaSeleccionado, 'fede') === 'descanso' ? 'bg-sage text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🛋️ Descanso</button>
@@ -390,17 +385,12 @@
                     </div>
 
                     <div>
-                      <label class="block text-xs font-bold text-ink mb-1">Sesiones hoy para ARANTXA:</label>
+                      <label class="block text-xs font-bold text-ink mb-1" x-text="'Sesión del ' + diaSeleccionado + ' para ARANTXA:'"></label>
                       <select :value="obtenerCargaAtleta(diaSeleccionado, 'arantxa')" @change="fijarCargaAtleta(diaSeleccionado, 'arantxa', $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
-                        <option value="auto" x-text="'Plan semanal activo (' + (objetivoBaseDia(diaSeleccionado, 'arantxa').entreno || 'Plan activo') + ' · ' + objetivoBaseDia(diaSeleccionado, 'arantxa').kcal + ' kcal · ' + objetivoBaseDia(diaSeleccionado, 'arantxa').ch + 'g CH)'"></option>
-                        <option value="descanso">0 Sesiones · Descanso Total (1.630 kcal | 145g CH)</option>
-                        <option value="unica_run_suave">1 Sesión · Carrera Fácil 8 km (1.860 kcal | 215g CH)</option>
-                        <option value="unica_cf">1 Sesión · Solo CrossFit WOD (1.890 kcal | 220g CH)</option>
-                        <option value="unica_run_intensa">1 Sesión · Carrera Intensa: Series / Tempo 10 km (1.970 kcal | 245g CH)</option>
-                        <option value="precarga_trail">Descanso Activo · Precarga Trail (2.040 kcal | 265g CH)</option>
-                        <option value="doble_gym">2 Sesiones · Cuestas / Carrera + Gym Fuerza (2.197 kcal | 295g CH)</option>
-                        <option value="doble_cf">2 Sesiones · Tempo / Series + CrossFit WOD (2.280 kcal | 310g CH)</option>
-                        <option value="trail_largo">Tirada Larga · Trail 22 km +1000m (2.380 kcal | 345g CH)</option>
+                        <option value="auto" x-text="'Plan semanal activo (' + objetivoBaseDia(diaSeleccionado, 'arantxa').entreno + ' · ' + objetivoBaseDia(diaSeleccionado, 'arantxa').kcal + ' kcal · ' + objetivoBaseDia(diaSeleccionado, 'arantxa').ch + 'g CH)'"></option>
+                        <template x-for="p in listaPerfilesSesion('arantxa')" :key="p.key">
+                          <option :value="p.key" x-text="p.nombre + ' (' + p.kcal + ' kcal | ' + p.ch + 'g CH)'"></option>
+                        </template>
                       </select>
                       <div class="flex flex-wrap gap-1.5 mt-2">
                         <button type="button" @click="fijarCargaAtleta(diaSeleccionado, 'arantxa', 'descanso')" :class="obtenerCargaAtleta(diaSeleccionado, 'arantxa') === 'descanso' ? 'bg-ara-dark text-white' : 'bg-canvas text-ink border border-border hover:bg-subtle'" class="px-2.5 py-1 rounded-full text-[11px] font-bold transition">🛋️ Descanso</button>
@@ -424,7 +414,7 @@
                     <select :value="diaPermutadoCon(diaSeleccionado) || ''" @change="permutarDias(diaSeleccionado, $event.target.value)" class="w-full bg-canvas border border-border rounded-xl px-3 py-2.5 text-xs font-semibold text-ink">
                       <option value="">-- Mantener en su día original --</option>
                       <template x-for="dAlt in diasSemana.filter(x => x !== diaSeleccionado)" :key="dAlt">
-                        <option :value="dAlt" x-text="'⇄ Intercambiar con ' + dAlt + ' (' + RESUMEN_OFICIAL_FEDE[normalizar(dAlt)].entreno + ' · ' + RESUMEN_OFICIAL_FEDE[normalizar(dAlt)].kcal + ' kcal)'"></option>
+                        <option :value="dAlt" x-text="'⇄ Intercambiar con ' + dAlt + ' (' + objetivoBaseDia(dAlt, 'fede').entreno + ' · ' + objetivoBaseDia(dAlt, 'fede').kcal + ' kcal)'"></option>
                       </template>
                     </select>
                   </div>
